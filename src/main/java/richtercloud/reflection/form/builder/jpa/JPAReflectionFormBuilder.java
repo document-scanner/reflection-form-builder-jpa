@@ -14,6 +14,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.Transient;
 import javax.swing.JComponent;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.ValueRetriever;
 
 /**
  *
@@ -23,12 +24,12 @@ public class JPAReflectionFormBuilder<E> extends ReflectionFormBuilder<E> {
     private EntityManager entityManager;
     
     public JPAReflectionFormBuilder(EntityManager entityManager) {
-        this(CLASS_MAPPING_DEFAULT, entityManager);
+        this(CLASS_MAPPING_DEFAULT, VALUE_RETRIEVER_MAPPING_DEFAULT, entityManager);
     }
     
     
-    public JPAReflectionFormBuilder(Map<Class<?>, Class<? extends JComponent>> classMapping, EntityManager entityManager) {
-        super(classMapping);
+    public JPAReflectionFormBuilder(Map<Class<?>, Class<? extends JComponent>> classMapping, Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping, EntityManager entityManager) {
+        super(classMapping, valueRetrieverMapping);
         if(entityManager == null) {
             throw new IllegalArgumentException("entityManager mustn't be null");
         }
