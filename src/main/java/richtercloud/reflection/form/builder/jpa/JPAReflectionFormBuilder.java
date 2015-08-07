@@ -5,16 +5,18 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import javax.persistence.EntityManager;
+import javax.persistence.Id;
 import javax.persistence.Transient;
 import javax.swing.JComponent;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
-import richtercloud.reflection.form.builder.ValueRetriever;
+import richtercloud.reflection.form.builder.retriever.ValueRetriever;
 
 /**
  *
@@ -50,16 +52,21 @@ public class JPAReflectionFormBuilder<E> extends ReflectionFormBuilder<E> {
     }
 
     @Override
-    protected JComponent getClassComponent(Class<?> type) throws NoSuchMethodException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        Class<? extends JComponent> clazz = getClassMapping().get(type);
+    protected JComponent getClassComponent(Field field) throws NoSuchMethodException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         JComponent retValue;
+        if(field.getAnnotation(Id.class) != null) {
+            retValue = new IdPanel(IdGenerator.getInstance());
+            return retValue;
+        }
+        Class<? extends JComponent> clazz = getClassMapping().get(field.getType());
         if(clazz == null) {
-            clazz = ReflectionFormBuilder.CLASS_MAPPING_DEFAULT.get(type);
+            clazz = ReflectionFormBuilder.CLASS_MAPPING_DEFAULT.get(field.getType());
         }
         if(clazz == null) {
-            retValue = new QueryPanel<>(this.entityManager, getEntityClassFields(), type);
+            retValue = new QueryPanel<>(this.entityManager, getEntityClassFields(), field.getType());
         } else {
-            retValue = clazz.getConstructor().newInstance();
+            Constructor<? extends JComponent> clazzConstructor = clazz.getDeclaredConstructor();
+            retValue = clazzConstructor.newInstance();
         }
         return retValue;
     }
