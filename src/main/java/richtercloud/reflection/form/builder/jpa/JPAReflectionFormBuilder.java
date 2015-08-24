@@ -65,6 +65,7 @@ public class JPAReflectionFormBuilder<E> extends ReflectionFormBuilder<E> {
      * <li>checks if the field is an entity (i.e. annotated with {@link Entity}) and returns a {@link QueryPanel}</li>
      * <li>returns a label indicating the type of the field</li>
      * </ol>
+     *
      * @param field
      * @return
      * @throws NoSuchMethodException
@@ -73,26 +74,19 @@ public class JPAReflectionFormBuilder<E> extends ReflectionFormBuilder<E> {
      * @throws IllegalArgumentException
      * @throws InvocationTargetException
      */
+    /*
+    @TODO: check if there's a possiblity that a Field is both annotated with @Id
+    and its type an entity
+    */
     @Override
     protected JComponent getClassComponent(Field field) throws NoSuchMethodException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        JComponent retValue;
+        JComponent retValue = super.getClassComponent(field); //never null
         if(field.getAnnotation(Id.class) != null) {
             retValue = new IdPanel(IdGenerator.getInstance());
             return retValue;
         }
-        Class<? extends JComponent> clazz = getClassMapping().get(field.getType());
-        if(clazz == null) {
-            clazz = ReflectionFormBuilder.CLASS_MAPPING_DEFAULT.get(field.getType());
-        }
-        if(clazz == null) {
-            if(field.getType().getAnnotation(Entity.class) != null) {
-                retValue = new QueryPanel<>(this.entityManager, getEntityClassFields(), field.getType());
-            }else {
-                return new JLabel(field.getType().getName());
-            }
-        } else {
-            Constructor<? extends JComponent> clazzConstructor = clazz.getDeclaredConstructor();
-            retValue = clazzConstructor.newInstance();
+        if(field.getType().getAnnotation(Entity.class) != null) {
+            retValue = new QueryPanel<>(this.entityManager, getEntityClassFields(), field.getType());
         }
         return retValue;
     }
