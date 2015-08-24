@@ -5,21 +5,20 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import java.lang.reflect.Constructor;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
 import javax.persistence.Id;
 import javax.persistence.Transient;
 import javax.swing.JComponent;
-import javax.swing.JLabel;
+import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
-import richtercloud.reflection.form.builder.components.OCRResultPanelRetriever;
-import richtercloud.reflection.form.builder.components.ScanResultPanelRetriever;
 import richtercloud.reflection.form.builder.retriever.ValueRetriever;
 
 /**
@@ -30,13 +29,13 @@ import richtercloud.reflection.form.builder.retriever.ValueRetriever;
 public class JPAReflectionFormBuilder<E> extends ReflectionFormBuilder<E> {
     private EntityManager entityManager;
 
-    public JPAReflectionFormBuilder(EntityManager entityManager, OCRResultPanelRetriever oCRResultPanelRetriever, ScanResultPanelRetriever scanResultPanelRetriever) {
-        this(CLASS_MAPPING_DEFAULT, VALUE_RETRIEVER_MAPPING_DEFAULT, entityManager, oCRResultPanelRetriever, scanResultPanelRetriever);
+    public JPAReflectionFormBuilder(EntityManager entityManager, List<Pair<Class<? extends Annotation>, Callable<? extends JComponent>>> annotationMapping) {
+        this(CLASS_MAPPING_DEFAULT, VALUE_RETRIEVER_MAPPING_DEFAULT, entityManager, annotationMapping);
     }
 
 
-    public JPAReflectionFormBuilder(Map<Class<?>, Class<? extends JComponent>> classMapping, Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping, EntityManager entityManager, OCRResultPanelRetriever oCRResultPanelRetriever, ScanResultPanelRetriever scanResultPanelRetriever) {
-        super(classMapping, valueRetrieverMapping, oCRResultPanelRetriever, scanResultPanelRetriever);
+    public JPAReflectionFormBuilder(Map<Class<?>, Class<? extends JComponent>> classMapping, Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping, EntityManager entityManager, List<Pair<Class<? extends Annotation>, Callable<? extends JComponent>>> annotationMapping) {
+        super(classMapping, valueRetrieverMapping, annotationMapping);
         if(entityManager == null) {
             throw new IllegalArgumentException("entityManager mustn't be null");
         }
