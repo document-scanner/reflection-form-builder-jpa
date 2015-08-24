@@ -5,6 +5,7 @@
         <groupId>richtercloud</groupId>
         <artifactId>reflection-form-builder-aggregator</artifactId>
         <version>1.0-SNAPSHOT</version>
+        <relativePath></relativePath>
     </parent>
     <artifactId>reflection-form-builder-jpa</artifactId>
     <packaging>jar</packaging>
