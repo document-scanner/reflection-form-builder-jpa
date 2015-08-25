@@ -19,6 +19,7 @@ import javax.persistence.Transient;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.ReflectionFormPanel;
 import richtercloud.reflection.form.builder.retriever.ValueRetriever;
 
 /**
@@ -52,6 +53,16 @@ public class JPAReflectionFormBuilder<E> extends ReflectionFormBuilder<E> {
                 relevantFieldsIt.remove();
             }
         }
+        relevantFieldsIt = relevantFields.listIterator();
+        while(relevantFieldsIt.hasNext()) {
+            Field relevantFieldsNxt = relevantFieldsIt.next();
+            if(relevantFieldsNxt.getAnnotation(Id.class) != null) {
+                relevantFieldsIt.remove();
+                relevantFields.add(0, relevantFieldsNxt);
+                break;
+            }
+        }
+
         return relevantFields;
     }
 
@@ -87,6 +98,13 @@ public class JPAReflectionFormBuilder<E> extends ReflectionFormBuilder<E> {
         if(field.getType().getAnnotation(Entity.class) != null) {
             retValue = new QueryPanel<>(this.entityManager, getEntityClassFields(), field.getType());
         }
+        return retValue;
+    }
+
+    @Override
+    public JPAReflectionFormPanel<E> transform(Class<? extends E> entityClass) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException {
+        ReflectionFormPanel<E> reflectionFormPanel = super.transform(entityClass);
+        JPAReflectionFormPanel<E> retValue = new JPAReflectionFormPanel<>(entityManager, reflectionFormPanel, entityClass, reflectionFormPanel.getFieldMapping(), reflectionFormPanel.getValueRetrieverMapping());
         return retValue;
     }
 
