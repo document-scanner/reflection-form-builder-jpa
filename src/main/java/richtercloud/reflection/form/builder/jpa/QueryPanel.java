@@ -14,7 +14,6 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import java.awt.Component;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -34,7 +33,6 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.text.JTextComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -194,7 +192,7 @@ public class QueryPanel<E> extends javax.swing.JPanel {
                         QueryComboBoxEditor.this.item.setText(QueryComboBoxEditor.this.editorComponent.getText());
                     }
                 }
-});
+            });
         }
 
         @Override
