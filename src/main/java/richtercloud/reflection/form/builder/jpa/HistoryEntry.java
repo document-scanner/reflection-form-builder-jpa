@@ -16,6 +16,7 @@ package richtercloud.reflection.form.builder.jpa;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Objects;
 
 /**
  *
@@ -86,5 +87,27 @@ public class HistoryEntry implements Serializable, Comparable<HistoryEntry>{
     @Override
     public String toString() {
         return this.text;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 53 * hash + Objects.hashCode(this.text);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final HistoryEntry other = (HistoryEntry) obj;
+        if (!Objects.equals(this.text, other.text)) {
+            return false;
+        }
+        return true;
     }
 }
