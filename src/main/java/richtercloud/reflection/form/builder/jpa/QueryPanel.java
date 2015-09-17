@@ -99,7 +99,7 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         @Override
         public void addElement(E item) {
             this.items.add(item);
-            this.items.sort(this.comparator);
+            Collections.sort(this.items, this.comparator);
             super.addElement(item);
         }
 
@@ -112,7 +112,7 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         @Override
         public void insertElementAt(E item, int index) {
             this.items.add(index, item);
-            this.items.sort(this.comparator);
+            Collections.sort(this.items, this.comparator);
             super.insertElementAt(item, index);
         }
 
