@@ -14,25 +14,41 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
+import java.util.Set;
+import javax.swing.JOptionPane;
 import javax.swing.JSpinner;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 
 /**
+ * A component to generate ids for entity instances. Ids are only generated for
+ * valid instances (i.e. after validation with Java Validation API). This
+ * restriction isn't necessary, but generation of intermediate ids on invalid
+ * instances doesn't make sense.
  *
  * @author richter
  */
 public class IdPanel extends javax.swing.JPanel {
+    private static final long serialVersionUID = 1L;
     private IdGenerator idGenerator;
+    private Object entity;
+    private final static ValidatorFactory FACTORY = Validation.buildDefaultValidatorFactory();
+    private String idValidationFailureDialogTitle;
 
     /**
      * Creates new form IdPanel
      */
-    private IdPanel() {
+    protected IdPanel() {
         initComponents();
     }
 
-    public IdPanel(IdGenerator idGenerator) {
+    public IdPanel(IdGenerator idGenerator, Object entity, String idValidationFailureDialogTitle) {
         this();
         this.idGenerator = idGenerator;
+        this.entity = entity;
+        this.idValidationFailureDialogTitle = idValidationFailureDialogTitle;
     }
 
     public JSpinner getIdSpinner() {
@@ -76,7 +92,25 @@ public class IdPanel extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void nextIdButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nextIdButtonActionPerformed
-        this.idSpinner.setValue(idGenerator.getNextId());
+        Validator validator = FACTORY.getValidator();
+        Set<ConstraintViolation<Object>> violations = validator.validate(this.entity);
+        if(!violations.isEmpty()) {
+            StringBuilder messageBuilder = new StringBuilder(1000);
+            messageBuilder.append("<html>");
+            messageBuilder.append("The following constraints are violated:<br/>");
+            for(ConstraintViolation<Object> violation : violations) {
+                messageBuilder.append(violation.getPropertyPath());
+                messageBuilder.append(": ");
+                messageBuilder.append(violation.getMessage());
+                messageBuilder.append("<br/>");
+            }
+            messageBuilder.append("Fix the corresponding values in the components.");
+            messageBuilder.append("</html>");
+            String message = messageBuilder.toString();
+            JOptionPane.showMessageDialog(this.getParent(), message, this.idValidationFailureDialogTitle, JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        this.idSpinner.setValue(idGenerator.getNextId(this.entity));
     }//GEN-LAST:event_nextIdButtonActionPerformed
 
 

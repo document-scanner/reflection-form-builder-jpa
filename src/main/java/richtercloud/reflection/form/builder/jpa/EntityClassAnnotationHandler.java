@@ -14,20 +14,27 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
+import java.lang.reflect.Field;
+import java.util.List;
+import javax.persistence.EntityManager;
+import javax.swing.JComponent;
+import richtercloud.reflection.form.builder.ClassAnnotationHandler;
+
 /**
  *
  * @author richter
  */
-/*
-internal implementation notes:
-- passing instances to components only requires reflection based creation which needs to be ensured for JPA anyway
-*/
-public interface IdGenerator {
+public class EntityClassAnnotationHandler implements ClassAnnotationHandler {
+    private EntityManager entityManager;
 
-    /**
-     * Get the next available Id for the entity {@code instance}.
-     * @param instance
-     * @return the next id
-     */
-    Long getNextId(Object instance);
+    public EntityClassAnnotationHandler(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
+
+    @Override
+    public JComponent handle(List<Field> entityClassFields, Class<?> clazz) {
+        JComponent retValue = new QueryPanel<>(this.entityManager, entityClassFields, clazz);
+        return retValue;
+    }
+
 }

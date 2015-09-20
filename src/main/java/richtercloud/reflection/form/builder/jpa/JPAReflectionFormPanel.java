@@ -15,25 +15,34 @@
 package richtercloud.reflection.form.builder.jpa;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.Map;
+import java.util.Set;
+import javax.persistence.EntityExistsException;
 import javax.persistence.EntityManager;
 import javax.swing.GroupLayout;
 import javax.swing.JComponent;
+import javax.swing.JOptionPane;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.reflection.form.builder.FieldHandler;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
 import richtercloud.reflection.form.builder.retriever.ValueRetriever;
 
 /**
  *
  * @author richter
- * @param <E> a generic type for the entity class
  */
-public class JPAReflectionFormPanel<E> extends ReflectionFormPanel<E> {
+public class JPAReflectionFormPanel extends ReflectionFormPanel {
     private static final long serialVersionUID = 1L;
     private final static Logger LOGGER = LoggerFactory.getLogger(JPAReflectionFormPanel.class);
     private EntityManager entityManager;
-    private ReflectionFormPanel<E> reflectionFormPanel;
+    private ReflectionFormPanel reflectionFormPanel;
+    private String persistFailureDialogTitle;
 
     /**
      * Creates new form JPAReflectionFormPanel
@@ -42,8 +51,14 @@ public class JPAReflectionFormPanel<E> extends ReflectionFormPanel<E> {
         initComponents();
     }
 
-    public JPAReflectionFormPanel(EntityManager entityManager, ReflectionFormPanel<E> reflectionFormPanel, Class<? extends E> entityClass, Map<Field, JComponent> fieldMapping, Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping, Map<Class<?>, Class<? extends JComponent>> classMapping) {
-        super(fieldMapping, reflectionFormPanel.getInstance(), entityClass, valueRetrieverMapping, classMapping);
+    public JPAReflectionFormPanel(EntityManager entityManager,
+            ReflectionFormPanel reflectionFormPanel,
+            Class<?> entityClass,
+            Map<Field, JComponent> fieldMapping,
+            Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping,
+            Map<Type, FieldHandler> classMapping,
+            String persistFailureDialogTitle) throws IllegalArgumentException, IllegalAccessException {
+        super(fieldMapping, reflectionFormPanel.retrieveInstance(), entityClass, valueRetrieverMapping, classMapping);
         initComponents();
         this.entityManager = entityManager;
         this.reflectionFormPanel = reflectionFormPanel;
@@ -51,6 +66,7 @@ public class JPAReflectionFormPanel<E> extends ReflectionFormPanel<E> {
         this.reflectionFormPanelPanel.setLayout(reflectionFormPanelPanelLayout);
         reflectionFormPanelPanelLayout.setHorizontalGroup(reflectionFormPanelPanelLayout.createSequentialGroup().addComponent(this.reflectionFormPanel));
         reflectionFormPanelPanelLayout.setVerticalGroup(reflectionFormPanelPanelLayout.createSequentialGroup().addComponent(this.reflectionFormPanel));
+        this.persistFailureDialogTitle = persistFailureDialogTitle;
     }
 
     /**
@@ -125,11 +141,41 @@ public class JPAReflectionFormPanel<E> extends ReflectionFormPanel<E> {
         try {
             instance = this.reflectionFormPanel.retrieveInstance();
         } catch (IllegalArgumentException | IllegalAccessException ex) {
-            LOGGER.debug(String.format("the following exception occured during persisting entity of type '%s'", this.reflectionFormPanel.getEntityClass()), ex);
-            statusLabel.setText("An exception occured"); //@TODO:
+            String message = String.format("the following exception occured during persisting entity of type '%s'", this.reflectionFormPanel.getEntityClass());
+            LOGGER.debug(message, ex);
+            statusLabel.setText(String.format("<html>%s: %s</html>", message, ReflectionFormPanel.generateExceptionMessage(ex)));
             return;
         }
-        entityManager.persist(instance);
+
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        Validator validator = factory.getValidator();
+        Set<ConstraintViolation<Object>> violations = validator.validate(instance);
+        if(!violations.isEmpty()) {
+            StringBuilder messageBuilder = new StringBuilder(1000);
+            messageBuilder.append("<html>");
+            messageBuilder.append("The following constraints are violated:<br/>");
+            for(ConstraintViolation<Object> violation : violations) {
+                messageBuilder.append(violation.getPropertyPath());
+                messageBuilder.append(": ");
+                messageBuilder.append(violation.getMessage());
+                messageBuilder.append("<br/>");
+            }
+            messageBuilder.append("Fix the corresponding values in the components.");
+            messageBuilder.append("</html>");
+            String message = messageBuilder.toString();
+            JOptionPane.showMessageDialog(this, message, this.persistFailureDialogTitle, JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        try {
+            entityManager.getTransaction().begin();
+            entityManager.persist(instance);
+            entityManager.getTransaction().commit();
+            statusLabel.setText(String.format("<html>persisted entity of type '%s' successfully</html>", this.reflectionFormPanel.getEntityClass()));
+        }catch(EntityExistsException ex) {
+            String message = String.format("the following exception occured during persisting entity of type '%s'", this.reflectionFormPanel.getEntityClass());
+            LOGGER.debug(message, ex);
+            statusLabel.setText(String.format("<html>%s: %s</html>", message, ReflectionFormPanel.generateExceptionMessage(ex)));
+        }
     }//GEN-LAST:event_saveButtonActionPerformed
 
 

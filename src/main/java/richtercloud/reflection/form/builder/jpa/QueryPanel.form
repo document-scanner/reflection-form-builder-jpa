@@ -124,6 +124,9 @@
     </Component>
     <Component class="javax.swing.JSpinner" name="queryLimitSpinner">
       <Properties>
+        <Property name="model" type="javax.swing.SpinnerModel" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+          <Connection code="queryLimitSpinnerModel" type="code"/>
+        </Property>
         <Property name="value" type="java.lang.Object" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
           <Connection code="INITIAL_QUERY_LIMIT_DEFAULT" type="code"/>
         </Property>

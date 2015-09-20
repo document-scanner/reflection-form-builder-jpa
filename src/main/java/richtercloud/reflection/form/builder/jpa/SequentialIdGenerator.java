@@ -18,16 +18,27 @@ package richtercloud.reflection.form.builder.jpa;
  *
  * @author richter
  */
-/*
-internal implementation notes:
-- passing instances to components only requires reflection based creation which needs to be ensured for JPA anyway
-*/
-public interface IdGenerator {
+public class SequentialIdGenerator implements IdGenerator {
+    private final static SequentialIdGenerator INSTANCE = new SequentialIdGenerator();
+
+    public static SequentialIdGenerator getInstance() {
+        return INSTANCE;
+    }
+    private long nextId = 0;
+
+    protected SequentialIdGenerator() {
+    }
 
     /**
-     * Get the next available Id for the entity {@code instance}.
+     * Returns the next id value, regardless which type is passed as
+     * {@code clazz} argument.
      * @param instance
-     * @return the next id
+     * @return
      */
-    Long getNextId(Object instance);
+    @Override
+    public Long getNextId(Object instance) {
+        this.nextId += 1;
+        return nextId;
+    }
+
 }

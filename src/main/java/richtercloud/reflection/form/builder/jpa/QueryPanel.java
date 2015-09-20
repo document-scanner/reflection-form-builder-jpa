@@ -32,6 +32,8 @@ import javax.swing.ComboBoxEditor;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JTextField;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.table.DefaultTableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +76,11 @@ public class QueryPanel<E> extends javax.swing.JPanel {
             return o1.getLastUsage().compareTo(o2.getLastUsage());
         }
     };
+    private final SpinnerModel queryLimitSpinnerModel = new SpinnerNumberModel(INITIAL_QUERY_LIMIT_DEFAULT, //value
+            1, //min
+            null, //max
+            1 //stepSize
+    );
 
     /*
     internal implementation notes:
@@ -172,87 +179,6 @@ public class QueryPanel<E> extends javax.swing.JPanel {
 
     private final QueryComboBoxEditor queryComboBoxEditor = new QueryComboBoxEditor();
 
-    private class QueryComboBoxEditor implements ComboBoxEditor {
-        private final JTextField editorComponent = new JTextField();
-        /**
-         * the new item which is about to be created and not (yet) part of the
-         * model of the {@link JComboBox} (can be retrieved with
-         * {@link #getItem() }).
-         */
-        private HistoryEntry item;
-        private final Set<ActionListener> actionListeners = new HashSet<>();
-
-        QueryComboBoxEditor() {
-            this.editorComponent.addKeyListener(new KeyAdapter() {
-                @Override
-                public void keyReleased(KeyEvent e) {
-                    if(QueryComboBoxEditor.this.item == null) {
-                        QueryComboBoxEditor.this.item = new HistoryEntry(QueryComboBoxEditor.this.editorComponent.getText(), 1, new Date());
-                    }else {
-                        QueryComboBoxEditor.this.item.setText(QueryComboBoxEditor.this.editorComponent.getText());
-                    }
-                }
-            });
-        }
-
-        @Override
-        public JTextField getEditorComponent() {
-            return this.editorComponent;
-        }
-
-        @Override
-        public void setItem(Object anObject) {
-            assert anObject instanceof HistoryEntry;
-            this.item = (HistoryEntry) anObject;
-            if(this.item != null) {
-                this.editorComponent.setText(this.item.getText());
-            }
-        }
-
-        @Override
-        public HistoryEntry getItem() {
-            return this.item;
-        }
-
-        @Override
-        public void selectAll() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-
-        /**
-         * Adds {@code l} to the set of notified {@link ActionListener}s.
-         * Doesn't have any effect if {@code l} already is a registered
-         * listener.
-         * @param l
-         */
-        /*
-        internal implementation notes:
-        - seems to be called without any precaution if listener has been added
-        before (throwing exception if listener is already registered thus
-        doesn't make sense)
-        */
-        @Override
-        public void addActionListener(ActionListener l) {
-            this.actionListeners.add(l);
-        }
-
-        /**
-         * Removes {@code l} from the set of notified {@link ActionListener}s.
-         * Doesn't have any effect if {@code l} isn't a registered listener.
-         * @param l
-         */
-        /*
-        internal implementation notes:
-        - seems to be called without any precaution if listener has been added
-        before (throwing exception if listener isn't registered thus doesn't
-        make sense)
-        */
-        @Override
-        public void removeActionListener(ActionListener l) {
-            this.actionListeners.remove(l);
-        }
-    }
-
     private void init0(EntityManager entityManager, List<Field> entityClassFields, Class<E> entityClass, List<HistoryEntry> initialHistory, int initialQueryLimit) {
         this.entityManager = entityManager;
         this.entityClass = entityClass;
@@ -326,6 +252,7 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         queryComboBox.setModel(queryComboBoxModel);
         queryComboBox.setEditor(queryComboBoxEditor);
 
+        queryLimitSpinner.setModel(queryLimitSpinnerModel);
         queryLimitSpinner.setValue(INITIAL_QUERY_LIMIT_DEFAULT);
 
         queryLimitLabel.setText("# of Results");
@@ -388,7 +315,7 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         //and selected index property and the editor can't tell because it
         //doesn't know the model)
         HistoryEntry queryComboBoxEditorItem = queryComboBoxEditor.getItem();
-        if(!queryComboBoxModel.contains(queryComboBoxEditorItem)) {
+        if(queryComboBoxEditorItem != null && !queryComboBoxModel.contains(queryComboBoxEditorItem)) {
             queryText = queryComboBoxEditorItem.getText();
             if(queryText == null || queryText.isEmpty()) {
                 queryStatusLabel.setText("Enter a query");
@@ -408,7 +335,9 @@ public class QueryPanel<E> extends javax.swing.JPanel {
     }//GEN-LAST:event_queryButtonActionPerformed
 
     /**
-     * executes {@code query}
+     * Executes JQPL query {@code query}. Creates a {@link HistoryEntry} in the
+     * {@code queryComboBoxModel} and resets the current item of
+     * {@code queryComboBoxEditor}.
      * @param query
      */
     /*
@@ -418,7 +347,7 @@ public class QueryPanel<E> extends javax.swing.JPanel {
     objects
     */
     private void executeQuery(TypedQuery<E> query, int queryLimit, String queryText) {
-        LOGGER.debug("executing query '%s'", queryText);
+        LOGGER.debug("executing query '{}'", queryText);
         while(this.queryResultTableModel.getRowCount() > 0) {
             this.queryResultTableModel.removeRow(0);
         }
@@ -440,7 +369,8 @@ public class QueryPanel<E> extends javax.swing.JPanel {
             if(!this.queryComboBoxModel.contains(entry)) {
                 this.queryComboBoxModel.addElement(entry);
             }
-            this.queryComboBoxEditor.setItem(null); //reset
+            this.queryComboBoxEditor.setItem(null); //reset to indicate the need
+                //to create a new item
         }catch(Exception ex) {
             LOGGER.info("an exception occured while executing the query", ex);
             this.queryStatusLabel.setText(String.format("<html>%s</html>", ex.getMessage()));
@@ -456,6 +386,87 @@ public class QueryPanel<E> extends javax.swing.JPanel {
             this.queryStatusLabel.setText(String.format("<html>%s</html>", ex.getMessage()));
         }
         return null;
+    }
+
+    private class QueryComboBoxEditor implements ComboBoxEditor {
+        private final JTextField editorComponent = new JTextField();
+        /**
+         * the new item which is about to be created and not (yet) part of the
+         * model of the {@link JComboBox} (can be retrieved with
+         * {@link #getItem() }).
+         */
+        private HistoryEntry item = new HistoryEntry(TOOL_TIP_TEXT_KEY, WIDTH, null);
+        private final Set<ActionListener> actionListeners = new HashSet<>();
+
+        QueryComboBoxEditor() {
+            this.editorComponent.addKeyListener(new KeyAdapter() {
+                @Override
+                public void keyReleased(KeyEvent e) {
+                    if(QueryComboBoxEditor.this.item == null) {
+                        QueryComboBoxEditor.this.item = new HistoryEntry(QueryComboBoxEditor.this.editorComponent.getText(), 1, new Date());
+                    }else {
+                        QueryComboBoxEditor.this.item.setText(QueryComboBoxEditor.this.editorComponent.getText());
+                    }
+                }
+            });
+        }
+
+        @Override
+        public JTextField getEditorComponent() {
+            return this.editorComponent;
+        }
+
+        @Override
+        public void setItem(Object anObject) {
+            assert anObject instanceof HistoryEntry;
+            this.item = (HistoryEntry) anObject;
+            if(this.item != null) {
+                this.editorComponent.setText(this.item.getText());
+            }
+        }
+
+        @Override
+        public HistoryEntry getItem() {
+            return this.item;
+        }
+
+        @Override
+        public void selectAll() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        /**
+         * Adds {@code l} to the set of notified {@link ActionListener}s.
+         * Doesn't have any effect if {@code l} already is a registered
+         * listener.
+         * @param l
+         */
+        /*
+        internal implementation notes:
+        - seems to be called without any precaution if listener has been added
+        before (throwing exception if listener is already registered thus
+        doesn't make sense)
+        */
+        @Override
+        public void addActionListener(ActionListener l) {
+            this.actionListeners.add(l);
+        }
+
+        /**
+         * Removes {@code l} from the set of notified {@link ActionListener}s.
+         * Doesn't have any effect if {@code l} isn't a registered listener.
+         * @param l
+         */
+        /*
+        internal implementation notes:
+        - seems to be called without any precaution if listener has been added
+        before (throwing exception if listener isn't registered thus doesn't
+        make sense)
+        */
+        @Override
+        public void removeActionListener(ActionListener l) {
+            this.actionListeners.remove(l);
+        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
