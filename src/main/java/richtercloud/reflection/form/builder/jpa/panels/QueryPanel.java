@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package richtercloud.reflection.form.builder.jpa;
+package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -30,13 +30,21 @@ import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import javax.swing.ComboBoxEditor;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListSelectionModel;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.jpa.HistoryEntry;
 
 /**
  *
@@ -54,12 +62,6 @@ public class QueryPanel<E> extends javax.swing.JPanel {
     initialization with parameterless constructor and initComponents
     */
     private DefaultTableModel queryResultTableModel = new DefaultTableModel();
-    /**
-     * in order to guarantee the order to fields (which is not guaranteed by
-     * {@link Class#getDeclaredFields() }, save the initial invokation here and
-     * rely to it
-     */
-    private List<Field> entityClassFields;
     /**
      * the default value for the initial query limit (see {@link #QueryPanel(javax.persistence.EntityManager, java.lang.Class, int) } for details
      */
@@ -82,111 +84,87 @@ public class QueryPanel<E> extends javax.swing.JPanel {
             1 //stepSize
     );
 
-    /*
-    internal implementation notes:
-    - due to the fact that the interface defines index based methods, a
-    PriorityQueue can't be used for item storage -> use a List and List.sort at
-    every model change
-    */
-    private class SortedComboBoxModel<E> extends DefaultComboBoxModel<E> {
-        private static final long serialVersionUID = 1L;
-        private final List<E> items;
-        private final Comparator<E> comparator;
-
-        /*
-        internal implementation notes:
-        - comparator can only be assigned at instantiation of PriorityQueue, so
-        it has to be set here
-        */
-        SortedComboBoxModel(Comparator<E> comparator) {
-            this.comparator = comparator;
-            this.items = new ArrayList<>();
-        }
-
-        @Override
-        public void addElement(E item) {
-            this.items.add(item);
-            Collections.sort(this.items, this.comparator);
-            super.addElement(item);
-        }
-
-        @Override
-        public void removeElement(Object obj) {
-            this.items.remove(obj);
-            super.removeElement(obj);
-        }
-
-        @Override
-        public void insertElementAt(E item, int index) {
-            this.items.add(index, item);
-            Collections.sort(this.items, this.comparator);
-            super.insertElementAt(item, index);
-        }
-
-        @Override
-        public void removeElementAt(int index) {
-            this.items.remove(index);
-            super.removeElementAt(index);
-        }
-
-        @Override
-        public int getSize() {
-            return this.items.size();
-        }
-
-        @Override
-        public E getElementAt(int index) {
-            return this.items.get(index);
-        }
-
-        List<E> getItems() {
-            return Collections.unmodifiableList(this.items);
-        }
-
-        boolean contains(E element) {
-            return this.items.contains(element);
-        }
-    }
-
     private final SortedComboBoxModel<HistoryEntry> queryComboBoxModel = new SortedComboBoxModel<>(QUERY_HISTORY_COMPARATOR_USAGE);
+    /**
+     * The result of the current query (needs to be stored separately because the table model is used to display field values, not instances)
+     */
+    private List<E> queryResults;
+    private final QueryComboBoxEditor queryComboBoxEditor = new QueryComboBoxEditor();
+    private ReflectionFormBuilder reflectionFormBuilder;
+    private ListSelectionModel queryResultTableSelectionModel = new DefaultListSelectionModel();
+    private Set<QueryPanelUpdateListener> updateListeners = new HashSet<>();
 
     /**
      * Creates new form QueryPanel
      */
+    /*
+    internal implementation notes:
+    - public constructor necessary for NetBeans GUI builder (protected no
+    sufficient for use in other projects)
+    */
     public QueryPanel() {
         this.initComponents();
+        this.queryResultTableSelectionModel.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                for(QueryPanelUpdateListener updateListener : updateListeners) {
+                    LOGGER.debug("notifying update listener {} about selection change", updateListener);
+                    updateListener.onUpdate(new QueryPanelUpdateEvent(QueryPanel.this.queryResults.get(e.getFirstIndex())));
+                }
+            }
+        });
+    }
+    public QueryPanel(EntityManager entityManager,
+            Class<E> entityClass,
+            ReflectionFormBuilder reflectionFormBuilder) {
+        this(entityManager, entityClass, reflectionFormBuilder, ListSelectionModel.SINGLE_SELECTION);
     }
 
-    @SuppressWarnings("unchecked")
-    public QueryPanel(EntityManager entityManager, List<Field> entityClassFields, Class<E> entityClass) {
-        this(entityManager, entityClassFields, entityClass, Collections.EMPTY_LIST, INITIAL_QUERY_LIMIT_DEFAULT);
+    protected QueryPanel(EntityManager entityManager,
+            Class<E> entityClass,
+            ReflectionFormBuilder reflectionFormBuilder,
+            int queryResultTableSelectionMode) {
+        this(entityManager,
+                entityClass,
+                reflectionFormBuilder,
+                queryResultTableSelectionMode,
+                new LinkedList<HistoryEntry>(),
+                INITIAL_QUERY_LIMIT_DEFAULT);
+    }
+
+    public QueryPanel(EntityManager entityManager,
+            Class<E> entityClass,
+            ReflectionFormBuilder reflectionFormBuilder,
+            List<HistoryEntry> initialHistory,
+            int initialQueryLimit) {
+        this(entityManager, entityClass, reflectionFormBuilder, ListSelectionModel.SINGLE_SELECTION, initialHistory, initialQueryLimit);
     }
 
     /**
      *
      * @param entityManager
-     * @param entityClassFields
      * @param entityClass
+     * @param reflectionFormBuilder
+     * @param queryResultTableSelectionMode
      * @param initialHistory might be modified
      * @param initialQueryLimit When the component is created an initial query is executed. This property
      * limits its result length. Set to {@code 0} in order to skip initial
      * query.
      */
-    public QueryPanel(EntityManager entityManager, List<Field> entityClassFields, Class<E> entityClass, List<HistoryEntry> initialHistory, int initialQueryLimit) {
+    protected QueryPanel(EntityManager entityManager,
+            Class<E> entityClass,
+            ReflectionFormBuilder reflectionFormBuilder,
+            int queryResultTableSelectionMode,
+            List<HistoryEntry> initialHistory,
+            int initialQueryLimit) {
         this();
-        this.init0(entityManager, entityClassFields, entityClass, initialHistory, initialQueryLimit);
-    }
-
-    private final QueryComboBoxEditor queryComboBoxEditor = new QueryComboBoxEditor();
-
-    private void init0(EntityManager entityManager, List<Field> entityClassFields, Class<E> entityClass, List<HistoryEntry> initialHistory, int initialQueryLimit) {
         this.entityManager = entityManager;
         this.entityClass = entityClass;
+        this.reflectionFormBuilder = reflectionFormBuilder;
         for(HistoryEntry initialHistoryEntry : initialHistory) {
             this.queryComboBoxModel.addElement(initialHistoryEntry);
         }
-        this.entityClassFields = entityClassFields;
-        this.initTableModel(this.entityClassFields);
+        initTableModel(this.queryResultTableModel, this.reflectionFormBuilder.retrieveRelevantFields(entityClass));
         this.queryLabel.setText(String.format("%s query:", entityClass.getSimpleName()));
         //Criteria API doesn't allow retrieval of string/text from objects
         //created with CriteriaBuilder, but text should be the first entry in
@@ -196,20 +174,40 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         String queryText = String.format("SELECT %s from %s %s", entityClassQueryIdentifier, entityClass.getSimpleName(), entityClassQueryIdentifier);
         TypedQuery<E> query = entityManager.createQuery(queryText, entityClass);
         this.executeQuery(query, initialQueryLimit, queryText);
+        this.queryResultTableSelectionModel.setSelectionMode(queryResultTableSelectionMode);
     }
 
-    public void init(EntityManager entityManager, List<Field> entityClassFields, Class<E> entityClass, List<HistoryEntry> initialHistory, int initialQueryLimit) {
-        this.init0(entityManager, entityClassFields, entityClass, initialHistory, initialQueryLimit);
-    }
-
-    private void initTableModel(List<Field> entityClassFields) {
+    protected static void initTableModel(DefaultTableModel tableModel, List<Field> entityClassFields) {
         for(Field field : entityClassFields) {
-            this.queryResultTableModel.addColumn(field.getName());
+            tableModel.addColumn(field.getName());
         }
     }
 
     public List<HistoryEntry> getQueryHistory() {
         return new LinkedList<>(this.queryComboBoxModel.getItems());
+    }
+
+    public void addUpdateListener(QueryPanelUpdateListener updateListener) {
+        this.updateListeners.add(updateListener);
+    }
+
+    public void removeUpdateListener(QueryPanelUpdateListener updateListener) {
+        this.updateListeners.remove(updateListener);
+    }
+
+    public Set<QueryPanelUpdateListener> getUpdateListeners() {
+        return updateListeners;
+    }
+
+    public Object getSelectedObject() {
+        int index = this.queryResultTable.getSelectedRow();
+        if(index < 0) {
+            //can happen during layout validation/initialization
+            return null;
+        }
+        //assume that if index is >= 0 that this.queryResults is != null as well
+        Object retValue = this.getQueryResults().get(index);
+        return retValue;
     }
 
     /**
@@ -225,12 +223,17 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         queryButton = new javax.swing.JButton();
         separator = new javax.swing.JSeparator();
         queryResultLabel = new javax.swing.JLabel();
-        queryResultTableScrollPane = new javax.swing.JScrollPane();
-        queryResultTable = new javax.swing.JTable();
         queryStatusLabel = new javax.swing.JLabel();
         queryComboBox = new javax.swing.JComboBox<HistoryEntry>();
         queryLimitSpinner = new javax.swing.JSpinner();
         queryLimitLabel = new javax.swing.JLabel();
+        queryResultTableScrollPane = new javax.swing.JScrollPane();
+        queryResultTable = new JTable() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
 
         queryLabel.setText("Query:");
 
@@ -243,9 +246,6 @@ public class QueryPanel<E> extends javax.swing.JPanel {
 
         queryResultLabel.setText("Query result:");
 
-        queryResultTable.setModel(queryResultTableModel);
-        queryResultTableScrollPane.setViewportView(queryResultTable);
-
         queryStatusLabel.setText(" ");
 
         queryComboBox.setEditable(true);
@@ -257,29 +257,33 @@ public class QueryPanel<E> extends javax.swing.JPanel {
 
         queryLimitLabel.setText("# of Results");
 
+        queryResultTable.setModel(this.queryResultTableModel);
+        queryResultTable.setSelectionModel(this.queryResultTableSelectionModel);
+        queryResultTableScrollPane.setViewportView(queryResultTable);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(queryStatusLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(queryResultTableScrollPane)
+                    .addComponent(queryStatusLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
                         .addComponent(queryLabel)
                         .addGap(18, 18, 18)
-                        .addComponent(queryComboBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(queryComboBox, 0, 285, Short.MAX_VALUE)
                         .addGap(18, 18, 18)
                         .addComponent(queryLimitLabel)
                         .addGap(18, 18, 18)
-                        .addComponent(queryLimitSpinner)
+                        .addComponent(queryLimitSpinner, javax.swing.GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(queryButton))
-                    .addComponent(separator)
-                    .addGroup(layout.createSequentialGroup()
+                    .addComponent(separator, javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addComponent(queryResultLabel)
-                        .addGap(0, 509, Short.MAX_VALUE))
-                    .addComponent(queryResultTableScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -299,7 +303,7 @@ public class QueryPanel<E> extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(queryResultLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(queryResultTableScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 333, Short.MAX_VALUE)
+                .addComponent(queryResultTableScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 352, Short.MAX_VALUE)
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -352,13 +356,9 @@ public class QueryPanel<E> extends javax.swing.JPanel {
             this.queryResultTableModel.removeRow(0);
         }
         try {
-            List<E> queryResults = query.setMaxResults(queryLimit).getResultList();
+            queryResults = query.setMaxResults(queryLimit).getResultList();
             for(E queryResult : queryResults) {
-                List<Object> queryResultValues = new LinkedList<>();
-                for(Field field : this.entityClassFields) {
-                    queryResultValues.add(field.get(queryResult));
-                }
-                this.queryResultTableModel.addRow(queryResultValues.toArray(new Object[queryResultValues.size()]));
+                handleInstanceToTableModel(this.queryResultTableModel, queryResult, reflectionFormBuilder, entityClass);
             }
             this.queryStatusLabel.setText("Query executed successfully.");
             HistoryEntry entry = queryComboBoxEditor.getItem();
@@ -386,6 +386,30 @@ public class QueryPanel<E> extends javax.swing.JPanel {
             this.queryStatusLabel.setText(String.format("<html>%s</html>", ex.getMessage()));
         }
         return null;
+    }
+
+    public DefaultTableModel getQueryResultTableModel() {
+        return queryResultTableModel;
+    }
+
+    public List<E> getQueryResults() {
+        return queryResults;
+    }
+
+    public JTable getQueryResultTable() {
+        return queryResultTable;
+    }
+
+    public JLabel getQueryStatusLabel() {
+        return queryStatusLabel;
+    }
+
+    protected static void handleInstanceToTableModel(DefaultTableModel queryResultTableModel, Object queryResult, ReflectionFormBuilder reflectionFormBuilder, Class<?> entityClass) throws IllegalArgumentException, IllegalAccessException {
+        List<Object> queryResultValues = new LinkedList<>();
+        for(Field field : reflectionFormBuilder.retrieveRelevantFields(entityClass)) {
+            queryResultValues.add(field.get(queryResult));
+        }
+        queryResultTableModel.addRow(queryResultValues.toArray(new Object[queryResultValues.size()]));
     }
 
     private class QueryComboBoxEditor implements ComboBoxEditor {
@@ -466,6 +490,72 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         @Override
         public void removeActionListener(ActionListener l) {
             this.actionListeners.remove(l);
+        }
+    }
+
+    /*
+    internal implementation notes:
+    - due to the fact that the interface defines index based methods, a
+    PriorityQueue can't be used for item storage -> use a List and List.sort at
+    every model change
+    */
+    private class SortedComboBoxModel<E> extends DefaultComboBoxModel<E> {
+        private static final long serialVersionUID = 1L;
+        private final List<E> items;
+        private final Comparator<E> comparator;
+
+        /*
+        internal implementation notes:
+        - comparator can only be assigned at instantiation of PriorityQueue, so
+        it has to be set here
+        */
+        SortedComboBoxModel(Comparator<E> comparator) {
+            this.comparator = comparator;
+            this.items = new ArrayList<>();
+        }
+
+        @Override
+        public void addElement(E item) {
+            this.items.add(item);
+            Collections.sort(this.items, this.comparator);
+            super.addElement(item);
+        }
+
+        @Override
+        public void removeElement(Object obj) {
+            this.items.remove(obj);
+            super.removeElement(obj);
+        }
+
+        @Override
+        public void insertElementAt(E item, int index) {
+            this.items.add(index, item);
+            Collections.sort(this.items, this.comparator);
+            super.insertElementAt(item, index);
+        }
+
+        @Override
+        public void removeElementAt(int index) {
+            this.items.remove(index);
+            super.removeElementAt(index);
+        }
+
+        @Override
+        public int getSize() {
+            return this.items.size();
+        }
+
+        @Override
+        public E getElementAt(int index) {
+            return this.items.get(index);
+        }
+
+        List<E> getItems() {
+            return Collections.unmodifiableList(this.items);
+        }
+
+        boolean contains(E element) {
+            return this.items.contains(element);
         }
     }
 

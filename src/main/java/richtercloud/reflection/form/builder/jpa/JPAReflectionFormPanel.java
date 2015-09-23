@@ -56,7 +56,7 @@ public class JPAReflectionFormPanel extends ReflectionFormPanel {
             Class<?> entityClass,
             Map<Field, JComponent> fieldMapping,
             Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping,
-            Map<Type, FieldHandler> classMapping,
+            Map<Type, FieldHandler<?>> classMapping,
             String persistFailureDialogTitle) throws IllegalArgumentException, IllegalAccessException {
         super(fieldMapping, reflectionFormPanel.retrieveInstance(), entityClass, valueRetrieverMapping, classMapping);
         initComponents();
@@ -172,6 +172,7 @@ public class JPAReflectionFormPanel extends ReflectionFormPanel {
             entityManager.getTransaction().commit();
             statusLabel.setText(String.format("<html>persisted entity of type '%s' successfully</html>", this.reflectionFormPanel.getEntityClass()));
         }catch(EntityExistsException ex) {
+            entityManager.getTransaction().rollback();
             String message = String.format("the following exception occured during persisting entity of type '%s'", this.reflectionFormPanel.getEntityClass());
             LOGGER.debug(message, ex);
             statusLabel.setText(String.format("<html>%s: %s</html>", message, ReflectionFormPanel.generateExceptionMessage(ex)));

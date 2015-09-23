@@ -14,17 +14,22 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import java.lang.reflect.Field;
-import java.util.List;
+import richtercloud.reflection.form.builder.jpa.panels.QueryPanel;
+import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
+import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateEvent;
 import javax.persistence.EntityManager;
 import javax.swing.JComponent;
+import javax.swing.ListSelectionModel;
 import richtercloud.reflection.form.builder.ClassAnnotationHandler;
+import richtercloud.reflection.form.builder.EntityFieldUpdateEvent;
+import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.UpdateListener;
 
 /**
  *
  * @author richter
  */
-public class EntityClassAnnotationHandler implements ClassAnnotationHandler {
+public class EntityClassAnnotationHandler implements ClassAnnotationHandler<EntityFieldUpdateEvent> {
     private EntityManager entityManager;
 
     public EntityClassAnnotationHandler(EntityManager entityManager) {
@@ -32,8 +37,19 @@ public class EntityClassAnnotationHandler implements ClassAnnotationHandler {
     }
 
     @Override
-    public JComponent handle(List<Field> entityClassFields, Class<?> clazz) {
-        JComponent retValue = new QueryPanel<>(this.entityManager, entityClassFields, clazz);
+    public JComponent handle(Class<?> clazz,
+            final UpdateListener<EntityFieldUpdateEvent> updateListener,
+            ReflectionFormBuilder reflectionFormBuilder) {
+        QueryPanel retValue = new QueryPanel<>(this.entityManager,
+                clazz,
+                reflectionFormBuilder
+        );
+        retValue.addUpdateListener(new QueryPanelUpdateListener() {
+            @Override
+            public void onUpdate(QueryPanelUpdateEvent event) {
+                updateListener.onUpdate(new EntityFieldUpdateEvent(event.getNewSelectionItem()));
+            }
+        });
         return retValue;
     }
 

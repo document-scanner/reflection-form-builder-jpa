@@ -12,15 +12,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package richtercloud.reflection.form.builder.jpa;
+package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.util.Set;
 import javax.swing.JOptionPane;
 import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import richtercloud.reflection.form.builder.jpa.IdGenerator;
 
 /**
  * A component to generate ids for entity instances. Ids are only generated for
@@ -30,21 +32,27 @@ import javax.validation.ValidatorFactory;
  *
  * @author richter
  */
-public class IdPanel extends javax.swing.JPanel {
+/*
+internal implementation notes:
+- There's no sense in providing a generic id panel for numeric ids because
+type of SpinnerNumberModel is determined at initialization.
+*/
+public class LongIdPanel extends javax.swing.JPanel {
     private static final long serialVersionUID = 1L;
     private IdGenerator idGenerator;
     private Object entity;
     private final static ValidatorFactory FACTORY = Validation.buildDefaultValidatorFactory();
     private String idValidationFailureDialogTitle;
+    private final SpinnerNumberModel idSpinnerModel = new SpinnerNumberModel((Long)0L, (Long)0L, (Long)Long.MAX_VALUE, (Long)1L);
 
     /**
      * Creates new form IdPanel
      */
-    protected IdPanel() {
+    protected LongIdPanel() {
         initComponents();
     }
 
-    public IdPanel(IdGenerator idGenerator, Object entity, String idValidationFailureDialogTitle) {
+    public LongIdPanel(IdGenerator idGenerator, Object entity, String idValidationFailureDialogTitle) {
         this();
         this.idGenerator = idGenerator;
         this.entity = entity;
@@ -66,6 +74,8 @@ public class IdPanel extends javax.swing.JPanel {
 
         idSpinner = new javax.swing.JSpinner();
         nextIdButton = new javax.swing.JButton();
+
+        idSpinner.setModel(this.idSpinnerModel);
 
         nextIdButton.setText("Next id");
         nextIdButton.addActionListener(new java.awt.event.ActionListener() {

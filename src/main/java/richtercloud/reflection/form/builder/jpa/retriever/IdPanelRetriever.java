@@ -14,14 +14,14 @@
  */
 package richtercloud.reflection.form.builder.jpa.retriever;
 
-import richtercloud.reflection.form.builder.jpa.IdPanel;
+import richtercloud.reflection.form.builder.jpa.panels.LongIdPanel;
 import richtercloud.reflection.form.builder.retriever.ValueRetriever;
 
 /**
  *
  * @author richter
  */
-public class IdPanelRetriever implements ValueRetriever<Long, IdPanel> {
+public class IdPanelRetriever implements ValueRetriever<Long, LongIdPanel> {
     private final static IdPanelRetriever INSTANCE = new IdPanelRetriever();
 
     public static IdPanelRetriever getInstance() {
@@ -32,10 +32,10 @@ public class IdPanelRetriever implements ValueRetriever<Long, IdPanel> {
     }
 
     @Override
-    public Long retrieve(IdPanel comp) {
-        int retValueLong = (Integer)comp.getIdSpinner().getValue(); //@TODO: consider
+    public Long retrieve(LongIdPanel comp) {
+        long retValueLong = (Long)comp.getIdSpinner().getValue(); //@TODO: consider
             //development of parameterized OpenJDK SpinnerModel
-        return (long)retValueLong;
+        return retValueLong;
     }
 
 }

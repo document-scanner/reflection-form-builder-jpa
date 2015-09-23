@@ -14,6 +14,7 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
+import richtercloud.reflection.form.builder.jpa.panels.LongIdPanel;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -42,38 +43,35 @@ import richtercloud.reflection.form.builder.retriever.ValueRetriever;
 
 /**
  * Handles generation of {@link JPAReflectionFormPanel} from root entity class
- * using JPA annoations like {@link Id} (using {@link IdPanel) and
- * {@link Embedded} (using nested/recursive form generation).
+ * using JPA annoations like {@link Id} (using {@link LongIdPanel{@link Embedded} (using nested/recursive form generation).
  *
  * @author richter
  */
 public class JPAReflectionFormBuilder extends ReflectionFormBuilder {
-    public static final Map<Class<? extends JComponent>, ValueRetriever<?, ?>> VALUE_RETRIEVER_MAPPING_JPA_DEFAULT;
-    public final static List<Pair<Class<? extends Annotation>, FieldAnnotationHandler>> JPA_FIELD_ANNOTATION_MAPPING_DEFAULT;
+    public static final Map<Class<? extends JComponent>, ValueRetriever<?, ?>> VALUE_RETRIEVER_MAPPING_DEFAULT_JPA;
     static {
-        Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping0 = new HashMap<>();
-        valueRetrieverMapping0.putAll(VALUE_RETRIEVER_MAPPING_DEFAULT);
-        valueRetrieverMapping0.put(IdPanel.class, IdPanelRetriever.getInstance());
-        VALUE_RETRIEVER_MAPPING_JPA_DEFAULT = Collections.unmodifiableMap(valueRetrieverMapping0);
+        Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping0 = new HashMap<>(ReflectionFormBuilder.VALUE_RETRIEVER_MAPPING_DEFAULT);
+        valueRetrieverMapping0.put(LongIdPanel.class, IdPanelRetriever.getInstance());
+        VALUE_RETRIEVER_MAPPING_DEFAULT_JPA = Collections.unmodifiableMap(valueRetrieverMapping0);
     }
+    public final static List<Pair<Class<? extends Annotation>, FieldAnnotationHandler>> FIELD_ANNOTATION_MAPPING_DEFAULT_JPA;
     static {
-        List<Pair<Class<? extends Annotation>, FieldAnnotationHandler>> jpaFieldAnnotationMapping0 = new LinkedList<>();
-        jpaFieldAnnotationMapping0.addAll(FIELD_ANNOTATION_MAPPING_DEFAULT);
+        List<Pair<Class<? extends Annotation>, FieldAnnotationHandler>> jpaFieldAnnotationMapping0 = new LinkedList<>(ReflectionFormBuilder.FIELD_ANNOTATION_MAPPING_DEFAULT);
         jpaFieldAnnotationMapping0.add(new ImmutablePair<Class<? extends Annotation>, FieldAnnotationHandler>(Embedded.class, EmbeddedFieldAnnotationHandler.getInstance()));
-        JPA_FIELD_ANNOTATION_MAPPING_DEFAULT = Collections.unmodifiableList(jpaFieldAnnotationMapping0);
+        FIELD_ANNOTATION_MAPPING_DEFAULT_JPA = Collections.unmodifiableList(jpaFieldAnnotationMapping0);
     }
 
     private static List<Pair<Class<? extends Annotation>, FieldAnnotationHandler>> generateFieldAnnotationMapping(IdFieldAnnoationHandler idFieldAnnoationHandler) {
         List<Pair<Class<? extends Annotation>, FieldAnnotationHandler>> retValue = new LinkedList<>();
-        retValue.addAll(JPA_FIELD_ANNOTATION_MAPPING_DEFAULT);
+        retValue.addAll(FIELD_ANNOTATION_MAPPING_DEFAULT_JPA);
         retValue.add(new ImmutablePair<Class<? extends Annotation>, FieldAnnotationHandler>(Id.class, idFieldAnnoationHandler));
         return retValue;
     }
 
-    private static List<Pair<Class<? extends Annotation>, ClassAnnotationHandler>> generateClassAnnotationMapping(EntityClassAnnotationHandler entityClassAnnotationHandler) {
-        List<Pair<Class<? extends Annotation>, ClassAnnotationHandler>> retValue = new LinkedList<>();
+    private static List<Pair<Class<? extends Annotation>, ClassAnnotationHandler<?>>> generateClassAnnotationMapping(EntityClassAnnotationHandler entityClassAnnotationHandler) {
+        List<Pair<Class<? extends Annotation>, ClassAnnotationHandler<?>>> retValue = new LinkedList<>();
         retValue.addAll(CLASS_ANNOTATION_MAPPING_DEFAULT);
-        retValue.add(new ImmutablePair<Class<? extends Annotation>, ClassAnnotationHandler>(Entity.class, entityClassAnnotationHandler));
+        retValue.add(new ImmutablePair<Class<? extends Annotation>, ClassAnnotationHandler<?>>(Entity.class, entityClassAnnotationHandler));
         return retValue;
     }
     private EntityManager entityManager;
@@ -81,21 +79,21 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder {
 
     public JPAReflectionFormBuilder(EntityManager entityManager,
             List<Pair<Class<? extends Annotation>, FieldAnnotationHandler>> fieldAnnotationMapping,
-            List<Pair<Class<? extends Annotation>, ClassAnnotationHandler>> classAnnotationMapping,
+            List<Pair<Class<? extends Annotation>, ClassAnnotationHandler<?>>> classAnnotationMapping,
             String persistFailureDialogTitle,
             String idValidationFailureDialogTitle) {
-        this(CLASS_MAPPING_DEFAULT, PRIMITIVE_MAPPING_DEFAULT, VALUE_RETRIEVER_MAPPING_JPA_DEFAULT, entityManager, fieldAnnotationMapping, classAnnotationMapping, persistFailureDialogTitle);
+        this(CLASS_MAPPING_DEFAULT, PRIMITIVE_MAPPING_DEFAULT, VALUE_RETRIEVER_MAPPING_DEFAULT_JPA, entityManager, fieldAnnotationMapping, classAnnotationMapping, persistFailureDialogTitle);
     }
 
     public JPAReflectionFormBuilder(EntityManager entityManager,
             String persistFailureDialogTitle,
             IdFieldAnnoationHandler idFieldAnnoationHandler,
             EntityClassAnnotationHandler entityClassAnnotationHandler) {
-        this(CLASS_MAPPING_DEFAULT, PRIMITIVE_MAPPING_DEFAULT, VALUE_RETRIEVER_MAPPING_JPA_DEFAULT, entityManager, generateFieldAnnotationMapping(idFieldAnnoationHandler), generateClassAnnotationMapping(entityClassAnnotationHandler), persistFailureDialogTitle);
+        this(CLASS_MAPPING_DEFAULT, PRIMITIVE_MAPPING_DEFAULT, VALUE_RETRIEVER_MAPPING_DEFAULT_JPA, entityManager, generateFieldAnnotationMapping(idFieldAnnoationHandler), generateClassAnnotationMapping(entityClassAnnotationHandler), persistFailureDialogTitle);
     }
 
-    public JPAReflectionFormBuilder(Map<Type, FieldHandler> classMapping,
-            Map<Class<?>, Class<? extends JComponent>> primitiveMapping,
+    public JPAReflectionFormBuilder(Map<Type, FieldHandler<?>> classMapping,
+            Map<Class<?>, FieldHandler<?>> primitiveMapping,
             Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping,
             EntityManager entityManager,
             String persistFailureDialogTitle,
@@ -104,12 +102,12 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder {
         this(classMapping, primitiveMapping, valueRetrieverMapping, entityManager, generateFieldAnnotationMapping(idFieldAnnoationHandler), generateClassAnnotationMapping(entityClassAnnotationHandler), persistFailureDialogTitle);
     }
 
-    public JPAReflectionFormBuilder(Map<Type, FieldHandler> classMapping,
-            Map<Class<?>, Class<? extends JComponent>> primitiveMapping,
+    public JPAReflectionFormBuilder(Map<Type, FieldHandler<?>> classMapping,
+            Map<Class<?>, FieldHandler<?>> primitiveMapping,
             Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping,
             EntityManager entityManager,
             List<Pair<Class<? extends Annotation>, FieldAnnotationHandler>> fieldAnnotationMapping,
-            List<Pair<Class<? extends Annotation>, ClassAnnotationHandler>> classAnnotationMapping,
+            List<Pair<Class<? extends Annotation>, ClassAnnotationHandler<?>>> classAnnotationMapping,
             String persistFailureDialogTitle) {
         super(classMapping, primitiveMapping, valueRetrieverMapping, fieldAnnotationMapping, classAnnotationMapping);
         if(entityManager == null) {

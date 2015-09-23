@@ -34,6 +34,11 @@
   </Layout>
   <SubComponents>
     <Component class="javax.swing.JSpinner" name="idSpinner">
+      <Properties>
+        <Property name="model" type="javax.swing.SpinnerModel" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+          <Connection code="this.idSpinnerModel" type="code"/>
+        </Property>
+      </Properties>
     </Component>
     <Component class="javax.swing.JButton" name="nextIdButton">
       <Properties>
