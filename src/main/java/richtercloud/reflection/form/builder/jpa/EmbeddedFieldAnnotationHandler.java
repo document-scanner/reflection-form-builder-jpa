@@ -15,15 +15,20 @@
 package richtercloud.reflection.form.builder.jpa;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.Set;
 import javax.swing.JComponent;
 import richtercloud.reflection.form.builder.FieldAnnotationHandler;
+import richtercloud.reflection.form.builder.FieldUpdateEvent;
+import richtercloud.reflection.form.builder.FieldUpdateListener;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 
 /**
  *
  * @author richter
  */
-public class EmbeddedFieldAnnotationHandler implements FieldAnnotationHandler {
+public class EmbeddedFieldAnnotationHandler implements FieldAnnotationHandler<Object, FieldUpdateEvent<Object>> {
     private final static EmbeddedFieldAnnotationHandler INSTANCE = new EmbeddedFieldAnnotationHandler();
 
     public static EmbeddedFieldAnnotationHandler getInstance() {
@@ -34,13 +39,19 @@ public class EmbeddedFieldAnnotationHandler implements FieldAnnotationHandler {
     }
 
     @Override
-    public JComponent handle(Class<?> clazz, Object entity, ReflectionFormBuilder reflectionFormBuilder) {
+    public JComponent handle(Type fieldClass,
+            Object fieldValue,
+            Object entity,
+            FieldUpdateListener<FieldUpdateEvent<Object>> updateListener,
+            ReflectionFormBuilder reflectionFormBuilder) {
+        if(fieldClass == null) {
+            throw new IllegalArgumentException("fieldClass mustn't be null");
+        }
         try {
-            JComponent retValue = reflectionFormBuilder.transform(clazz);
+            JComponent retValue = reflectionFormBuilder.transform(fieldValue.getClass(), fieldValue);
             return retValue;
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException ex) {
             throw new RuntimeException(ex);
         }
     }
-
 }

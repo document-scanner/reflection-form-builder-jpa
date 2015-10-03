@@ -12,13 +12,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package richtercloud.reflection.form.builder.jpa.panels;
+package richtercloud.reflection.form.builder.jpa;
+
+import java.util.List;
+import richtercloud.reflection.form.builder.FieldUpdateEvent;
 
 /**
  *
  * @author richter
  */
-public interface ListQueryPanelUpdateListener {
+public class ElementCollectionFieldUpdateEvent implements FieldUpdateEvent<List<Object>> {
+    private List<Object> newValue;
 
-    void onUpdate(ListQueryPanelUpdateEvent event);
+    public ElementCollectionFieldUpdateEvent(List<Object> newValue) {
+        this.newValue = newValue;
+    }
+
+    @Override
+    public List<Object> getNewValue() {
+        return newValue;
+    }
+
+
 }

@@ -22,7 +22,7 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Component id="resultTableScrollPane" pref="573" max="32767" attributes="0"/>
                   <Group type="102" attributes="0">
-                      <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
+                      <Component id="resultTableLabel" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="32767" attributes="0"/>
                       <Component id="addButton" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="unrelated" max="-2" attributes="0"/>
@@ -41,7 +41,7 @@
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="removeButton" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="addButton" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="jLabel1" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="resultTableLabel" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace type="unrelated" max="-2" attributes="0"/>
               <Component id="resultTableScrollPane" pref="167" max="32767" attributes="0"/>
@@ -53,7 +53,8 @@
   <SubComponents>
     <Component class="richtercloud.reflection.form.builder.jpa.panels.QueryPanel" name="queryPanel">
       <AuxValues>
-        <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new QueryPanel&lt;&gt;(entityManager, entityClass, reflectionFormBuilder, ListSelectionModel.MULTIPLE_INTERVAL_SELECTION)&#xa;"/>
+        <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="createQueryPanel();"/>
+        <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;Object&gt;"/>
       </AuxValues>
     </Component>
     <Component class="javax.swing.JButton" name="removeButton">
@@ -72,7 +73,7 @@
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="addButtonActionPerformed"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JLabel" name="jLabel1">
+    <Component class="javax.swing.JLabel" name="resultTableLabel">
       <Properties>
         <Property name="text" type="java.lang.String" value="Selected entities:"/>
       </Properties>

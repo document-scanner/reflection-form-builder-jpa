@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
+import javax.persistence.metamodel.Metamodel;
 import javax.swing.ComboBoxEditor;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListSelectionModel;
@@ -47,6 +48,18 @@ import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
 
 /**
+ * Allows to run a JPQL query for a specific class while getting feedback about
+ * the following errors:<ul>
+ * <li>syntax errors in queries</li>
+ * <li>queries with the wrong result type/class</li>
+ * <li>(unexpected) errors which occured during execution of the query</li>
+ * </ul> and an overview of the result in a table displaying all class fields
+ * (as returned by {@link ReflectionFormBuilder#retrieveRelevantFields(java.lang.Class) }.
+ *
+ * In favour of immutability as design principle QueryPanel needs to be
+ * recreated in order to handle a different entity class.
+ *
+ * There's currently no feature to hide specific class fields.
  *
  * @author richter
  * @param <E> a generic type for the entity class
@@ -55,7 +68,7 @@ public class QueryPanel<E> extends javax.swing.JPanel {
     private static final long serialVersionUID = 1L;
     private final static Logger LOGGER = LoggerFactory.getLogger(QueryPanel.class);
     private EntityManager entityManager;
-    private Class<E> entityClass;
+    private Class<? extends E> entityClass;
     /*
     internal implementation notes:
     - set a model stub initially, overwrite in construction in order to allow
@@ -88,56 +101,46 @@ public class QueryPanel<E> extends javax.swing.JPanel {
     /**
      * The result of the current query (needs to be stored separately because the table model is used to display field values, not instances)
      */
-    private List<E> queryResults;
+    private List<E> queryResults = new LinkedList<>(); //can be initialized because null needs to be expressed differently anyway
     private final QueryComboBoxEditor queryComboBoxEditor = new QueryComboBoxEditor();
     private ReflectionFormBuilder reflectionFormBuilder;
     private ListSelectionModel queryResultTableSelectionModel = new DefaultListSelectionModel();
     private Set<QueryPanelUpdateListener> updateListeners = new HashSet<>();
 
-    /**
-     * Creates new form QueryPanel
-     */
-    /*
-    internal implementation notes:
-    - public constructor necessary for NetBeans GUI builder (protected no
-    sufficient for use in other projects)
-    */
-    public QueryPanel() {
-        this.initComponents();
-        this.queryResultTableSelectionModel.addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                for(QueryPanelUpdateListener updateListener : updateListeners) {
-                    LOGGER.debug("notifying update listener {} about selection change", updateListener);
-                    updateListener.onUpdate(new QueryPanelUpdateEvent(QueryPanel.this.queryResults.get(e.getFirstIndex())));
-                }
-            }
-        });
-    }
     public QueryPanel(EntityManager entityManager,
-            Class<E> entityClass,
-            ReflectionFormBuilder reflectionFormBuilder) {
-        this(entityManager, entityClass, reflectionFormBuilder, ListSelectionModel.SINGLE_SELECTION);
+            Class<? extends E> entityClass,
+            ReflectionFormBuilder reflectionFormBuilder,
+            E initialValue) throws IllegalArgumentException, IllegalAccessException {
+        this(entityManager, entityClass, reflectionFormBuilder, initialValue, ListSelectionModel.SINGLE_SELECTION);
     }
 
     protected QueryPanel(EntityManager entityManager,
-            Class<E> entityClass,
+            Class<? extends E> entityClass,
             ReflectionFormBuilder reflectionFormBuilder,
-            int queryResultTableSelectionMode) {
+            E initialValue,
+            int queryResultTableSelectionMode) throws IllegalArgumentException, IllegalAccessException {
         this(entityManager,
                 entityClass,
                 reflectionFormBuilder,
+                initialValue,
                 queryResultTableSelectionMode,
                 new LinkedList<HistoryEntry>(),
                 INITIAL_QUERY_LIMIT_DEFAULT);
     }
 
     public QueryPanel(EntityManager entityManager,
-            Class<E> entityClass,
+            Class<? extends E> entityClass,
             ReflectionFormBuilder reflectionFormBuilder,
+            E initialValue,
             List<HistoryEntry> initialHistory,
-            int initialQueryLimit) {
-        this(entityManager, entityClass, reflectionFormBuilder, ListSelectionModel.SINGLE_SELECTION, initialHistory, initialQueryLimit);
+            int initialQueryLimit) throws IllegalArgumentException, IllegalAccessException {
+        this(entityManager,
+                entityClass,
+                reflectionFormBuilder,
+                initialValue,
+                ListSelectionModel.SINGLE_SELECTION,
+                initialHistory,
+                initialQueryLimit);
     }
 
     /**
@@ -145,21 +148,38 @@ public class QueryPanel<E> extends javax.swing.JPanel {
      * @param entityManager
      * @param entityClass
      * @param reflectionFormBuilder
+     * @param initialValue
      * @param queryResultTableSelectionMode
      * @param initialHistory might be modified
      * @param initialQueryLimit When the component is created an initial query is executed. This property
      * limits its result length. Set to {@code 0} in order to skip initial
      * query.
+     * @throws java.lang.IllegalAccessException
      */
     protected QueryPanel(EntityManager entityManager,
-            Class<E> entityClass,
+            Class<? extends E> entityClass,
             ReflectionFormBuilder reflectionFormBuilder,
+            E initialValue,
             int queryResultTableSelectionMode,
             List<HistoryEntry> initialHistory,
-            int initialQueryLimit) {
-        this();
-        this.entityManager = entityManager;
+            int initialQueryLimit) throws IllegalArgumentException, IllegalAccessException {
+        if(entityClass == null) {
+            throw new IllegalArgumentException("entityClass mustn't be null");
+        }
+        validateEntityClass(entityClass, entityManager);
         this.entityClass = entityClass;
+        this.initComponents();
+        this.queryResultTableSelectionModel.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                for(QueryPanelUpdateListener updateListener : updateListeners) {
+                    LOGGER.debug("notifying update listener {} about selection change", updateListener);
+                    updateListener.onUpdate(new QueryPanelUpdateEvent(QueryPanel.this.queryResults.get(e.getFirstIndex()),
+                            QueryPanel.this));
+                }
+            }
+        });
+        this.entityManager = entityManager;
         this.reflectionFormBuilder = reflectionFormBuilder;
         for(HistoryEntry initialHistoryEntry : initialHistory) {
             this.queryComboBoxModel.addElement(initialHistoryEntry);
@@ -172,12 +192,22 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         //CriteriaBuilder
         String entityClassQueryIdentifier = String.valueOf(Character.toLowerCase(entityClass.getSimpleName().charAt(0)));
         String queryText = String.format("SELECT %s from %s %s", entityClassQueryIdentifier, entityClass.getSimpleName(), entityClassQueryIdentifier);
-        TypedQuery<E> query = entityManager.createQuery(queryText, entityClass);
+        TypedQuery<? extends E> query = entityManager.createQuery(queryText, entityClass);
         this.executeQuery(query, initialQueryLimit, queryText);
         this.queryResultTableSelectionModel.setSelectionMode(queryResultTableSelectionMode);
+        if(initialValue != null) {
+            if(!this.entityManager.contains(initialValue)) {
+                this.queryResultLabel.setText(String.format("previously managed entity %s has been removed from persistent storage, ignoring", initialValue));
+            }
+            if(!this.queryResults.contains(initialValue)) {
+                this.queryResults.add(initialValue); // ok to add initially (will be overwritten with the next query where the user has to specify a query which retrieves the initial value or not
+            }
+            int initialValueIndex = this.queryResults.indexOf(initialValue);
+            this.queryResultTableSelectionModel.addSelectionInterval(initialValueIndex, initialValueIndex); //no need to clear selection because we're just initializing
+        }
     }
 
-    protected static void initTableModel(DefaultTableModel tableModel, List<Field> entityClassFields) {
+    public static void initTableModel(DefaultTableModel tableModel, List<Field> entityClassFields) {
         for(Field field : entityClassFields) {
             tableModel.addColumn(field.getName());
         }
@@ -297,7 +327,7 @@ public class QueryPanel<E> extends javax.swing.JPanel {
                     .addComponent(queryLimitSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(queryLimitLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(queryStatusLabel)
+                .addComponent(queryStatusLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(separator, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -325,12 +355,15 @@ public class QueryPanel<E> extends javax.swing.JPanel {
                 queryStatusLabel.setText("Enter a query");
                 return;
             }
-        }else {
+        }else if(queryComboBox.getSelectedIndex() >= 0) {
             HistoryEntry selectedHistoryEntry = this.queryComboBox.getItemAt(this.queryComboBox.getSelectedIndex());
             queryText = selectedHistoryEntry.getText();
+        }else {
+            this.queryStatusLabel.setText("No query entered or selected");
+            return;
         }
         int queryLimit = (int) queryLimitSpinner.getValue();
-        TypedQuery<E> query = this.createQuery(queryText); //handles displaying
+        TypedQuery<? extends E> query = this.createQuery(queryText); //handles displaying
             //exceptions which occured during query execution (explaining
             //syntax errors)
         if(query != null) {
@@ -350,13 +383,14 @@ public class QueryPanel<E> extends javax.swing.JPanel {
     the text of the query because there's no way to retrieve text from Criteria
     objects
     */
-    private void executeQuery(TypedQuery<E> query, int queryLimit, String queryText) {
+    private void executeQuery(TypedQuery<? extends E> query, int queryLimit, String queryText) {
         LOGGER.debug("executing query '{}'", queryText);
         while(this.queryResultTableModel.getRowCount() > 0) {
             this.queryResultTableModel.removeRow(0);
         }
         try {
-            queryResults = query.setMaxResults(queryLimit).getResultList();
+            List<? extends E> queryResultTmp = query.setMaxResults(queryLimit).getResultList();
+            queryResults.addAll(queryResultTmp);
             for(E queryResult : queryResults) {
                 handleInstanceToTableModel(this.queryResultTableModel, queryResult, reflectionFormBuilder, entityClass);
             }
@@ -377,9 +411,9 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         }
     }
 
-    private TypedQuery<E> createQuery(String queryText) {
+    private TypedQuery<? extends E> createQuery(String queryText) {
         try {
-            TypedQuery<E> query = this.entityManager.createQuery(queryText, this.entityClass);
+            TypedQuery<? extends E> query = this.entityManager.createQuery(queryText, this.entityClass);
             return query;
         }catch(Exception ex) {
             LOGGER.info("an exception occured while executing the query", ex);
@@ -392,7 +426,7 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         return queryResultTableModel;
     }
 
-    public List<E> getQueryResults() {
+    public List<? extends E> getQueryResults() {
         return queryResults;
     }
 
@@ -404,12 +438,25 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         return queryStatusLabel;
     }
 
+    public Class<? extends E> getEntityClass() {
+        return entityClass;
+    }
+
     protected static void handleInstanceToTableModel(DefaultTableModel queryResultTableModel, Object queryResult, ReflectionFormBuilder reflectionFormBuilder, Class<?> entityClass) throws IllegalArgumentException, IllegalAccessException {
         List<Object> queryResultValues = new LinkedList<>();
         for(Field field : reflectionFormBuilder.retrieveRelevantFields(entityClass)) {
             queryResultValues.add(field.get(queryResult));
         }
         queryResultTableModel.addRow(queryResultValues.toArray(new Object[queryResultValues.size()]));
+    }
+
+    public static void validateEntityClass(Class<?> entityClass, EntityManager entityManager) {
+        Metamodel meta = entityManager.getMetamodel();
+        try {
+            meta.entity(entityClass);
+        }catch(IllegalArgumentException ex) {
+            throw new IllegalArgumentException(String.format("entityClass %s is not a mapped entity", entityClass), ex);
+        }
     }
 
     private class QueryComboBoxEditor implements ComboBoxEditor {

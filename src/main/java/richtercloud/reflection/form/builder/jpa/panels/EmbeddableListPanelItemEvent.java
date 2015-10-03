@@ -14,24 +14,17 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
+import java.util.List;
+import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
+
 /**
  *
  * @author richter
  */
-public class QueryPanelUpdateEvent {
-    private QueryPanel source;
-    private Object newSelectionItem;
+public class EmbeddableListPanelItemEvent extends ListPanelItemEvent<Object> {
 
-    public QueryPanelUpdateEvent(Object newSelectionItem, QueryPanel source) {
-        this.newSelectionItem = newSelectionItem;
-        this.source = source;
+    public EmbeddableListPanelItemEvent(int eventType, int index, List<Object> item) {
+        super(eventType, index, item);
     }
 
-    public QueryPanel getSource() {
-        return source;
-    }
-
-    public Object getNewSelectionItem() {
-        return newSelectionItem;
-    }
 }

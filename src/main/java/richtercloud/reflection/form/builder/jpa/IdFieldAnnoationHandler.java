@@ -14,28 +14,80 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import richtercloud.reflection.form.builder.jpa.panels.LongIdPanel;
+import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.Set;
 import javax.swing.JComponent;
 import richtercloud.reflection.form.builder.FieldAnnotationHandler;
+import richtercloud.reflection.form.builder.FieldUpdateEvent;
+import richtercloud.reflection.form.builder.FieldUpdateListener;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.jpa.panels.IdFieldUpdateEvent;
+import richtercloud.reflection.form.builder.jpa.panels.LongIdPanel;
+import richtercloud.reflection.form.builder.jpa.panels.LongIdPanelUpdateEvent;
+import richtercloud.reflection.form.builder.jpa.panels.LongIdPanelUpdateListener;
 
 /**
  *
  * @author richter
  */
-public class IdFieldAnnoationHandler implements FieldAnnotationHandler {
+/*
+internal implementation notes:
+- in order to be able to map the annotation handler to the JPA Id annotation
+there're no subtypes and the type of the id is retrieved from the fieldType
+argument of the handle method
+*/
+public class IdFieldAnnoationHandler implements FieldAnnotationHandler<Object, FieldUpdateEvent<Object>> {
     private IdGenerator idGenerator;
     private String idValidationFailureDialogTitle;
 
-    public IdFieldAnnoationHandler(IdGenerator idGenerator, String idValidationFailureDialogTitle) {
+    public IdFieldAnnoationHandler(IdGenerator idGenerator,
+            String idValidationFailureDialogTitle) {
         this.idGenerator = idGenerator;
         this.idValidationFailureDialogTitle = idValidationFailureDialogTitle;
     }
 
+    /**
+     *
+     * @param fieldClass
+     * @param fieldValue
+     * @param entity
+     * @param updateListener
+     * @param reflectionFormBuilder
+     * @return
+     */
+    /*
+    internal implementation notes:
+    - due to the fact that information about the field type and the field value
+    needs to be passed and that the field value can be null two parameter are
+    passed (a java.lang.reflect.Field reference could be
+    passed, but that'd be not good style)
+    */
     @Override
-    public JComponent handle(Class<?> clazz, Object entity, ReflectionFormBuilder reflectionFormBuilder) {
-        JComponent retValue;
-        retValue = new LongIdPanel(this.idGenerator, entity, this.idValidationFailureDialogTitle);
+    public JComponent handle(Type fieldClass,
+            Object fieldValue,
+            Object entity,
+            final FieldUpdateListener<FieldUpdateEvent<Object>> updateListener,
+            ReflectionFormBuilder reflectionFormBuilder) {
+        if(fieldClass == null) {
+            throw new IllegalArgumentException("fieldClass mustn't be null");
+        }
+        LongIdPanel retValue;
+        if(fieldClass.equals(Long.class)) {
+            retValue = new LongIdPanel(this.idGenerator,
+                    entity,
+                    (Long) fieldValue, //initialValue
+                    this.idValidationFailureDialogTitle);
+        }else {
+            throw new IllegalArgumentException(String.format("field type %s is not supported", fieldValue.getClass()));
+        }
+        retValue.addUpdateListener(new LongIdPanelUpdateListener() {
+
+            @Override
+            public void onUpdate(LongIdPanelUpdateEvent event) {
+                updateListener.onUpdate(new IdFieldUpdateEvent(event.getNewValue()));
+            }
+        });
         return retValue;
     }
 

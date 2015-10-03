@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.persistence.EntityExistsException;
 import javax.persistence.EntityManager;
+import javax.persistence.RollbackException;
 import javax.swing.GroupLayout;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
@@ -56,7 +57,7 @@ public class JPAReflectionFormPanel extends ReflectionFormPanel {
             Class<?> entityClass,
             Map<Field, JComponent> fieldMapping,
             Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping,
-            Map<Type, FieldHandler<?>> classMapping,
+            Map<Type, FieldHandler<?,?>> classMapping,
             String persistFailureDialogTitle) throws IllegalArgumentException, IllegalAccessException {
         super(fieldMapping, reflectionFormPanel.retrieveInstance(), entityClass, valueRetrieverMapping, classMapping);
         initComponents();
@@ -79,7 +80,6 @@ public class JPAReflectionFormPanel extends ReflectionFormPanel {
     private void initComponents() {
 
         saveButton = new javax.swing.JButton();
-        overviewButton = new javax.swing.JButton();
         statusLabel = new javax.swing.JLabel();
         reflectionFormPanelPanel = new javax.swing.JPanel();
 
@@ -89,8 +89,6 @@ public class JPAReflectionFormPanel extends ReflectionFormPanel {
                 saveButtonActionPerformed(evt);
             }
         });
-
-        overviewButton.setText("Overview");
 
         statusLabel.setText(" ");
 
@@ -114,9 +112,7 @@ public class JPAReflectionFormPanel extends ReflectionFormPanel {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(reflectionFormPanelPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(0, 242, Short.MAX_VALUE)
-                        .addComponent(overviewButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGap(0, 332, Short.MAX_VALUE)
                         .addComponent(saveButton))
                     .addComponent(statusLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
@@ -129,9 +125,7 @@ public class JPAReflectionFormPanel extends ReflectionFormPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(statusLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(saveButton)
-                    .addComponent(overviewButton))
+                .addComponent(saveButton)
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -173,15 +167,21 @@ public class JPAReflectionFormPanel extends ReflectionFormPanel {
             statusLabel.setText(String.format("<html>persisted entity of type '%s' successfully</html>", this.reflectionFormPanel.getEntityClass()));
         }catch(EntityExistsException ex) {
             entityManager.getTransaction().rollback();
-            String message = String.format("the following exception occured during persisting entity of type '%s'", this.reflectionFormPanel.getEntityClass());
-            LOGGER.debug(message, ex);
-            statusLabel.setText(String.format("<html>%s: %s</html>", message, ReflectionFormPanel.generateExceptionMessage(ex)));
+            handlePersistenceException(ex);
+
+        }catch(RollbackException ex) {
+             //cannot call entityManager.getTransaction().rollback() here because transaction isn' active
+            handlePersistenceException(ex);
         }
     }//GEN-LAST:event_saveButtonActionPerformed
 
+    private void handlePersistenceException(Exception ex) {
+        String message = String.format("the following exception occured during persisting entity of type '%s'", this.reflectionFormPanel.getEntityClass());
+        LOGGER.debug(message, ex);
+        statusLabel.setText(String.format("<html>%s: %s</html>", message, ReflectionFormPanel.generateExceptionMessage(ex)));
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton overviewButton;
     private javax.swing.JPanel reflectionFormPanelPanel;
     private javax.swing.JButton saveButton;
     private javax.swing.JLabel statusLabel;

@@ -14,20 +14,21 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
-import java.util.List;
+import richtercloud.reflection.form.builder.FieldUpdateEvent;
 
 /**
  *
  * @author richter
  */
-public class ListQueryPanelUpdateEvent {
-    private List<?> newSelectionList;
+public class IdFieldUpdateEvent implements FieldUpdateEvent<Object>{
+    private Object newValue;
 
-    public ListQueryPanelUpdateEvent(List<?> newSelectionList) {
-        this.newSelectionList = newSelectionList;
+    public IdFieldUpdateEvent(Object newValue) {
+        this.newValue = newValue;
     }
 
-    public List<?> getNewSelectionItem() {
-        return newSelectionList;
+    @Override
+    public Object getNewValue() {
+        return newValue;
     }
 }

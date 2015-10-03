@@ -21,10 +21,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
+import javax.persistence.ElementCollection;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
@@ -36,6 +39,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.reflection.form.builder.ClassAnnotationHandler;
 import richtercloud.reflection.form.builder.FieldAnnotationHandler;
 import richtercloud.reflection.form.builder.FieldHandler;
+import richtercloud.reflection.form.builder.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
 import richtercloud.reflection.form.builder.jpa.retriever.IdPanelRetriever;
@@ -58,6 +62,7 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder {
     static {
         List<Pair<Class<? extends Annotation>, FieldAnnotationHandler>> jpaFieldAnnotationMapping0 = new LinkedList<>(ReflectionFormBuilder.FIELD_ANNOTATION_MAPPING_DEFAULT);
         jpaFieldAnnotationMapping0.add(new ImmutablePair<Class<? extends Annotation>, FieldAnnotationHandler>(Embedded.class, EmbeddedFieldAnnotationHandler.getInstance()));
+        jpaFieldAnnotationMapping0.add(new ImmutablePair<Class<? extends Annotation>, FieldAnnotationHandler>(ElementCollection.class, ElementCollectionFieldAnnotationHandler.getInstance()));
         FIELD_ANNOTATION_MAPPING_DEFAULT_JPA = Collections.unmodifiableList(jpaFieldAnnotationMapping0);
     }
 
@@ -68,10 +73,10 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder {
         return retValue;
     }
 
-    private static List<Pair<Class<? extends Annotation>, ClassAnnotationHandler<?>>> generateClassAnnotationMapping(EntityClassAnnotationHandler entityClassAnnotationHandler) {
-        List<Pair<Class<? extends Annotation>, ClassAnnotationHandler<?>>> retValue = new LinkedList<>();
+    private static List<Pair<Class<? extends Annotation>, ClassAnnotationHandler<Object,FieldUpdateEvent<Object>>>> generateClassAnnotationMapping(EntityClassAnnotationHandler entityClassAnnotationHandler) {
+        List<Pair<Class<? extends Annotation>, ClassAnnotationHandler<Object,FieldUpdateEvent<Object>>>> retValue = new LinkedList<>();
         retValue.addAll(CLASS_ANNOTATION_MAPPING_DEFAULT);
-        retValue.add(new ImmutablePair<Class<? extends Annotation>, ClassAnnotationHandler<?>>(Entity.class, entityClassAnnotationHandler));
+        retValue.add(new ImmutablePair<Class<? extends Annotation>, ClassAnnotationHandler<Object,FieldUpdateEvent<Object>>>(Entity.class, entityClassAnnotationHandler));
         return retValue;
     }
     private EntityManager entityManager;
@@ -79,37 +84,77 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder {
 
     public JPAReflectionFormBuilder(EntityManager entityManager,
             List<Pair<Class<? extends Annotation>, FieldAnnotationHandler>> fieldAnnotationMapping,
-            List<Pair<Class<? extends Annotation>, ClassAnnotationHandler<?>>> classAnnotationMapping,
+            List<Pair<Class<? extends Annotation>, ClassAnnotationHandler<Object,FieldUpdateEvent<Object>>>> classAnnotationMapping,
             String persistFailureDialogTitle,
             String idValidationFailureDialogTitle) {
-        this(CLASS_MAPPING_DEFAULT, PRIMITIVE_MAPPING_DEFAULT, VALUE_RETRIEVER_MAPPING_DEFAULT_JPA, entityManager, fieldAnnotationMapping, classAnnotationMapping, persistFailureDialogTitle);
+        this(CLASS_MAPPING_DEFAULT,
+                PRIMITIVE_MAPPING_DEFAULT,
+                VALUE_RETRIEVER_MAPPING_DEFAULT_JPA,
+                fieldAnnotationMapping,
+                classAnnotationMapping,
+                new HashSet<Type>(),
+                new HashSet<Type>(),
+                new HashSet<Type>(),
+                entityManager,
+                persistFailureDialogTitle);
     }
 
     public JPAReflectionFormBuilder(EntityManager entityManager,
             String persistFailureDialogTitle,
             IdFieldAnnoationHandler idFieldAnnoationHandler,
             EntityClassAnnotationHandler entityClassAnnotationHandler) {
-        this(CLASS_MAPPING_DEFAULT, PRIMITIVE_MAPPING_DEFAULT, VALUE_RETRIEVER_MAPPING_DEFAULT_JPA, entityManager, generateFieldAnnotationMapping(idFieldAnnoationHandler), generateClassAnnotationMapping(entityClassAnnotationHandler), persistFailureDialogTitle);
+        this(CLASS_MAPPING_DEFAULT,
+                PRIMITIVE_MAPPING_DEFAULT,
+                VALUE_RETRIEVER_MAPPING_DEFAULT_JPA,
+                generateFieldAnnotationMapping(idFieldAnnoationHandler),
+                generateClassAnnotationMapping(entityClassAnnotationHandler),
+                new HashSet<Type>(),
+                new HashSet<Type>(),
+                new HashSet<Type>(),
+                entityManager,
+                persistFailureDialogTitle);
     }
 
-    public JPAReflectionFormBuilder(Map<Type, FieldHandler<?>> classMapping,
-            Map<Class<?>, FieldHandler<?>> primitiveMapping,
+    public JPAReflectionFormBuilder(Map<Type, FieldHandler<?,?>> classMapping,
+            Map<Class<?>, FieldHandler<?,?>> primitiveMapping,
             Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping,
+            Set<Type> ignoresFieldAnnotationMapping,
+            Set<Type> ignoresClassAnnotationMapping,
+            Set<Type> ignoresPrimitiveMapping,
             EntityManager entityManager,
             String persistFailureDialogTitle,
             IdFieldAnnoationHandler idFieldAnnoationHandler,
             EntityClassAnnotationHandler entityClassAnnotationHandler) {
-        this(classMapping, primitiveMapping, valueRetrieverMapping, entityManager, generateFieldAnnotationMapping(idFieldAnnoationHandler), generateClassAnnotationMapping(entityClassAnnotationHandler), persistFailureDialogTitle);
+        this(classMapping,
+                primitiveMapping,
+                valueRetrieverMapping,
+                generateFieldAnnotationMapping(idFieldAnnoationHandler),
+                generateClassAnnotationMapping(entityClassAnnotationHandler),
+                ignoresFieldAnnotationMapping,
+                ignoresClassAnnotationMapping,
+                ignoresPrimitiveMapping,
+                entityManager,
+                persistFailureDialogTitle);
     }
 
-    public JPAReflectionFormBuilder(Map<Type, FieldHandler<?>> classMapping,
-            Map<Class<?>, FieldHandler<?>> primitiveMapping,
+    public JPAReflectionFormBuilder(Map<Type, FieldHandler<?,?>> classMapping,
+            Map<Class<?>, FieldHandler<?,?>> primitiveMapping,
             Map<Class<? extends JComponent>, ValueRetriever<?, ?>> valueRetrieverMapping,
-            EntityManager entityManager,
             List<Pair<Class<? extends Annotation>, FieldAnnotationHandler>> fieldAnnotationMapping,
-            List<Pair<Class<? extends Annotation>, ClassAnnotationHandler<?>>> classAnnotationMapping,
+            List<Pair<Class<? extends Annotation>, ClassAnnotationHandler<Object,FieldUpdateEvent<Object>>>> classAnnotationMapping,
+            Set<Type> ignoresFieldAnnotationMapping,
+            Set<Type> ignoresClassAnnotationMapping,
+            Set<Type> ignoresPrimitiveMapping,
+            EntityManager entityManager,
             String persistFailureDialogTitle) {
-        super(classMapping, primitiveMapping, valueRetrieverMapping, fieldAnnotationMapping, classAnnotationMapping);
+        super(classMapping,
+                primitiveMapping,
+                valueRetrieverMapping,
+                fieldAnnotationMapping,
+                classAnnotationMapping,
+                ignoresFieldAnnotationMapping,
+                ignoresClassAnnotationMapping,
+                ignoresPrimitiveMapping);
         if(entityManager == null) {
             throw new IllegalArgumentException("entityManager mustn't be null");
         }
@@ -119,6 +164,9 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder {
 
     @Override
     public List<Field> retrieveRelevantFields(Class<?> entityClass) {
+        if(entityClass == null) {
+            throw new IllegalArgumentException("entityClass mustn't be null");
+        }
         List<Field> relevantFields = super.retrieveRelevantFields(entityClass);
         ListIterator<Field> relevantFieldsIt = relevantFields.listIterator();
         while(relevantFieldsIt.hasNext()) {
@@ -141,8 +189,9 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder {
     }
 
     @Override
-    public JPAReflectionFormPanel transform(Class<?> entityClass) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException {
-        ReflectionFormPanel reflectionFormPanel = super.transform(entityClass);
+    public JPAReflectionFormPanel transform(Class<?> entityClass, Object entityToUpdate) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException {
+        ReflectionFormPanel reflectionFormPanel = super.transform(entityClass,
+                entityToUpdate);
         JPAReflectionFormPanel retValue = new JPAReflectionFormPanel(entityManager,
                 reflectionFormPanel,
                 entityClass,

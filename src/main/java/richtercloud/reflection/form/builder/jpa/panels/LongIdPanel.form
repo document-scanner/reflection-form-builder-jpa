@@ -17,7 +17,9 @@
     <DimensionLayout dim="0">
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="0" attributes="0">
-              <Component id="idSpinner" pref="333" max="32767" attributes="0"/>
+              <Component id="nullCheckBox" min="-2" max="-2" attributes="0"/>
+              <EmptySpace type="unrelated" max="-2" attributes="0"/>
+              <Component id="idSpinner" pref="681" max="32767" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Component id="nextIdButton" min="-2" max="-2" attributes="0"/>
           </Group>
@@ -28,6 +30,7 @@
           <Group type="103" groupAlignment="3" attributes="0">
               <Component id="idSpinner" alignment="3" min="-2" max="-2" attributes="0"/>
               <Component id="nextIdButton" alignment="3" min="-2" max="-2" attributes="0"/>
+              <Component id="nullCheckBox" alignment="3" min="-2" max="-2" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -46,6 +49,14 @@
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="nextIdButtonActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JCheckBox" name="nullCheckBox">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="null"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="nullCheckBoxActionPerformed"/>
       </Events>
     </Component>
   </SubComponents>

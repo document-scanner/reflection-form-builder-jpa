@@ -27,19 +27,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
+import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
+import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 
 /**
  *
  * @author richter
  */
-public class ListQueryPanel extends javax.swing.JPanel {
+public class QueryListPanel extends javax.swing.JPanel {
     private static final long serialVersionUID = 1L;
-    private final static Logger LOGGER = LoggerFactory.getLogger(ListQueryPanel.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(QueryListPanel.class);
     private DefaultTableModel resultTableModel = new DefaultTableModel();
     private EntityManager entityManager;
     private ReflectionFormBuilder reflectionFormBuilder;
     private Class<?> entityClass;
-    private Set<ListQueryPanelUpdateListener> updateListeners = new HashSet<>();
+    private Set<ListPanelItemListener<Object>> updateListeners = new HashSet<>();
     /**
      * A constantly up-to-date list of selected references (the "result" of the
      * panel)
@@ -49,24 +51,48 @@ public class ListQueryPanel extends javax.swing.JPanel {
     /**
      * Creates new form ListQueryPanel
      */
-    public ListQueryPanel() {
+    public QueryListPanel() {
     }
 
-    public ListQueryPanel(EntityManager entityManager, ReflectionFormBuilder reflectionFormBuilder, Class<?> entityClass) {
+    public QueryListPanel(EntityManager entityManager,
+            ReflectionFormBuilder reflectionFormBuilder,
+            Class<?> entityClass,
+            List<Object> initialValues) throws IllegalArgumentException, IllegalAccessException {
+        if(entityManager == null) {
+            throw new IllegalArgumentException("entityManager mustn't be null");
+        }
+        if(reflectionFormBuilder == null) {
+            throw new IllegalArgumentException("reflectionFormBuilder mustn't be null");
+        }
+        if(entityClass == null) {
+            throw new IllegalArgumentException("entityClass mustn't be null");
+        }
+        QueryPanel.validateEntityClass(entityClass, entityManager);
         this.entityManager = entityManager;
         this.reflectionFormBuilder = reflectionFormBuilder;
         this.entityClass = entityClass;
         QueryPanel.initTableModel(this.resultTableModel, this.reflectionFormBuilder.retrieveRelevantFields(entityClass));
+        if(initialValues != null) {
+            this.resultList.addAll(initialValues); //before initComponents (simply use resultList for initialization)
+        }
         initComponents();
         this.resultTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
     }
 
-    public void addUpdateListener(ListQueryPanelUpdateListener updateListener) {
+    public void addItemListener(ListPanelItemListener<Object> updateListener) {
         this.updateListeners.add(updateListener);
     }
 
-    public void removeUpdateListener(ListQueryPanelUpdateListener updateListener) {
+    public void removeItemListener(ListPanelItemListener<Object> updateListener) {
         this.updateListeners.remove(updateListener);
+    }
+
+    private QueryPanel<Object> createQueryPanel() throws IllegalArgumentException, IllegalAccessException {
+        return new QueryPanel<>(entityManager,
+                entityClass,
+                reflectionFormBuilder,
+                null, //initialValue
+                ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
     }
 
     /**
@@ -76,13 +102,12 @@ public class ListQueryPanel extends javax.swing.JPanel {
      */
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
+    private void initComponents() throws IllegalArgumentException, IllegalAccessException {
 
-        queryPanel = new QueryPanel<>(entityManager, entityClass, reflectionFormBuilder, ListSelectionModel.MULTIPLE_INTERVAL_SELECTION)
-        ;
+        queryPanel = createQueryPanel();
         removeButton = new javax.swing.JButton();
         addButton = new javax.swing.JButton();
-        jLabel1 = new javax.swing.JLabel();
+        resultTableLabel = new javax.swing.JLabel();
         resultTableScrollPane = new javax.swing.JScrollPane();
         resultTable = new JTable() {
             @Override
@@ -105,7 +130,7 @@ public class ListQueryPanel extends javax.swing.JPanel {
             }
         });
 
-        jLabel1.setText("Selected entities:");
+        resultTableLabel.setText("Selected entities:");
 
         resultTable.setModel(this.resultTableModel);
         resultTableScrollPane.setViewportView(resultTable);
@@ -120,7 +145,7 @@ public class ListQueryPanel extends javax.swing.JPanel {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(resultTableScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 573, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLabel1)
+                        .addComponent(resultTableLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(addButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
@@ -135,7 +160,7 @@ public class ListQueryPanel extends javax.swing.JPanel {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(removeButton)
                     .addComponent(addButton)
-                    .addComponent(jLabel1))
+                    .addComponent(resultTableLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(resultTableScrollPane, javax.swing.GroupLayout.DEFAULT_SIZE, 167, Short.MAX_VALUE)
                 .addContainerGap())
@@ -153,9 +178,9 @@ public class ListQueryPanel extends javax.swing.JPanel {
                 this.queryPanel.getQueryStatusLabel().setText(String.format("<html>%s</html>", ex.getMessage()));
             }
             this.resultList.add(queryResult);
-        }
-        for(ListQueryPanelUpdateListener updateListener : updateListeners) {
-            updateListener.onUpdate(new ListQueryPanelUpdateEvent(this.resultList));
+            for(ListPanelItemListener<Object> updateListener : updateListeners) {
+                updateListener.onItemAdded(new ListPanelItemEvent<>(ListPanelItemEvent.EVENT_TYPE_ADDED, index, resultList));
+            }
         }
     }//GEN-LAST:event_addButtonActionPerformed
 
@@ -173,20 +198,19 @@ public class ListQueryPanel extends javax.swing.JPanel {
             this.resultTableModel.removeRow(selectedRow);
             Object queryResult = this.queryPanel.getQueryResults().get(selectedRow);
             this.resultList.remove(queryResult);
+            for(ListPanelItemListener<Object> updateListener : updateListeners) {
+                updateListener.onItemRemoved(new ListPanelItemEvent<>(ListPanelItemEvent.EVENT_TYPE_REMOVED, selectedRow, this.resultList));
+            }
         }
-        for(ListQueryPanelUpdateListener updateListener : updateListeners) {
-            updateListener.onUpdate(new ListQueryPanelUpdateEvent(this.resultList));
-        }
-
     }//GEN-LAST:event_removeButtonActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton addButton;
-    private javax.swing.JLabel jLabel1;
-    private richtercloud.reflection.form.builder.jpa.panels.QueryPanel queryPanel;
+    private richtercloud.reflection.form.builder.jpa.panels.QueryPanel<Object> queryPanel;
     private javax.swing.JButton removeButton;
     private javax.swing.JTable resultTable;
+    private javax.swing.JLabel resultTableLabel;
     private javax.swing.JScrollPane resultTableScrollPane;
     // End of variables declaration//GEN-END:variables
 }

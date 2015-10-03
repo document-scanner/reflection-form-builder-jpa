@@ -14,14 +14,18 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
+import java.util.HashSet;
 import java.util.Set;
 import javax.swing.JOptionPane;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import richtercloud.reflection.form.builder.FieldUpdateListener;
 import richtercloud.reflection.form.builder.jpa.IdGenerator;
 
 /**
@@ -44,6 +48,8 @@ public class LongIdPanel extends javax.swing.JPanel {
     private final static ValidatorFactory FACTORY = Validation.buildDefaultValidatorFactory();
     private String idValidationFailureDialogTitle;
     private final SpinnerNumberModel idSpinnerModel = new SpinnerNumberModel((Long)0L, (Long)0L, (Long)Long.MAX_VALUE, (Long)1L);
+    private Set<LongIdPanelUpdateListener> updateListener = new HashSet<>();
+    private Long value;
 
     /**
      * Creates new form IdPanel
@@ -52,15 +58,42 @@ public class LongIdPanel extends javax.swing.JPanel {
         initComponents();
     }
 
-    public LongIdPanel(IdGenerator idGenerator, Object entity, String idValidationFailureDialogTitle) {
+    public LongIdPanel(IdGenerator idGenerator,
+            Object entity,
+            Long initialValue,
+            String idValidationFailureDialogTitle) {
         this();
         this.idGenerator = idGenerator;
         this.entity = entity;
         this.idValidationFailureDialogTitle = idValidationFailureDialogTitle;
+        this.idSpinner.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                for(LongIdPanelUpdateListener updateListener : LongIdPanel.this.updateListener) {
+                    updateListener.onUpdate(new LongIdPanelUpdateEvent((Long) LongIdPanel.this.idSpinner.getValue()));
+                }
+            }
+        });
+        this.value = initialValue;
+        if(initialValue == null) {
+            this.nullCheckBox.setSelected(true);
+            this.idSpinner.setEnabled(false);
+        }else {
+            this.idSpinner.setValue(initialValue);
+            this.nullCheckBox.setSelected(false); //might not be necessary, but is clearer
+        }
     }
 
     public JSpinner getIdSpinner() {
         return idSpinner;
+    }
+
+    public void addUpdateListener(LongIdPanelUpdateListener updateListener) {
+        this.updateListener.add(updateListener);
+    }
+
+    public void removeUpdateListener(LongIdPanelUpdateListener updateListener) {
+        this.updateListener.remove(updateListener);
     }
 
     /**
@@ -74,6 +107,7 @@ public class LongIdPanel extends javax.swing.JPanel {
 
         idSpinner = new javax.swing.JSpinner();
         nextIdButton = new javax.swing.JButton();
+        nullCheckBox = new javax.swing.JCheckBox();
 
         idSpinner.setModel(this.idSpinnerModel);
 
@@ -84,12 +118,21 @@ public class LongIdPanel extends javax.swing.JPanel {
             }
         });
 
+        nullCheckBox.setText("null");
+        nullCheckBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                nullCheckBoxActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(idSpinner, javax.swing.GroupLayout.DEFAULT_SIZE, 333, Short.MAX_VALUE)
+                .addComponent(nullCheckBox)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(idSpinner, javax.swing.GroupLayout.DEFAULT_SIZE, 681, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(nextIdButton))
         );
@@ -97,7 +140,8 @@ public class LongIdPanel extends javax.swing.JPanel {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                 .addComponent(idSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addComponent(nextIdButton))
+                .addComponent(nextIdButton)
+                .addComponent(nullCheckBox))
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -123,9 +167,23 @@ public class LongIdPanel extends javax.swing.JPanel {
         this.idSpinner.setValue(idGenerator.getNextId(this.entity));
     }//GEN-LAST:event_nextIdButtonActionPerformed
 
+    private void nullCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nullCheckBoxActionPerformed
+        if(nullCheckBox.isSelected()) {
+            this.value = null;
+            this.idSpinner.setEnabled(false);
+        }else {
+            this.value = (Long) idSpinner.getValue();
+            this.idSpinner.setEnabled(true);
+        }
+        for(LongIdPanelUpdateListener updateListener : this.updateListener) {
+            updateListener.onUpdate(new LongIdPanelUpdateEvent(value));
+        }
+    }//GEN-LAST:event_nullCheckBoxActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JSpinner idSpinner;
     private javax.swing.JButton nextIdButton;
+    private javax.swing.JCheckBox nullCheckBox;
     // End of variables declaration//GEN-END:variables
 }

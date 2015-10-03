@@ -14,22 +14,23 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import richtercloud.reflection.form.builder.jpa.panels.QueryPanel;
-import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
-import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateEvent;
+import javax.persistence.Entity;
 import javax.persistence.EntityManager;
 import javax.swing.JComponent;
-import javax.swing.ListSelectionModel;
 import richtercloud.reflection.form.builder.ClassAnnotationHandler;
-import richtercloud.reflection.form.builder.EntityFieldUpdateEvent;
+import richtercloud.reflection.form.builder.FieldUpdateEvent;
+import richtercloud.reflection.form.builder.FieldUpdateListener;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
-import richtercloud.reflection.form.builder.UpdateListener;
+import richtercloud.reflection.form.builder.SimpleEntityFieldUpdateEvent;
+import richtercloud.reflection.form.builder.jpa.panels.QueryPanel;
+import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateEvent;
+import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
 
 /**
- *
+ * Handles fields with a type which have a {@link Entity} class annotation.
  * @author richter
  */
-public class EntityClassAnnotationHandler implements ClassAnnotationHandler<EntityFieldUpdateEvent> {
+public class EntityClassAnnotationHandler implements ClassAnnotationHandler<Object, FieldUpdateEvent<Object>> {
     private EntityManager entityManager;
 
     public EntityClassAnnotationHandler(EntityManager entityManager) {
@@ -37,20 +38,26 @@ public class EntityClassAnnotationHandler implements ClassAnnotationHandler<Enti
     }
 
     @Override
-    public JComponent handle(Class<?> clazz,
-            final UpdateListener<EntityFieldUpdateEvent> updateListener,
+    public JComponent handle(Class<? extends Object> fieldType,
+            Object fieldValue,
+            final FieldUpdateListener<FieldUpdateEvent<Object>> updateListener,
             ReflectionFormBuilder reflectionFormBuilder) {
-        QueryPanel retValue = new QueryPanel<>(this.entityManager,
-                clazz,
-                reflectionFormBuilder
-        );
-        retValue.addUpdateListener(new QueryPanelUpdateListener() {
-            @Override
-            public void onUpdate(QueryPanelUpdateEvent event) {
-                updateListener.onUpdate(new EntityFieldUpdateEvent(event.getNewSelectionItem()));
-            }
-        });
-        return retValue;
+        try {
+            QueryPanel<Object> retValue = new QueryPanel<>(this.entityManager,
+                    fieldType,
+                    reflectionFormBuilder,
+                    fieldValue
+            );
+            retValue.addUpdateListener(new QueryPanelUpdateListener() {
+                @Override
+                public void onUpdate(QueryPanelUpdateEvent event) {
+                    updateListener.onUpdate(new SimpleEntityFieldUpdateEvent(event.getNewSelectionItem()));
+                }
+            });
+            return retValue;
+        } catch (IllegalArgumentException | IllegalAccessException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
 }
