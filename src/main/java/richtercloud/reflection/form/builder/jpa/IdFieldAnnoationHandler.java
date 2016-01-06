@@ -14,18 +14,18 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.Set;
 import javax.swing.JComponent;
-import richtercloud.reflection.form.builder.FieldAnnotationHandler;
-import richtercloud.reflection.form.builder.FieldUpdateEvent;
-import richtercloud.reflection.form.builder.FieldUpdateListener;
-import richtercloud.reflection.form.builder.ReflectionFormBuilder;
-import richtercloud.reflection.form.builder.jpa.panels.IdFieldUpdateEvent;
+import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
+import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
+import richtercloud.reflection.form.builder.fieldhandler.FieldAnnotationHandler;
 import richtercloud.reflection.form.builder.jpa.panels.LongIdPanel;
-import richtercloud.reflection.form.builder.jpa.panels.LongIdPanelUpdateEvent;
-import richtercloud.reflection.form.builder.jpa.panels.LongIdPanelUpdateListener;
+import richtercloud.reflection.form.builder.message.MessageHandler;
+import richtercloud.reflection.form.builder.panels.NumberPanel;
+import richtercloud.reflection.form.builder.panels.NumberPanelUpdateEvent;
+import richtercloud.reflection.form.builder.panels.NumberPanelUpdateListener;
 
 /**
  *
@@ -36,22 +36,23 @@ internal implementation notes:
 - in order to be able to map the annotation handler to the JPA Id annotation
 there're no subtypes and the type of the id is retrieved from the fieldType
 argument of the handle method
+- Currently enforce Long as id type. Other types are possible, abstract if necessary
 */
-public class IdFieldAnnoationHandler implements FieldAnnotationHandler<Object, FieldUpdateEvent<Object>> {
-    private IdGenerator idGenerator;
-    private String idValidationFailureDialogTitle;
+public class IdFieldAnnoationHandler implements FieldAnnotationHandler<Long, FieldUpdateEvent<Long>, JPAReflectionFormBuilder> {
+    private final IdGenerator idGenerator;
+    private final MessageHandler messageHandler;
+    private final FieldRetriever fieldRetriever;
 
     public IdFieldAnnoationHandler(IdGenerator idGenerator,
-            String idValidationFailureDialogTitle) {
+            MessageHandler messageHandler,
+            FieldRetriever fieldRetriever) {
         this.idGenerator = idGenerator;
-        this.idValidationFailureDialogTitle = idValidationFailureDialogTitle;
+        this.messageHandler = messageHandler;
+        this.fieldRetriever = fieldRetriever;
     }
 
     /**
      *
-     * @param fieldClass
-     * @param fieldValue
-     * @param entity
      * @param updateListener
      * @param reflectionFormBuilder
      * @return
@@ -64,28 +65,29 @@ public class IdFieldAnnoationHandler implements FieldAnnotationHandler<Object, F
     passed, but that'd be not good style)
     */
     @Override
-    public JComponent handle(Type fieldClass,
-            Object fieldValue,
-            Object entity,
-            final FieldUpdateListener<FieldUpdateEvent<Object>> updateListener,
-            ReflectionFormBuilder reflectionFormBuilder) {
-        if(fieldClass == null) {
+    public JComponent handle(Field field,
+            Object instance,
+            final FieldUpdateListener<FieldUpdateEvent<Long>> updateListener,
+            JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalAccessException {
+        if(field == null) {
             throw new IllegalArgumentException("fieldClass mustn't be null");
         }
-        LongIdPanel retValue;
-        if(fieldClass.equals(Long.class)) {
+        Type fieldType = field.getGenericType();
+        Long fieldValue = (Long) field.get(instance);
+        NumberPanel<Long> retValue;
+        if(fieldType.equals(Long.class)) {
             retValue = new LongIdPanel(this.idGenerator,
-                    entity,
-                    (Long) fieldValue, //initialValue
-                    this.idValidationFailureDialogTitle);
+                    instance, fieldValue, //initialValue
+                    messageHandler,
+                    fieldRetriever);
         }else {
             throw new IllegalArgumentException(String.format("field type %s is not supported", fieldValue.getClass()));
         }
-        retValue.addUpdateListener(new LongIdPanelUpdateListener() {
+        retValue.addUpdateListener(new NumberPanelUpdateListener<Long>() {
 
             @Override
-            public void onUpdate(LongIdPanelUpdateEvent event) {
-                updateListener.onUpdate(new IdFieldUpdateEvent(event.getNewValue()));
+            public void onUpdate(NumberPanelUpdateEvent<Long> event) {
+                updateListener.onUpdate(new FieldUpdateEvent<>(event.getNewValue()));
             }
         });
         return retValue;

@@ -18,51 +18,68 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.ReflectionFormPanel;
+import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
+import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
+import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
+import richtercloud.reflection.form.builder.message.MessageHandler;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
-import richtercloud.reflection.form.builder.panels.ListPanelTableCellEditor;
-import richtercloud.reflection.form.builder.panels.ListPanelTableCellRenderer;
-import richtercloud.reflection.form.builder.panels.ListPanelTableModel;
+import richtercloud.reflection.form.builder.panels.RightHeightTableHeader;
 
 /**
  *
  * @author richter
- * @param <T> the type of the managed values
  */
-public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItemListener<Object>, EmbeddableListPanelTableModel> {
+public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItemListener<Object>, EmbeddableListPanelTableModel, JPAReflectionFormBuilder> {
     private static final long serialVersionUID = 1L;
-    private Class<?> embeddableClass;
-
-    public EmbeddableListPanel(ReflectionFormBuilder reflectionFormBuilder,
-            ListPanelTableCellEditor mainListCellEditor,
-            ListPanelTableCellRenderer mainListCellRenderer,
-            Class<?> embeddableClass) throws NoSuchMethodException {
-        super(reflectionFormBuilder,
-                mainListCellEditor,
-                mainListCellRenderer,
-                new EmbeddableListPanelTableModel(embeddableClass,
-                        reflectionFormBuilder),
-                createMainListColumnModel(embeddableClass, reflectionFormBuilder));
-        if(embeddableClass == null) {
-            throw new IllegalArgumentException("embeddableClass mustn't be null");
-        }
-        this.embeddableClass = embeddableClass;
-    }
 
     /*
     internal implementation notes:
     - no need to pass renderers because editing takes place in dialog
-    */
-    private static DefaultTableColumnModel createMainListColumnModel(Class<?> embeddableClass, ReflectionFormBuilder reflectionFormBuilder) {
+     */
+    private static DefaultTableColumnModel createMainListColumnModel(Class<?> embeddableClass,
+            ReflectionFormBuilder reflectionFormBuilder) {
         DefaultTableColumnModel mainListColumnModel = new DefaultTableColumnModel();
-        List<Field> embeddableClassFields = reflectionFormBuilder.retrieveRelevantFields(embeddableClass);
+        List<Field> embeddableClassFields = reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(embeddableClass);
         for(int i=0; i<embeddableClassFields.size(); i++) {
             mainListColumnModel.addColumn(new TableColumn(i, 100));
         }
         return mainListColumnModel;
+    }
+    private final FieldHandler embeddableFieldHandler;
+    private Class<?> embeddableClass;
+
+    public EmbeddableListPanel(JPAReflectionFormBuilder reflectionFormBuilder,
+            Class<?> embeddableClass,
+            List<Object> initialValues,
+            MessageHandler messageHandler,
+            FieldHandler embeddableFieldHandler) {
+        super(reflectionFormBuilder,
+                new EmbeddableListPanelCellEditor(),
+                new EmbeddableListPanelCellRenderer(),
+                new EmbeddableListPanelTableModel(embeddableClass,
+                        reflectionFormBuilder),
+                messageHandler,
+                new RightHeightTableHeader(createMainListColumnModel(embeddableClass, reflectionFormBuilder), 16));
+        if(embeddableClass == null) {
+            throw new IllegalArgumentException("embeddableClass mustn't be null");
+        }
+        if(embeddableFieldHandler == null) {
+            throw new IllegalArgumentException("embeddableFieldHandler mustn't be null");
+        }
+        this.embeddableClass = embeddableClass;
+        this.embeddableFieldHandler = embeddableFieldHandler;
+        if(initialValues != null) {
+            for(Object initialValue : initialValues) {
+                this.getMainListModel().addElement(initialValue);
+            }
+        }
     }
 
     @Override
@@ -77,4 +94,26 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
             throw new IllegalArgumentException(String.format("embeddableClass %s doesn't have a zero-argument contructor", this.embeddableClass));
         }
     }
+
+    @Override
+    protected void editRow() throws FieldHandlingException {
+        try {
+            ReflectionFormPanel reflectionFormPanel = this.getReflectionFormBuilder().transformEmbeddable(
+                    embeddableClass, //entityClass
+                    this.getMainListModel().getData().get(this.getMainList().getSelectedRow()), //entityToUpdate
+                    embeddableFieldHandler
+            );
+            JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+            EmbeddableListPanelEditDialog dialog = new EmbeddableListPanelEditDialog(topFrame, //parent
+                    reflectionFormPanel //reflectionFormPanel
+            );
+            dialog.setVisible(true); //since EmbeddableListPanelEditDialog is
+                //always model this will block until the dialog is closed
+            this.getMainList().updateUI(); //reflect changes done by field
+                    //updates
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
 }

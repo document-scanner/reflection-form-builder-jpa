@@ -14,93 +14,58 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JComponent;
-import javax.swing.JLabel;
-import richtercloud.reflection.form.builder.FieldAnnotationHandler;
-import richtercloud.reflection.form.builder.FieldUpdateListener;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
-import richtercloud.reflection.form.builder.jpa.panels.EmbeddableListPanel;
-import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
-import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
-import richtercloud.reflection.form.builder.panels.ListPanelTableCellEditor;
-import richtercloud.reflection.form.builder.panels.ListPanelTableCellRenderer;
+import richtercloud.reflection.form.builder.fieldhandler.FieldAnnotationHandler;
+import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
+import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
+import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
+import richtercloud.reflection.form.builder.jpa.typehandler.ElementCollectionTypeHandler;
 
 /**
+ * Due to static precedences order of mapping in {@link ReflectionFormBuilder}
+ * it is necessary to explicitly reuse specifications in the class mapping (in
+ * the case of default implementations).
+ * {@code ElementCollectionFieldAnnotationHandler} does that by taking all
+ * matches of the class mapping for the field type. Mechanisms for more
+ * selection possibilites might be added later if necessary.
  *
  * @author richter
  */
-public class ElementCollectionFieldAnnotationHandler implements FieldAnnotationHandler<List<Object>, ElementCollectionFieldUpdateEvent> {
-    private final static ElementCollectionFieldAnnotationHandler INSTANCE = new ElementCollectionFieldAnnotationHandler();
+public class ElementCollectionFieldAnnotationHandler implements FieldAnnotationHandler<List<Object>, FieldUpdateEvent<List<Object>>, JPAReflectionFormBuilder> {
+    private final ElementCollectionTypeHandler elementCollectionTypeHandler;
 
-    public static ElementCollectionFieldAnnotationHandler getInstance() {
-        return INSTANCE;
+    public ElementCollectionFieldAnnotationHandler(ElementCollectionTypeHandler elementCollectionTypeHandler) {
+        this.elementCollectionTypeHandler = elementCollectionTypeHandler;
     }
 
-    protected ElementCollectionFieldAnnotationHandler() {
-    }
-
+    /**
+     * Assumes that the {@code field}  type is {@link List}.
+     *
+     * Checks whether {typeHandlerMapping} contains a key matching the field type,
+     * and if it does, handles the field with it, otherwise applies this
+     * proceedure recursively over the list of nested generics. @TODO: currently only creates a component for the first generic type or Object if none is specified.
+     *
+     * @param updateListener
+     * @param reflectionFormBuilder
+     * @return
+     */
     @Override
-    public JComponent handle(Type fieldClass,
-            List<Object> fieldValue,
-            Object entity,
-            final FieldUpdateListener<ElementCollectionFieldUpdateEvent> updateListener,
-            ReflectionFormBuilder reflectionFormBuilder) {
-        Class<?> genericType;
-        if(!(fieldClass instanceof ParameterizedType)) {
-            /*a simple
-            @ElementCollection
-            private List objectList;
-            declaration*/
-            genericType = Object.class;
-        }else {
-            Type[] genericTypeArguments = ((ParameterizedType)fieldClass).getActualTypeArguments();
-            if(genericTypeArguments.length == 0) {
-                //can happen according to ParameterizedType.getActualTypeArguments
-                genericType = Object.class;
-            }else {
-                genericType = (Class<?>) genericTypeArguments[0];
-            }
-        }
-        EmbeddableListPanel retValue;
-        try {
-            retValue = new EmbeddableListPanel(reflectionFormBuilder,
-                    new ListPanelTableCellEditor(new JLabel()) {
-                        private static final long serialVersionUID = 1L;
-
-                        @Override
-                        protected Object stopCellEditing0() {
-                            //do nothing because there's no editing in the table,
-                            //but in the dialog
-                            return null;
-                        }
-                    },
-                    new ListPanelTableCellRenderer(new JLabel()) {
-                    },
-                    genericType
-            );
-        } catch (NoSuchMethodException ex) {
-            throw new RuntimeException(ex);
-        }
-        retValue.addItemListener(new ListPanelItemListener<Object>() {
-
-            @Override
-            public void onItemAdded(ListPanelItemEvent<Object> event) {
-                updateListener.onUpdate(new ElementCollectionFieldUpdateEvent(event.getItem()));
-            }
-
-            @Override
-            public void onItemRemoved(ListPanelItemEvent<Object> event) {
-                updateListener.onUpdate(new ElementCollectionFieldUpdateEvent(event.getItem()));
-            }
-        });
-        return retValue;
+    public JComponent handle(Field field,
+            Object instance,
+            final FieldUpdateListener<FieldUpdateEvent<List<Object>>> updateListener,
+            JPAReflectionFormBuilder reflectionFormBuilder) throws FieldHandlingException, IllegalAccessException {
+        Type fieldType = field.getGenericType();
+        List<Object> fieldValue = (List<Object>) field.get(instance);
+        return this.elementCollectionTypeHandler.handle(fieldType,
+                fieldValue,
+                field.getName(),
+                field.getDeclaringClass(),
+                updateListener,
+                reflectionFormBuilder);
     }
 
 }

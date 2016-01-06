@@ -14,24 +14,11 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import java.util.List;
-import richtercloud.reflection.form.builder.FieldUpdateEvent;
-
 /**
  *
  * @author richter
  */
-public class ElementCollectionFieldUpdateEvent implements FieldUpdateEvent<List<Object>> {
-    private List<Object> newValue;
+public interface EmbeddableReflectionFormPanelUpdateListener {
 
-    public ElementCollectionFieldUpdateEvent(List<Object> newValue) {
-        this.newValue = newValue;
-    }
-
-    @Override
-    public List<Object> getNewValue() {
-        return newValue;
-    }
-
-
+    void onUpdate(EmbeddableReflectionFormPanelUpdateEvent e);
 }

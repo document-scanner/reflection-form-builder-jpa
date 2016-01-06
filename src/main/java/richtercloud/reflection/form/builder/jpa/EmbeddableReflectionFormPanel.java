@@ -16,34 +16,36 @@ package richtercloud.reflection.form.builder.jpa;
 
 import java.lang.reflect.Field;
 import java.util.Map;
+import javax.persistence.Embeddable;
 import javax.persistence.EntityManager;
 import javax.swing.JComponent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import richtercloud.reflection.form.builder.ReflectionFormPanel;
 
 /**
- *
+ * A panel to manage components to set fields of an {@link Embeddable} class.
+ * Contains no save button, because all changes are written immediately, but a
+ * label explaining that. Has a
+ * close button in order to facilitate navigation (to avoid just have an
+ * unfocusable window close icon).
  * @author richter
+ * @param <T>
  */
-public abstract class JPAReflectionFormPanel<T> extends ReflectionFormPanel {
+/*
+internal implementation notes:
+- un- and redoing should be implemented for the whole application after a major
+release
+*/
+public class EmbeddableReflectionFormPanel<T> extends JPAReflectionFormPanel<T> {
     private static final long serialVersionUID = 1L;
-    private final static Logger LOGGER = LoggerFactory.getLogger(JPAReflectionFormPanel.class);
-    private EntityManager entityManager;
 
-    public JPAReflectionFormPanel(EntityManager entityManager,
+    public EmbeddableReflectionFormPanel(EntityManager entityManager,
             T instance,
             Class<? extends T> entityClass,
             Map<Field, JComponent> fieldMapping) throws IllegalArgumentException, IllegalAccessException {
-        super(fieldMapping,
+        super(entityManager,
                 instance,
-                entityClass);
+                entityClass,
+                fieldMapping);
         this.validate();
-        this.entityManager = entityManager;
-    }
-
-    public EntityManager getEntityManager() {
-        return entityManager;
     }
 
 }

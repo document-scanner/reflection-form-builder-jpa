@@ -18,10 +18,9 @@ import javax.persistence.Entity;
 import javax.persistence.EntityManager;
 import javax.swing.JComponent;
 import richtercloud.reflection.form.builder.ClassAnnotationHandler;
-import richtercloud.reflection.form.builder.FieldUpdateEvent;
-import richtercloud.reflection.form.builder.FieldUpdateListener;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
-import richtercloud.reflection.form.builder.SimpleEntityFieldUpdateEvent;
+import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
+import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanel;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
@@ -51,7 +50,7 @@ public class EntityClassAnnotationHandler implements ClassAnnotationHandler<Obje
             retValue.addUpdateListener(new QueryPanelUpdateListener() {
                 @Override
                 public void onUpdate(QueryPanelUpdateEvent event) {
-                    updateListener.onUpdate(new SimpleEntityFieldUpdateEvent(event.getNewSelectionItem()));
+                    updateListener.onUpdate(new FieldUpdateEvent<>(event.getNewSelectionItem()));
                 }
             });
             return retValue;

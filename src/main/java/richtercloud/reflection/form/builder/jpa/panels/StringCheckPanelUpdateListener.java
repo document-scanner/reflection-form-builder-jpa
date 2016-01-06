@@ -14,16 +14,11 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
-import richtercloud.reflection.form.builder.panels.NumberPanelUpdateEvent;
-
 /**
  *
  * @author richter
  */
-public class LongIdPanelUpdateEvent extends NumberPanelUpdateEvent<Long> {
+public interface StringCheckPanelUpdateListener {
 
-    public LongIdPanelUpdateEvent(Long aLong) {
-        super(aLong);
-    }
-
+    void onUpdate(StringCheckPanelUpdateEvent event);
 }

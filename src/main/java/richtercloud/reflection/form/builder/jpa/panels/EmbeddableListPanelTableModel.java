@@ -18,7 +18,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
@@ -35,30 +34,53 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
     private Constructor<?> embeddableClassConstructor;
     private List<Field> embeddableClassFields;
 
-    public EmbeddableListPanelTableModel(Class<?> embeddableClass, ReflectionFormBuilder reflectionFormBuilder) throws NoSuchMethodException {
+    /**
+     *
+     * @param embeddableClass
+     * @param reflectionFormBuilder
+     * @throws IllegalArgumentException if {@code embeddableClass} doesn't have a
+     * zero-argument constructor and raises {@link NoSuchMethodException} at
+     * retrieval of this constructor with {@link Class#getDeclaredConstructor(java.lang.Class...) }
+     */
+    public EmbeddableListPanelTableModel(Class<?> embeddableClass,
+            ReflectionFormBuilder reflectionFormBuilder) {
+        super(0,
+                reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(embeddableClass).size());
         if(embeddableClass == null) {
             throw new IllegalArgumentException("embeddableClass mustn't be null");
         }
-        this.embeddableClassConstructor = embeddableClass.getDeclaredConstructor();
+        try {
+            this.embeddableClassConstructor = embeddableClass.getDeclaredConstructor();
+        }catch(NoSuchMethodException ex) {
+            throw new IllegalArgumentException(String.format("embeddableClass %s doesn't have a zero-argument constructor", embeddableClass), ex);
+        }
         this.embeddableClassConstructor.setAccessible(true);
-        this.embeddableClassFields = reflectionFormBuilder.retrieveRelevantFields(embeddableClass);
+        this.embeddableClassFields = reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(embeddableClass);
         for (Field embeddableClassField : embeddableClassFields) {
             this.addColumn(embeddableClassField.getName());
         }
     }
 
+    /*
+    internal implementation notes:
+    - must not be unmodifiable because Hibernate will invoke clear on it @TODO
+    check if that can be fixed because this violates the interface specification
+    (i.e. the idea to enforce all manipulations through other methods which is a
+    quite common use case and hibernate should support it)
+    */
     @Override
     public List<Object> getData() {
-        return Collections.unmodifiableList(embeddables);
+        return this.embeddables;
     }
 
     @Override
     public void addColumn(String columnName) {
         super.addColumn(columnName);//should fire data change event
+        this.fireTableStructureChanged();
     }
 
     @Override
-    public void removeRow(int row) {
+    public void removeElement(int row) {
         embeddables.remove(row);
         this.fireTableDataChanged();
     }
@@ -66,6 +88,12 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
     @Override
     public void addElement(Object element) {
         this.embeddables.add(element);
+        this.fireTableDataChanged();
+    }
+
+    @Override
+    public void insertElementAt(int row, Object element) {
+        this.embeddables.add(row, element);
         this.fireTableDataChanged();
     }
 
@@ -132,4 +160,13 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
         }
     }
 
+    @Override
+    public String getColumnName(int column) {
+        return this.embeddableClassFields.get(column).getName();
+    }
+
+    @Override
+    public int getColumnCount() {
+        return this.embeddableClassFields.size();
+    }
 }

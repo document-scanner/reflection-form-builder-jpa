@@ -14,77 +14,35 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import richtercloud.reflection.form.builder.jpa.typehandler.JPAEntityListTypeHandler;
 import java.util.List;
 import javax.persistence.EntityManager;
-import javax.swing.JComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.reflection.form.builder.AbstractListFieldHandler;
-import richtercloud.reflection.form.builder.FieldHandler;
-import richtercloud.reflection.form.builder.FieldUpdateListener;
-import richtercloud.reflection.form.builder.ReflectionFormBuilder;
-import richtercloud.reflection.form.builder.SimpleEntityListFieldUpdateEvent;
-import richtercloud.reflection.form.builder.jpa.panels.QueryListPanel;
-import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
-import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
+import richtercloud.reflection.form.builder.fieldhandler.AbstractListFieldHandler;
+import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
+import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
+import richtercloud.reflection.form.builder.typehandler.TypeHandler;
+import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  *
  * @author richter
  */
-public class JPAEntityListFieldHandler extends AbstractListFieldHandler<List<Object>,SimpleEntityListFieldUpdateEvent> implements FieldHandler<List<Object>,SimpleEntityListFieldUpdateEvent> {
+public class JPAEntityListFieldHandler extends AbstractListFieldHandler<List<Object>, FieldUpdateEvent<List<Object>>, JPAReflectionFormBuilder> implements FieldHandler<List<Object>,FieldUpdateEvent<List<Object>>, JPAReflectionFormBuilder> {
     private final static Logger LOGGER = LoggerFactory.getLogger(JPAEntityListFieldHandler.class);
-    private final EntityManager entityManager;
 
-    public JPAEntityListFieldHandler(EntityManager entityManager) {
-        this.entityManager = entityManager;
+    public JPAEntityListFieldHandler(EntityManager entityManager,
+            MessageHandler messageHandler) {
+        super(messageHandler,
+                new JPAEntityListTypeHandler(entityManager,
+                        messageHandler));
     }
 
-    @Override
-    public JComponent handle0(Type type,
-            List<Object> fieldValue,
-            final FieldUpdateListener<SimpleEntityListFieldUpdateEvent> updateListener,
-            ReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException, IllegalAccessException {
-        LOGGER.debug("handling type {}", type);
-        //don't assert that type is instanceof ParameterizedType because a
-        //simple List can be treated as List<Object>
-        Class<?> entityClass;
-        if(type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
-            if(parameterizedType.getActualTypeArguments().length == 0) {
-                //can happen according to docs
-                entityClass = Object.class;
-            }else if(parameterizedType.getActualTypeArguments().length > 1) {
-                throw new IllegalArgumentException(String.format("can't handle more than one type argument with a %s (type is %s)", List.class, type));
-            }
-            Type listGenericType = parameterizedType.getActualTypeArguments()[0];
-            if(!(listGenericType instanceof Class)) {
-                throw new IllegalArgumentException(String.format("first type argument of type %s isn't an instance of %s", type, Class.class));
-            }
-            entityClass = (Class<?>) listGenericType;
-        }else {
-            entityClass = Object.class;
-        }
-        final QueryListPanel retValue = new QueryListPanel(entityManager,
-                reflectionFormBuilder,
-                entityClass,
-                fieldValue);
-        retValue.addItemListener(new ListPanelItemListener<Object>() {
-
-            @Override
-            public void onItemAdded(ListPanelItemEvent<Object> event) {
-                updateListener.onUpdate(new SimpleEntityListFieldUpdateEvent(event.getItem()));
-            }
-
-            @Override
-            public void onItemRemoved(ListPanelItemEvent<Object> event) {
-                updateListener.onUpdate(new SimpleEntityListFieldUpdateEvent(event.getItem()));
-            }
-        });
-        return retValue;
+    public JPAEntityListFieldHandler(EntityManager entityManager,
+            MessageHandler messageHandler,
+            TypeHandler<List<Object>, FieldUpdateEvent<List<Object>>,JPAReflectionFormBuilder> typeHandler) {
+        super(messageHandler, typeHandler);
     }
-
 }
 

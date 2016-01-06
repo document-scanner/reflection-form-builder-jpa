@@ -12,18 +12,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package richtercloud.reflection.form.builder.jpa.panels;
+package richtercloud.reflection.form.builder.jpa.typehandler;
 
-import richtercloud.reflection.form.builder.panels.NumberPanelUpdateEvent;
+import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
+import richtercloud.reflection.form.builder.typehandler.MappingTypeHandler;
 
 /**
  *
  * @author richter
  */
-public class LongIdPanelUpdateEvent extends NumberPanelUpdateEvent<Long> {
-
-    public LongIdPanelUpdateEvent(Long aLong) {
-        super(aLong);
-    }
+public class JPAMappingTypeHandler<T, E extends FieldUpdateEvent<T>, R extends ReflectionFormBuilder> extends MappingTypeHandler<T,E,R> {
 
 }

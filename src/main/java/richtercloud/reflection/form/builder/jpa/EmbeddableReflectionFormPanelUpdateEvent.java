@@ -12,23 +12,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package richtercloud.reflection.form.builder.jpa.panels;
-
-import richtercloud.reflection.form.builder.FieldUpdateEvent;
+package richtercloud.reflection.form.builder.jpa;
 
 /**
  *
  * @author richter
  */
-public class IdFieldUpdateEvent implements FieldUpdateEvent<Object>{
-    private Object newValue;
+public class EmbeddableReflectionFormPanelUpdateEvent<T> {
+    private T value;
 
-    public IdFieldUpdateEvent(Object newValue) {
-        this.newValue = newValue;
+    public EmbeddableReflectionFormPanelUpdateEvent(T value) {
+        this.value = value;
     }
 
-    @Override
-    public Object getNewValue() {
-        return newValue;
+    public T getValue() {
+        return value;
     }
 }

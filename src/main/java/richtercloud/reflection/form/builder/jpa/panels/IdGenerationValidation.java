@@ -15,10 +15,10 @@
 package richtercloud.reflection.form.builder.jpa.panels;
 
 /**
- *
+ * A marker interface to group id generation validation (see package documentation of {@link richtercloud.document.scanner.model} for an explanation.
  * @author richter
  */
-public interface LongIdPanelUpdateListener {
+@SuppressWarnings("MarkerInterface")
+public interface IdGenerationValidation {
 
-    void onUpdate(LongIdPanelUpdateEvent event);
 }

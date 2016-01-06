@@ -14,44 +14,38 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Type;
-import java.util.Collections;
-import java.util.Set;
 import javax.swing.JComponent;
-import richtercloud.reflection.form.builder.FieldAnnotationHandler;
-import richtercloud.reflection.form.builder.FieldUpdateEvent;
-import richtercloud.reflection.form.builder.FieldUpdateListener;
-import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
+import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
+import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
+import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
+import richtercloud.reflection.form.builder.fieldhandler.FieldAnnotationHandler;
 
 /**
  *
  * @author richter
  */
-public class EmbeddedFieldAnnotationHandler implements FieldAnnotationHandler<Object, FieldUpdateEvent<Object>> {
-    private final static EmbeddedFieldAnnotationHandler INSTANCE = new EmbeddedFieldAnnotationHandler();
+public class EmbeddedFieldAnnotationHandler implements FieldAnnotationHandler<Object, FieldUpdateEvent<Object>, JPAReflectionFormBuilder> {
+    private FieldHandler embeddableFieldHandler;
 
-    public static EmbeddedFieldAnnotationHandler getInstance() {
-        return INSTANCE;
-    }
-
-    protected EmbeddedFieldAnnotationHandler() {
+    public EmbeddedFieldAnnotationHandler(FieldHandler fieldHandler) {
+        this.embeddableFieldHandler = fieldHandler;
     }
 
     @Override
-    public JComponent handle(Type fieldClass,
-            Object fieldValue,
-            Object entity,
+    public JComponent handle(Field field,
+            Object instance,
             FieldUpdateListener<FieldUpdateEvent<Object>> updateListener,
-            ReflectionFormBuilder reflectionFormBuilder) {
-        if(fieldClass == null) {
+            JPAReflectionFormBuilder reflectionFormBuilder) throws FieldHandlingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, InstantiationException {
+        if(field == null) {
             throw new IllegalArgumentException("fieldClass mustn't be null");
         }
-        try {
-            JComponent retValue = reflectionFormBuilder.transform(fieldValue.getClass(), fieldValue);
-            return retValue;
-        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException ex) {
-            throw new RuntimeException(ex);
-        }
+        Object fieldValue = field.get(instance);
+        JComponent retValue = reflectionFormBuilder.transformEmbeddable(field.getDeclaringClass(),
+                fieldValue,
+                embeddableFieldHandler);
+        return retValue;
     }
 }
