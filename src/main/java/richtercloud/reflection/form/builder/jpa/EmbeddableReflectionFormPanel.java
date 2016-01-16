@@ -19,6 +19,8 @@ import java.util.Map;
 import javax.persistence.Embeddable;
 import javax.persistence.EntityManager;
 import javax.swing.JComponent;
+import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateListener;
+import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 
 /**
  * A panel to manage components to set fields of an {@link Embeddable} class.
@@ -34,17 +36,19 @@ internal implementation notes:
 - un- and redoing should be implemented for the whole application after a major
 release
 */
-public class EmbeddableReflectionFormPanel<T> extends JPAReflectionFormPanel<T> {
+public class EmbeddableReflectionFormPanel<T> extends JPAReflectionFormPanel<T, ReflectionFormPanelUpdateListener> {
     private static final long serialVersionUID = 1L;
 
     public EmbeddableReflectionFormPanel(EntityManager entityManager,
             T instance,
             Class<? extends T> entityClass,
-            Map<Field, JComponent> fieldMapping) throws IllegalArgumentException, IllegalAccessException {
+            Map<Field, JComponent> fieldMapping,
+            FieldHandler fieldHandler) throws IllegalArgumentException, IllegalAccessException {
         super(entityManager,
                 instance,
                 entityClass,
-                fieldMapping);
+                fieldMapping,
+                fieldHandler);
         this.validate();
     }
 

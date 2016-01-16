@@ -71,7 +71,8 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFie
                 fieldMapping,
                 this.getMessageHandler(),
                 editingMode,
-                this.getFieldRetriever());
+                this.getFieldRetriever(),
+                fieldHandler);
         transformClass(entityClass,
                 instance,
                 fieldMapping,
@@ -107,7 +108,8 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFie
         EmbeddableReflectionFormPanel<Object> retValue = new EmbeddableReflectionFormPanel<>(entityManager,
                 instance0,
                 embeddableClass,
-                fieldMapping);
+                fieldMapping,
+                fieldHandler);
         transformClass(embeddableClass,
                 instance0,
                 fieldMapping,

@@ -14,21 +14,16 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
-import java.util.Set;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
-import javax.swing.JOptionPane;
 import javax.swing.LayoutStyle;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
-import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.EntityValidator;
 import richtercloud.reflection.form.builder.jpa.IdGenerator;
-import richtercloud.reflection.form.builder.message.Message;
 import richtercloud.reflection.form.builder.message.MessageHandler;
 import richtercloud.reflection.form.builder.panels.NumberPanel;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateListener;

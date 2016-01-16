@@ -14,7 +14,6 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import richtercloud.reflection.form.builder.jpa.typehandler.JPAStringTypeHandler;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import javax.persistence.EntityManager;
@@ -23,21 +22,25 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
+import richtercloud.reflection.form.builder.jpa.panels.StringCheckPanel;
+import richtercloud.reflection.form.builder.jpa.typehandler.JPAStringTypeHandler;
 import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  *
  * @author richter
  */
-public class JPAStringFieldHandler implements FieldHandler<String, FieldUpdateEvent<String>, JPAReflectionFormBuilder> {
+public class JPAStringFieldHandler implements FieldHandler<String, FieldUpdateEvent<String>, JPAReflectionFormBuilder, StringCheckPanel<?>> {
     private final JPAStringTypeHandler jPAStringTypeHandler;
 
     public JPAStringFieldHandler(EntityManager entityManager,
             int initialQueryLimit,
-            MessageHandler messageHandler) {
+            MessageHandler messageHandler,
+            String bidirectionalHelpDialogTitle) {
         this.jPAStringTypeHandler = new JPAStringTypeHandler(entityManager,
                 initialQueryLimit,
-                messageHandler);
+                messageHandler,
+                bidirectionalHelpDialogTitle);
     }
 
     public JPAStringFieldHandler(JPAStringTypeHandler jPAStringTypeHandler) {
@@ -57,6 +60,11 @@ public class JPAStringFieldHandler implements FieldHandler<String, FieldUpdateEv
                 field.getDeclaringClass(),
                 updateListener,
                 reflectionFormBuilder);
+    }
+
+    @Override
+    public void reset(StringCheckPanel<?> component) {
+        this.jPAStringTypeHandler.reset(component);
     }
 
 }

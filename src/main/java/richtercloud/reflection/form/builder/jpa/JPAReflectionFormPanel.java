@@ -21,12 +21,14 @@ import javax.swing.JComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
+import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateListener;
+import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 
 /**
  *
  * @author richter
  */
-public abstract class JPAReflectionFormPanel<T> extends ReflectionFormPanel {
+public abstract class JPAReflectionFormPanel<T, U extends ReflectionFormPanelUpdateListener> extends ReflectionFormPanel<U> {
     private static final long serialVersionUID = 1L;
     private final static Logger LOGGER = LoggerFactory.getLogger(JPAReflectionFormPanel.class);
     private EntityManager entityManager;
@@ -34,10 +36,12 @@ public abstract class JPAReflectionFormPanel<T> extends ReflectionFormPanel {
     public JPAReflectionFormPanel(EntityManager entityManager,
             T instance,
             Class<? extends T> entityClass,
-            Map<Field, JComponent> fieldMapping) throws IllegalArgumentException, IllegalAccessException {
+            Map<Field, JComponent> fieldMapping,
+            FieldHandler fieldHandler) throws IllegalArgumentException, IllegalAccessException {
         super(fieldMapping,
                 instance,
-                entityClass);
+                entityClass,
+                fieldHandler);
         this.validate();
         this.entityManager = entityManager;
     }

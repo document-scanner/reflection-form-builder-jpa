@@ -25,7 +25,7 @@ internal implementation notes:
 PriorityQueue can't be used for item storage -> use a List and List.sort at
 every model change
  */
-class SortedComboBoxModel<E> extends DefaultComboBoxModel<E> {
+public class SortedComboBoxModel<E> extends DefaultComboBoxModel<E> {
 
     private static final long serialVersionUID = 1L;
     private final List<E> items;

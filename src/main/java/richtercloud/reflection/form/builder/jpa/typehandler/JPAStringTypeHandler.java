@@ -21,27 +21,30 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
-import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 import richtercloud.reflection.form.builder.jpa.panels.StringCheckPanel;
 import richtercloud.reflection.form.builder.jpa.panels.StringCheckPanelUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.StringCheckPanelUpdateListener;
 import richtercloud.reflection.form.builder.message.MessageHandler;
+import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 
 /**
  *
  * @author richter
  */
-public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEvent<String>,JPAReflectionFormBuilder> {
+public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEvent<String>,JPAReflectionFormBuilder, StringCheckPanel<?>> {
     private final EntityManager entityManager;
     private final int initialQueryLimit;
     private final MessageHandler messageHandler;
+    private final String bidirectionalHelpDialogTitle;
 
     public JPAStringTypeHandler(EntityManager entityManager,
             int initialQueryLimit,
-            MessageHandler messageHandler) {
+            MessageHandler messageHandler,
+            String bidirectionalHelpDialogTitle) {
         this.entityManager = entityManager;
         this.initialQueryLimit = initialQueryLimit;
         this.messageHandler = messageHandler;
+        this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
     }
 
     @Override
@@ -58,7 +61,8 @@ public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEven
                 reflectionFormBuilder,
                 fieldValue, //fieldValue
                 fieldName, //fieldName
-                this.initialQueryLimit // initialQueryLimit
+                this.initialQueryLimit, // initialQueryLimit
+                bidirectionalHelpDialogTitle
         );
         retValue.addUpdateListener(new StringCheckPanelUpdateListener() {
             @Override
@@ -67,6 +71,11 @@ public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEven
             }
         });
         return  retValue;
+    }
+
+    @Override
+    public void reset(StringCheckPanel<?> component) {
+        component.reset();
     }
 
 }

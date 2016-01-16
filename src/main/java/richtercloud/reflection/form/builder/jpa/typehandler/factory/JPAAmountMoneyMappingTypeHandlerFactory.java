@@ -12,17 +12,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package richtercloud.reflection.form.builder.jpa.fieldhandler.factory;
+package richtercloud.reflection.form.builder.jpa.typehandler.factory;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import javax.persistence.EntityManager;
-import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 import static richtercloud.reflection.form.builder.fieldhandler.factory.MappingFieldHandlerFactory.createStringTypeToken;
-import richtercloud.reflection.form.builder.typehandler.factory.MappingTypeHandlerFactory;
 import richtercloud.reflection.form.builder.jpa.typehandler.JPAStringTypeHandler;
 import richtercloud.reflection.form.builder.message.MessageHandler;
+import richtercloud.reflection.form.builder.typehandler.TypeHandler;
+import richtercloud.reflection.form.builder.typehandler.factory.MappingTypeHandlerFactory;
 
 /**
  *
@@ -31,21 +31,27 @@ import richtercloud.reflection.form.builder.message.MessageHandler;
 public class JPAAmountMoneyMappingTypeHandlerFactory extends MappingTypeHandlerFactory {
     private final EntityManager entityManager;
     private final int initialQueryLimit;
+    private final String bidirectionalHelpDialogTitle;
 
-    public JPAAmountMoneyMappingTypeHandlerFactory(EntityManager entityManager, int initialQueryLimit, MessageHandler messageHandler) {
+    public JPAAmountMoneyMappingTypeHandlerFactory(EntityManager entityManager,
+            int initialQueryLimit,
+            MessageHandler messageHandler,
+            String bidirectionalHelpDialogTitle) {
         super(messageHandler);
         this.entityManager = entityManager;
         this.initialQueryLimit = initialQueryLimit;
+        this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
     }
 
     @Override
-    public Map<Type, TypeHandler<?, ?,?>> generateTypeHandlerMapping() {
-        Map<Type, TypeHandler<?, ?,?>> classMapping0 = new HashMap<>(super.generateTypeHandlerMapping());
+    public Map<Type, TypeHandler<?, ?,?, ?>> generateTypeHandlerMapping() {
+        Map<Type, TypeHandler<?, ?,?, ?>> classMapping0 = new HashMap<>(super.generateTypeHandlerMapping());
         //overwrite specification for String fields
         classMapping0.put(createStringTypeToken(),
                 new JPAStringTypeHandler(entityManager,
                         initialQueryLimit,
-                        getMessageHandler()));
+                        getMessageHandler(),
+                        bidirectionalHelpDialogTitle));
         return classMapping0;
     }
 }

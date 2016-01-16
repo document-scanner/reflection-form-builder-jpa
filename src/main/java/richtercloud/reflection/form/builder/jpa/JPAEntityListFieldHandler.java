@@ -14,7 +14,6 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import richtercloud.reflection.form.builder.jpa.typehandler.JPAEntityListTypeHandler;
 import java.util.List;
 import javax.persistence.EntityManager;
 import org.slf4j.Logger;
@@ -22,26 +21,30 @@ import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.fieldhandler.AbstractListFieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
-import richtercloud.reflection.form.builder.typehandler.TypeHandler;
+import richtercloud.reflection.form.builder.jpa.typehandler.JPAEntityListTypeHandler;
 import richtercloud.reflection.form.builder.message.MessageHandler;
+import richtercloud.reflection.form.builder.panels.AbstractListPanel;
+import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 
 /**
  *
  * @author richter
  */
-public class JPAEntityListFieldHandler extends AbstractListFieldHandler<List<Object>, FieldUpdateEvent<List<Object>>, JPAReflectionFormBuilder> implements FieldHandler<List<Object>,FieldUpdateEvent<List<Object>>, JPAReflectionFormBuilder> {
+public class JPAEntityListFieldHandler extends AbstractListFieldHandler<List<Object>, FieldUpdateEvent<List<Object>>, JPAReflectionFormBuilder> implements FieldHandler<List<Object>,FieldUpdateEvent<List<Object>>, JPAReflectionFormBuilder, AbstractListPanel> {
     private final static Logger LOGGER = LoggerFactory.getLogger(JPAEntityListFieldHandler.class);
 
     public JPAEntityListFieldHandler(EntityManager entityManager,
-            MessageHandler messageHandler) {
+            MessageHandler messageHandler,
+            String bidirectionalHelpDialogTitle) {
         super(messageHandler,
                 new JPAEntityListTypeHandler(entityManager,
-                        messageHandler));
+                        messageHandler,
+                        bidirectionalHelpDialogTitle));
     }
 
     public JPAEntityListFieldHandler(EntityManager entityManager,
             MessageHandler messageHandler,
-            TypeHandler<List<Object>, FieldUpdateEvent<List<Object>>,JPAReflectionFormBuilder> typeHandler) {
+            TypeHandler<List<Object>, FieldUpdateEvent<List<Object>>,JPAReflectionFormBuilder, AbstractListPanel> typeHandler) {
         super(messageHandler, typeHandler);
     }
 }

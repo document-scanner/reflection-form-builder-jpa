@@ -37,11 +37,15 @@ import richtercloud.reflection.form.builder.typehandler.AbstractListTypeHandler;
  */
 public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Object>, FieldUpdateEvent<List<Object>>,JPAReflectionFormBuilder> {
     private final static Logger LOGGER = LoggerFactory.getLogger(JPAEntityListTypeHandler.class);
-    private EntityManager entityManager;
+    private final EntityManager entityManager;
+    private final String bidirectionalHelpDialogTitle;
 
-    public JPAEntityListTypeHandler(EntityManager entityManager, MessageHandler messageHandler) {
+    public JPAEntityListTypeHandler(EntityManager entityManager,
+            MessageHandler messageHandler,
+            String bidirectionalHelpDialogTitle) {
         super(messageHandler);
         this.entityManager = entityManager;
+        this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
     }
 
     @Override
@@ -72,7 +76,8 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
         final QueryListPanel retValue = new QueryListPanel(entityManager,
                 reflectionFormBuilder,
                 entityClass,
-                fieldValue);
+                fieldValue,
+                bidirectionalHelpDialogTitle);
         retValue.addItemListener(new ListPanelItemListener<Object>() {
 
             @Override
@@ -87,4 +92,5 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
         });
         return retValue;
     }
+
 }

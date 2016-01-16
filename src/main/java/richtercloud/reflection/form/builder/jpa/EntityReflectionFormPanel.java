@@ -19,11 +19,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ContainerEvent;
 import java.awt.event.ContainerListener;
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.persistence.Embeddable;
 import javax.persistence.EntityExistsException;
 import javax.persistence.EntityManager;
@@ -32,25 +28,22 @@ import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 import javax.validation.groups.Default;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateEvent;
-import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateListener;
+import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.jpa.panels.IdPanel;
 import richtercloud.reflection.form.builder.message.Message;
 import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
- * A {@link JPAReflectionFormPanel} with an implementation to save entities
- * (fails {@link Embeddable} because they're not stored like entities.
+ * A {@link JPAReflectionFormPanel} with an implementation to save and delete
+ * entities (fails with an {@link Embeddable} because they're not stored like
+ * entities). Also provides a "Reset" button to reset the form.
+ *
  * @author richter
  */
 /*
@@ -58,12 +51,15 @@ internal implementation notes:
 - consider moving idPanel to a subclass if there's need for an
 EntityReflectionFormPanel which shouldn't support automatic ID generation or
 can't be provided with an IDPanel reference
+- bi-directional references have to be handled in QueryPanel and QueryListPanel
+because handling them here doesn't make sense
 */
-public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object> {
+public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, EntityReflectionFormPanelUpdateListener> {
     private final static Logger LOGGER = LoggerFactory.getLogger(EntityReflectionFormPanel.class);
     private static final long serialVersionUID = 1L;
     private final JButton saveButton = new JButton("Save");
     private final JButton deleteButton = new JButton("Delete");
+    private final JButton resetButton = new JButton("Reset");
     private final MessageHandler messageHandler;
     private final boolean editingMode;
     private final FieldRetriever fieldRetriever;
@@ -73,6 +69,15 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object> {
      */
     private IdPanel idPanel;
     private final EntityValidator entityValidator;
+    /*
+    internal implementation notes:
+    - keep a reference to the outer GroupLayout group because groups of
+    GroupLayout can't be retrieved
+    - don't overwrite super methods because they're used to arrage components of
+    the main center part
+    */
+    private final GroupLayout.Group horizontalEntityControlsGroup = getLayout().createParallelGroup();
+    private final GroupLayout.Group verticalEntityControlsGroup = getLayout().createSequentialGroup();
 
     /**
      *
@@ -82,6 +87,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object> {
      * @param fieldMapping
      * @param messageHandler
      * @param editingMode if {@code true} the save button with update an exiting entity and a delete button will be provided, otherwise it will persist a new entity and no delete button will be provided
+     * @param fieldRetriever
      * @throws IllegalArgumentException
      * @throws IllegalAccessException
      */
@@ -91,11 +97,13 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object> {
             Map<Field, JComponent> fieldMapping,
             MessageHandler messageHandler,
             boolean editingMode,
-            FieldRetriever fieldRetriever) throws IllegalArgumentException, IllegalAccessException {
+            FieldRetriever fieldRetriever,
+            FieldHandler fieldHandler) throws IllegalArgumentException, IllegalAccessException {
         super(entityManager,
                 instance,
                 entityClass,
-                fieldMapping);
+                fieldMapping,
+                fieldHandler);
         if(messageHandler == null) {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
@@ -111,6 +119,19 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object> {
                 saveButtonActionPerformed(evt);
             }
         });
+        resetButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                for(EntityReflectionFormPanelUpdateListener updateListener : getUpdateListeners()) {
+                    updateListener.onReset(new ReflectionFormPanelUpdateEvent(ReflectionFormPanelUpdateEvent.INSTANCE_RESET,
+                            null,
+                            null));
+                }
+            }
+        });
+        horizontalEntityControlsGroup.addGroup(getHorizontalMainGroup());
+        verticalEntityControlsGroup.addGroup(getVerticalMainGroup());
+        //create button group
         GroupLayout.SequentialGroup buttonGroupHorizontal = getLayout().createSequentialGroup();
         GroupLayout.ParallelGroup buttonGroupVertical = getLayout().createParallelGroup(GroupLayout.Alignment.BASELINE);
         buttonGroupHorizontal.addComponent(saveButton);
@@ -125,8 +146,18 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object> {
             buttonGroupHorizontal.addComponent(deleteButton);
             buttonGroupVertical.addComponent(deleteButton);
         }
-        getLayout().setHorizontalGroup(getLayout().createParallelGroup().addGroup(getHorizontalSequentialGroup()).addGroup(buttonGroupHorizontal));
-        getLayout().setVerticalGroup(getLayout().createSequentialGroup().addGroup(getVerticalSequentialGroup()).addGroup(buttonGroupVertical));
+        resetButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                reset();
+            }
+        });
+        buttonGroupHorizontal.addComponent(resetButton);
+        buttonGroupVertical.addComponent(resetButton);
+        horizontalEntityControlsGroup.addGroup(buttonGroupHorizontal);
+        verticalEntityControlsGroup.addGroup(buttonGroupVertical);
+        getLayout().setHorizontalGroup(horizontalEntityControlsGroup);
+        getLayout().setVerticalGroup(verticalEntityControlsGroup);
         this.validate();
         this.addContainerListener(new ContainerListener() {
             @Override
@@ -149,6 +180,14 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object> {
             }
         });
         this.entityValidator = new EntityValidator(fieldRetriever, messageHandler);
+    }
+
+    public GroupLayout.Group getVerticalEntityControlsGroup() {
+        return verticalEntityControlsGroup;
+    }
+
+    public GroupLayout.Group getHorizontalEntityControlsGroup() {
+        return horizontalEntityControlsGroup;
     }
 
     protected void deleteButtonActionPerformed(ActionEvent evt) {
@@ -175,8 +214,10 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object> {
              //cannot call entityManager.getTransaction().rollback() here because transaction isn' active
             handlePersistenceException(ex);
         }
-        for(ReflectionFormPanelUpdateListener updateListener : this.getUpdateListeners()) {
-            updateListener.onUpdate(new ReflectionFormPanelUpdateEvent(ReflectionFormPanelUpdateEvent.INSTANCE_DELETED, null, instance));
+        for(EntityReflectionFormPanelUpdateListener updateListener : this.getUpdateListeners()) {
+            updateListener.onUpdate(new ReflectionFormPanelUpdateEvent(ReflectionFormPanelUpdateEvent.INSTANCE_DELETED,
+                    null,
+                    instance));
         }
     }
 

@@ -49,27 +49,25 @@ public class StringCheckPanel<T> extends javax.swing.JPanel {
     private int initialQueryLimit;
     private QueryPanel<T> queryPanel;
     private Set<StringCheckPanelUpdateListener> updateListeners = new HashSet<>();
-
-    /**
-     * Creates new form StringCheckPanel
-     */
-    protected StringCheckPanel() {
-        initComponents();
-    }
+    private final String initialValue;
 
     public StringCheckPanel(EntityManager entityManager,
             Class<T> entityClass,
             ReflectionFormBuilder reflectionFormBuilder,
             String initialValue,
             String fieldName,
-            int initialQueryLimit) throws IllegalArgumentException, IllegalAccessException {
-        this();
+            int initialQueryLimit,
+            String bidirectionalHelpDialogTitle) throws IllegalArgumentException, IllegalAccessException {
+        initComponents();
         this.entityManager = entityManager;
         this.entityClass = entityClass;
         this.fieldName = fieldName;
         this.initialQueryLimit = initialQueryLimit;
-        this.queryPanel = new QueryPanel<>(entityManager, entityClass, reflectionFormBuilder,
-                null //initialValue
+        this.queryPanel = new QueryPanel<>(entityManager,
+                entityClass,
+                reflectionFormBuilder,
+                null, //initialValue
+                null //bidirectionalControlPanel (needs to be read-only)
         ); //will be reused by manipulating the queryComboBoxModel
         javax.swing.GroupLayout queryPanelDialogLayout = new javax.swing.GroupLayout(queryPanelDialog.getContentPane());
         queryPanelDialog.getContentPane().setLayout(queryPanelDialogLayout);
@@ -83,10 +81,8 @@ public class StringCheckPanel<T> extends javax.swing.JPanel {
         );
         this.queryPanelDialog.pack();
         this.textField.setText(initialValue);
-        if(initialValue != null && !initialValue.isEmpty()) {
-            this.checkButton.setEnabled(true);
-            updateStatusLabel();
-        }
+        this.initialValue = initialValue;
+        reset();
     }
 
     public void addUpdateListener(StringCheckPanelUpdateListener updateListener) {
@@ -277,6 +273,17 @@ public class StringCheckPanel<T> extends javax.swing.JPanel {
                     //keep them output of the format string
         );
         return retValue;
+    }
+
+    public void reset() {
+        if(initialValue != null && !initialValue.isEmpty()) {
+            this.textField.setText(initialValue);
+            this.checkButton.setEnabled(true);
+        }else {
+            this.textField.setText("");
+            this.checkButton.setEnabled(false);
+        }
+        updateStatusLabel();
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

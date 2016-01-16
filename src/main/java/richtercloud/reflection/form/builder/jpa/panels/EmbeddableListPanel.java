@@ -65,6 +65,7 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
                 new EmbeddableListPanelCellRenderer(),
                 new EmbeddableListPanelTableModel(embeddableClass,
                         reflectionFormBuilder),
+                initialValues,
                 messageHandler,
                 new RightHeightTableHeader(createMainListColumnModel(embeddableClass, reflectionFormBuilder), 16));
         if(embeddableClass == null) {
@@ -75,11 +76,6 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
         }
         this.embeddableClass = embeddableClass;
         this.embeddableFieldHandler = embeddableFieldHandler;
-        if(initialValues != null) {
-            for(Object initialValue : initialValues) {
-                this.getMainListModel().addElement(initialValue);
-            }
-        }
     }
 
     @Override
@@ -115,5 +111,4 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
             throw new RuntimeException(ex);
         }
     }
-
 }
