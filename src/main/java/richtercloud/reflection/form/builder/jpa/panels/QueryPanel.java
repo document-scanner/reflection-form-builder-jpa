@@ -15,10 +15,6 @@
 package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,31 +22,14 @@ import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
-import javax.persistence.TypedQuery;
-import javax.persistence.metamodel.Metamodel;
-import javax.swing.BorderFactory;
-import javax.swing.DefaultListSelectionModel;
 import javax.swing.GroupLayout;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.JSpinner;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.LayoutStyle;
 import javax.swing.ListSelectionModel;
-import javax.swing.SpinnerModel;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
-import richtercloud.reflection.form.builder.jpa.HistoryEntry;
 
 /**
  * Allows to run a JPQL query for a specific class while getting feedback about
@@ -70,59 +49,10 @@ import richtercloud.reflection.form.builder.jpa.HistoryEntry;
  * @author richter
  * @param <E> a generic type for the entity class
  */
-public class QueryPanel<E> extends javax.swing.JPanel {
+public class QueryPanel<E> extends AbstractQueryPanel {
     private static final long serialVersionUID = 1L;
     private final static Logger LOGGER = LoggerFactory.getLogger(QueryPanel.class);
-    /**
-     * the default value for the initial query limit (see {@link #QueryPanel(javax.persistence.EntityManager, java.lang.Class, int) } for details
-     */
-    public static final int INITIAL_QUERY_LIMIT_DEFAULT = 20;
-    private final static Comparator<HistoryEntry> QUERY_HISTORY_COMPARATOR_USAGE = new Comparator<HistoryEntry>() {
-        @Override
-        public int compare(HistoryEntry o1, HistoryEntry o2) {
-            return Integer.compare(o1.getUsageCount(), o2.getUsageCount());
-        }
-    };
-    private final static Comparator<HistoryEntry> QUERY_HISTORY_COMPARATOR_DATE = new Comparator<HistoryEntry>() {
-        @Override
-        public int compare(HistoryEntry o1, HistoryEntry o2) {
-            return o1.getLastUsage().compareTo(o2.getLastUsage());
-        }
-    };
-    /**
-     * Creates a mutable list with one {@link HistoryEntry} to select all
-     * entities of type {@code entityClass}.
-     * @param entityClass
-     * @return
-     */
-    public static List<HistoryEntry> generateInitialHistoryDefault(Class<?> entityClass) {
-        List<HistoryEntry> retValue = new ArrayList<>(Arrays.asList(new HistoryEntry(createQueryText(entityClass), //queryText
-                1, //usageCount
-                new Date() //lastUsage
-        )));
-        return retValue;
-    }
-    public static String generateEntityClassQueryIdentifier(Class<?> entityClass) {
-        String retValue = String.valueOf(Character.toLowerCase(entityClass.getSimpleName().charAt(0)));
-        return retValue;
-    }
-    private static String createQueryText(Class<?> entityClass) {
-        //Criteria API doesn't allow retrieval of string/text from objects
-        //created with CriteriaBuilder, but text should be the first entry in
-        //the query combobox -> construct String instead of using
-        //CriteriaBuilder
-        String entityClassQueryIdentifier = generateEntityClassQueryIdentifier(entityClass);
-        String retValue = String.format("SELECT %s from %s %s",
-                entityClassQueryIdentifier,
-                entityClass.getSimpleName(),
-                entityClassQueryIdentifier);
-        return retValue;
-    }
-    public static void initTableModel(DefaultTableModel tableModel, List<Field> entityClassFields) {
-        for(Field field : entityClassFields) {
-            tableModel.addColumn(field.getName());
-        }
-    }
+
     protected static void handleInstanceToTableModel(DefaultTableModel queryResultTableModel,
             Object queryResult,
             ReflectionFormBuilder reflectionFormBuilder,
@@ -134,210 +64,10 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         }
         queryResultTableModel.addRow(queryResultValues.toArray(new Object[queryResultValues.size()]));
     }
-    public static void validateEntityClass(Class<?> entityClass, EntityManager entityManager) {
-        Metamodel meta = entityManager.getMetamodel();
-        try {
-            meta.entity(entityClass);
-        }catch(IllegalArgumentException ex) {
-            throw new IllegalArgumentException(String.format("entityClass %s is not a mapped entity", entityClass), ex);
+    public static void initTableModel(DefaultTableModel tableModel, List<Field> entityClassFields) {
+        for(Field field : entityClassFields) {
+            tableModel.addColumn(field.getName());
         }
-    }
-    private EntityManager entityManager;
-    private Class<? extends E> entityClass;
-    /*
-    internal implementation notes:
-    - set a model stub initially, overwrite in construction in order to allow
-    initialization with parameterless constructor and initComponents
-    */
-    private DefaultTableModel queryResultTableModel = new DefaultTableModel();
-    private final SpinnerModel queryLimitSpinnerModel = new SpinnerNumberModel(INITIAL_QUERY_LIMIT_DEFAULT, //value
-            1, //min
-            null, //max
-            1 //stepSize
-    );
-
-    private final SortedComboBoxModel<HistoryEntry> queryComboBoxModel;
-    /**
-     * The result of the current query (needs to be stored separately because the table model is used to display field values, not instances)
-     */
-    private List<E> queryResults = new LinkedList<>(); //can be initialized because null needs to be expressed differently anyway
-    private final QueryComboBoxEditor queryComboBoxEditor;
-    private ReflectionFormBuilder reflectionFormBuilder;
-    private ListSelectionModel queryResultTableSelectionModel = new DefaultListSelectionModel();
-    private Set<QueryPanelUpdateListener> updateListeners = new HashSet<>();
-    /**
-     * the {@code query} argument of the last execution of {@link #executeQuery(javax.persistence.TypedQuery, int, java.lang.String) }
-     */
-    private TypedQuery<? extends E> lastQuery;
-    /**
-     * the {@code queryLimit} arugment of the last execution of {@link #executeQuery(javax.persistence.TypedQuery, int, java.lang.String) }
-     */
-    private int lastQueryLimit;
-    /**
-     * the {@code queryText} argument of the last execution of {@link #executeQuery(javax.persistence.TypedQuery, int, java.lang.String) }
-     */
-    private String lastQueryText;
-    private final JSeparator bidirectionalControlPanelSeparator;
-    private final JButton queryButton;
-    private final JComboBox<HistoryEntry> queryComboBox;
-    private final JLabel queryLabel;
-    private final JLabel queryLimitLabel;
-    private final JSpinner queryLimitSpinner;
-    private final JLabel queryResultLabel;
-    private final JTable queryResultTable;
-    private final JScrollPane queryResultTableScrollPane;
-    private final JTextArea queryStatusLabel;
-    private final JScrollPane queryStatusLabelScrollPane;
-    private final JSeparator separator;
-    private final BidirectionalControlPanel bidirectionalControlPanel;
-    private final E initialValue;
-
-    public QueryPanel(EntityManager entityManager,
-            Class<? extends E> entityClass,
-            ReflectionFormBuilder reflectionFormBuilder,
-            E initialValue,
-            BidirectionalControlPanel bidirectionalControlPanel) throws IllegalArgumentException, IllegalAccessException {
-        this(entityManager,
-                entityClass,
-                reflectionFormBuilder,
-                initialValue,
-                ListSelectionModel.SINGLE_SELECTION,
-                bidirectionalControlPanel);
-    }
-
-    protected QueryPanel(EntityManager entityManager,
-            Class<? extends E> entityClass,
-            ReflectionFormBuilder reflectionFormBuilder,
-            E initialValue,
-            int queryResultTableSelectionMode,
-            BidirectionalControlPanel bidirectionalControlPanel) throws IllegalArgumentException, IllegalAccessException {
-        this(entityManager,
-                entityClass,
-                reflectionFormBuilder,
-                initialValue,
-                queryResultTableSelectionMode,
-                generateInitialHistoryDefault(entityClass), //initialHistory
-                null, //initialSelectedHistoryEntry (null means point to the first item of initialHistory
-                INITIAL_QUERY_LIMIT_DEFAULT,
-                bidirectionalControlPanel);
-    }
-
-    public QueryPanel(EntityManager entityManager,
-            Class<? extends E> entityClass,
-            ReflectionFormBuilder reflectionFormBuilder,
-            E initialValue,
-            List<HistoryEntry> initialHistory,
-            HistoryEntry initialSelectedHistoryEntry,
-            int initialQueryLimit,
-            BidirectionalControlPanel bidirectionalControlPanel) throws IllegalArgumentException, IllegalAccessException {
-        this(entityManager,
-                entityClass,
-                reflectionFormBuilder,
-                initialValue,
-                ListSelectionModel.SINGLE_SELECTION,
-                initialHistory,
-                initialSelectedHistoryEntry,
-                initialQueryLimit,
-                bidirectionalControlPanel);
-    }
-
-    /**
-     *
-     * @param entityManager
-     * @param entityClass the class for which to the panel for
-     * @param reflectionFormBuilder
-     * @param initialValue
-     * @param queryResultTableSelectionMode
-     * @param initialHistory a list of history entries which ought to be selectable in the query history combo box (won't be modified)
-     * @param initialQueryLimit When the component is created an initial query is executed. This property
-     * limits its result length. Set to {@code 0} in order to skip initial
-     * query.
-     * @param initialSelectedHistoryEntry the query which ought to be selected initially (if {@code null} the first item of {@code predefinedQueries} will be selected initially or there will be no selected item if {@code intiialHistory} is empty.
-     * @param bidirectionalControlPanel
-     * @throws java.lang.IllegalAccessException
-     * @throws IllegalArgumentException if {@code initialSelectedHistoryEntry} is not {@code null}, but not contained in {@code initialHistory}
-     */
-    /*
-    internal implementation notes:
-    - it's necessary to use a copy of initialHistory in order to avoid ConcurrentModificationException when items are sorted in combobox model implementation
-    - enforce passing of BidirectionalControlPanel in order to maximize
-    reusability (and because it's perfectly legitimate due to
-    composition-over-inheritance)
-    */
-    protected QueryPanel(EntityManager entityManager,
-            Class<? extends E> entityClass,
-            ReflectionFormBuilder reflectionFormBuilder,
-            E initialValue,
-            int queryResultTableSelectionMode,
-            List<HistoryEntry> initialHistory,
-            HistoryEntry initialSelectedHistoryEntry,
-            int initialQueryLimit,
-            BidirectionalControlPanel bidirectionalControlPanel) throws IllegalArgumentException, IllegalAccessException {
-        if(entityClass == null) {
-            throw new IllegalArgumentException("entityClass mustn't be null");
-        }
-        queryLabel = new JLabel();
-        queryButton = new JButton();
-        separator = new JSeparator();
-        queryResultLabel = new JLabel();
-        queryComboBox = new JComboBox<>();
-        queryLimitSpinner = new JSpinner();
-        queryLimitLabel = new JLabel();
-        queryResultTableScrollPane = new JScrollPane();
-        queryResultTable = new JTable() {
-            private static final long serialVersionUID = 1L;
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        queryStatusLabelScrollPane = new JScrollPane();
-        queryStatusLabel = new JTextArea();
-        bidirectionalControlPanelSeparator = new JSeparator();
-        List<Field> entityClassFields = reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass);
-        this.bidirectionalControlPanel = bidirectionalControlPanel;
-        validateEntityClass(entityClass, entityManager);
-        this.entityClass = entityClass;
-        //initialize with initial item in order to minimize trouble with null
-        //being set as editor item in JComboBox.setEditor
-        this.queryComboBoxModel = new SortedComboBoxModel<>(QUERY_HISTORY_COMPARATOR_USAGE, new LinkedList<>(initialHistory));
-        this.queryComboBoxEditor = new QueryComboBoxEditor(entityClass);
-                //before initComponents because it's used there (yet sets item
-                //of editor to null, so statement after initComponent is
-                //necessary
-        this.initComponents();
-        if(initialSelectedHistoryEntry != null) {
-            if(!initialHistory.contains(initialSelectedHistoryEntry)) {
-                throw new IllegalArgumentException("if initialSelectedHistoryEntry is != null it has to be contained in initialHistory");
-            }
-            this.queryComboBox.setSelectedItem(initialSelectedHistoryEntry);
-        } else {
-            if(!initialHistory.isEmpty()) {
-                this.queryComboBox.setSelectedItem(initialHistory.get(0));
-            }else {
-                this.queryComboBox.setSelectedItem(null);
-            }
-        }
-        this.queryResultTableSelectionModel.addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                for(QueryPanelUpdateListener updateListener : updateListeners) {
-                    LOGGER.debug("notifying update listener {} about selection change", updateListener);
-                    updateListener.onUpdate(new QueryPanelUpdateEvent(QueryPanel.this.queryResults.get(e.getFirstIndex()),
-                            QueryPanel.this));
-                }
-            }
-        });
-        this.entityManager = entityManager;
-        this.reflectionFormBuilder = reflectionFormBuilder;
-        initTableModel(this.queryResultTableModel, this.reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass));
-        this.queryLabel.setText(String.format("%s query:", entityClass.getSimpleName()));
-        String queryText = createQueryText(entityClass);
-        TypedQuery<? extends E> query = entityManager.createQuery(queryText, entityClass);
-        this.executeQuery(query, initialQueryLimit, queryText);
-        this.queryResultTableSelectionModel.setSelectionMode(queryResultTableSelectionMode);
-        this.initialValue = initialValue;
-        reset();
     }
 
     /**
@@ -385,21 +115,64 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         }
         return retValue;
     }
+    private final E initialValue;
+    /**
+     *
+     * @param entityManager
+     * @param entityClass the class for which to the panel for
+     * @param reflectionFormBuilder
+     * @param initialValue
+     * @param queryResultTableSelectionMode
+     * @param initialHistory a list of history entries which ought to be selectable in the query history combo box (won't be modified)
+     * @param initialQueryLimit When the component is created an initial query is executed. This property
+     * limits its result length. Set to {@code 0} in order to skip initial
+     * query.
+     * @param initialSelectedHistoryEntry the query which ought to be selected initially (if {@code null} the first item of {@code predefinedQueries} will be selected initially or there will be no selected item if {@code intiialHistory} is empty.
+     * @param bidirectionalControlPanel
+     * @throws java.lang.IllegalAccessException
+     * @throws IllegalArgumentException if {@code initialSelectedHistoryEntry} is not {@code null}, but not contained in {@code initialHistory}
+     */
+    /*
+    internal implementation notes:
+    - it's necessary to use a copy of initialHistory in order to avoid ConcurrentModificationException when items are sorted in combobox model implementation
+    - enforce passing of BidirectionalControlPanel in order to maximize
+    reusability (and because it's perfectly legitimate due to
+    composition-over-inheritance)
+    */
+    public QueryPanel(EntityManager entityManager,
+            Class<? extends E> entityClass,
+            ReflectionFormBuilder reflectionFormBuilder,
+            E initialValue,
+            BidirectionalControlPanel bidirectionalControlPanel) throws IllegalArgumentException, IllegalAccessException {
+        super(bidirectionalControlPanel,
+                new QueryComponent<E>(entityManager, entityClass),
+                reflectionFormBuilder,
+                entityClass,
+                entityManager,
+                ListSelectionModel.SINGLE_SELECTION);
+        List<Field> entityClassFields = reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass);
+        initTableModel(this.getQueryResultTableModel(),
+                entityClassFields);
+        this.initialValue = initialValue;
 
-    public List<HistoryEntry> getQueryHistory() {
-        return new LinkedList<>(this.getQueryComboBoxModel().getItems());
-    }
+        GroupLayout.ParallelGroup horizontalParallelGroup = getLayout().createParallelGroup();
+        horizontalParallelGroup.addGroup(super.getHorizontalParallelGroup())
+                .addComponent(getQueryResultTableScrollPane(), GroupLayout.Alignment.TRAILING);
+        getLayout().setHorizontalGroup(horizontalParallelGroup);
 
-    public void addUpdateListener(QueryPanelUpdateListener updateListener) {
-        this.updateListeners.add(updateListener);
-    }
+        GroupLayout.SequentialGroup verticalSequentialGroup = getLayout().createSequentialGroup();
+        verticalSequentialGroup
+                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(super.getVerticalSequentialGroup())
+                .addComponent(getQueryResultTableScrollPane(), GroupLayout.DEFAULT_SIZE, 251, Short.MAX_VALUE)
+                .addContainerGap();
+        getLayout().setVerticalGroup(verticalSequentialGroup);
 
-    public void removeUpdateListener(QueryPanelUpdateListener updateListener) {
-        this.updateListeners.remove(updateListener);
+        reset();
     }
 
     public Object getSelectedObject() {
-        int index = this.queryResultTable.getSelectedRow();
+        int index = this.getQueryResultTable().getSelectedRow();
         if(index < 0) {
             //can happen during layout validation/initialization
             return null;
@@ -409,256 +182,19 @@ public class QueryPanel<E> extends javax.swing.JPanel {
         return retValue;
     }
 
-    public void clearSelection() {
-        this.queryResultTable.clearSelection();
-    }
-
-    /**
-     * @return the queryComboBoxModel
-     */
-    /*
-    internal implementation notes:
-    - expose in order to be able to reuse/update queries
-    */
-    public SortedComboBoxModel<HistoryEntry> getQueryComboBoxModel() {
-        return queryComboBoxModel;
-    }
-
-    private void initComponents() {
-        queryLabel.setText("Query:");
-
-        queryButton.setText("Run query");
-        queryButton.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                queryButtonActionPerformed(evt);
-            }
-        });
-
-        queryResultLabel.setText("Query result:");
-
-        queryComboBox.setEditable(true);
-        queryComboBox.setModel(queryComboBoxModel);
-        queryComboBox.setEditor(queryComboBoxEditor);
-
-        queryLimitSpinner.setModel(queryLimitSpinnerModel);
-        queryLimitSpinner.setValue(INITIAL_QUERY_LIMIT_DEFAULT);
-
-        queryLimitLabel.setText("# of Results");
-
-        queryResultTable.setModel(this.queryResultTableModel);
-        queryResultTable.setSelectionModel(this.queryResultTableSelectionModel);
-        queryResultTableScrollPane.setViewportView(queryResultTable);
-
-        queryStatusLabelScrollPane.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
-
-        queryStatusLabel.setEditable(false);
-        queryStatusLabel.setColumns(20);
-        queryStatusLabel.setLineWrap(true);
-        queryStatusLabel.setRows(2);
-        queryStatusLabel.setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
-        queryStatusLabelScrollPane.setViewportView(queryStatusLabel);
-
-        GroupLayout layout = new GroupLayout(this);
-        this.setLayout(layout);
-        GroupLayout.ParallelGroup horizontalParallelGroup = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
-        if(bidirectionalControlPanel != null) {
-            horizontalParallelGroup.addComponent(bidirectionalControlPanel)
-                    .addGap(18, 18, 18)
-                    .addComponent(bidirectionalControlPanelSeparator);
-        }
-        horizontalParallelGroup.addComponent(queryResultTableScrollPane, GroupLayout.Alignment.TRAILING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(queryLabel)
-                        .addGap(18, 18, 18)
-                        .addComponent(queryComboBox, 0, 283, Short.MAX_VALUE)
-                        .addGap(18, 18, 18)
-                        .addComponent(queryLimitLabel)
-                        .addGap(18, 18, 18)
-                        .addComponent(queryLimitSpinner, GroupLayout.DEFAULT_SIZE, 179, Short.MAX_VALUE)
-                        .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(queryButton))
-                    .addComponent(queryStatusLabelScrollPane, GroupLayout.Alignment.TRAILING)
-                    .addComponent(separator)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(queryResultLabel)
-                        .addGap(0, 0, Short.MAX_VALUE));
-
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(horizontalParallelGroup)
-                .addContainerGap())
-        );
-        GroupLayout.SequentialGroup verticalSequentialGroup = layout.createSequentialGroup();
-        if(bidirectionalControlPanel != null) {
-            verticalSequentialGroup.addComponent(bidirectionalControlPanel)
-                    .addGap(18, 18, 18)
-                    .addComponent(bidirectionalControlPanelSeparator, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE);
-        }
-        verticalSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(queryLabel)
-                    .addComponent(queryButton)
-                    .addComponent(queryComboBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                    .addComponent(queryLimitSpinner, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                    .addComponent(queryLimitLabel))
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(queryStatusLabelScrollPane, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(separator, GroupLayout.PREFERRED_SIZE, 10, GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(queryResultLabel)
-                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(queryResultTableScrollPane, GroupLayout.DEFAULT_SIZE, 251, Short.MAX_VALUE)
-                .addContainerGap();
-        layout.setVerticalGroup(
-            layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(verticalSequentialGroup)
-        );
-    }
-
-    private void queryButtonActionPerformed(java.awt.event.ActionEvent evt) {
-        //although queryComboBox's model should never be empty in the current
-        //implementation, there's check nevertheless so that future changes
-        //don't cause too much trouble (adding a function to delete history
-        //makes sense)
-        String queryText;
-        //there's no good way to tell if the ComboBox is currently being edited
-        //(the JComboBox doesn't know and thus doesn't change the selected item
-        //and selected index property and the editor can't tell because it
-        //doesn't know the model)
-        HistoryEntry queryComboBoxEditorItem = queryComboBoxEditor.getItem();
-        if(queryComboBoxEditorItem != null && !queryComboBoxModel.contains(queryComboBoxEditorItem)) {
-            queryText = queryComboBoxEditorItem.getText();
-            if(queryText == null || queryText.isEmpty()) {
-                queryStatusLabel.setText("Enter a query");
-                return;
-            }
-        }else if(queryComboBox.getSelectedIndex() >= 0) {
-            HistoryEntry selectedHistoryEntry = this.queryComboBox.getItemAt(this.queryComboBox.getSelectedIndex());
-            queryText = selectedHistoryEntry.getText();
-        }else {
-            this.queryStatusLabel.setText("No query entered or selected");
-            return;
-        }
-        int queryLimit = (int) queryLimitSpinner.getValue();
-        TypedQuery<? extends E> query = this.createQuery(queryText); //handles displaying
-            //exceptions which occured during query execution (explaining
-            //syntax errors)
-        if(query != null) {
-            this.executeQuery(query, queryLimit, queryText);
-        }
-    }
-
-
-    /**
-     * Executes JQPL query {@code query}. Creates a {@link HistoryEntry} in the
-     * {@code queryComboBoxModel} and resets the current item of
-     * {@code queryComboBoxEditor}.
-     * @param query
-     */
-    /*
-    internal implementation notes:
-    - in order to produce HistoryEntrys from every query it's necessary to pass
-    the text of the query because there's no way to retrieve text from Criteria
-    objects
-    */
-    private void executeQuery(TypedQuery<? extends E> query,
-            int queryLimit,
-            String queryText) {
-        LOGGER.debug("executing query '{}'", queryText);
-        while(this.queryResultTableModel.getRowCount() > 0) {
-            this.queryResultTableModel.removeRow(0);
-        }
-        try {
-            List<? extends E> queryResultTmp = query.setMaxResults(queryLimit).getResultList();
-            queryResults.clear();
-            queryResults.addAll(queryResultTmp);
-            for(E queryResult : queryResults) {
-                handleInstanceToTableModel(this.queryResultTableModel, queryResult, reflectionFormBuilder, entityClass);
-            }
-            this.queryStatusLabel.setText("Query executed successfully.");
-            HistoryEntry entry = queryComboBoxEditor.getItem();
-            if(entry == null) {
-                //if the query came from a HistoryEntry from the combo box model
-                entry = new HistoryEntry(queryText, 1, new Date());
-            }
-            if(!this.queryComboBoxModel.contains(entry)) {
-                this.getQueryComboBoxModel().addElement(entry);
-            }
-            this.queryComboBoxEditor.setItem(null); //reset to indicate the need
-                //to create a new item
-        }catch(Exception ex) {
-            LOGGER.info("an exception occured while executing the query", ex);
-            this.queryStatusLabel.setText(generateStatusMessage(ex.getMessage()));
-        }
-        this.lastQuery = query;
-        this.lastQueryLimit = queryLimit;
-        this.lastQueryText = queryText;
-    }
-
-    public void repeatLastQuery() {
-        executeQuery(lastQuery, lastQueryLimit, lastQueryText);
-    }
-
-    private TypedQuery<? extends E> createQuery(String queryText) {
-        try {
-            TypedQuery<? extends E> query = this.entityManager.createQuery(queryText, this.entityClass);
-            return query;
-        }catch(Exception ex) {
-            LOGGER.info("an exception occured while executing the query", ex);
-            this.queryStatusLabel.setText(generateStatusMessage(ex.getMessage()));
-        }
-        return null;
-    }
-
-    public DefaultTableModel getQueryResultTableModel() {
-        return queryResultTableModel;
-    }
-
-    public List<? extends E> getQueryResults() {
-        return queryResults;
-    }
-
-    public JTable getQueryResultTable() {
-        return queryResultTable;
-    }
-
-    public JTextArea getQueryStatusLabel() {
-        return queryStatusLabel;
-    }
-
-    public Class<? extends E> getEntityClass() {
-        return entityClass;
-    }
-
-
-    /**
-     * Allows later changes to message generation depending on the mechanism
-     * used for displaying (label (might require {@code <html></html>} tags around message), textarea, dialog, etc.)
-     *
-     * @param message
-     * @return the generated status message
-     */
-    private String generateStatusMessage(String message) {
-        return message;
-    }
-
     public void reset() {
-        while(this.queryResultTableModel.getRowCount() > 0) {
-            this.queryResultTableModel.removeRow(0);
+        while(this.getQueryResultTableModel().getRowCount() > 0) {
+            this.getQueryResultTableModel().removeRow(0);
         }
         if(initialValue != null) {
-            if(!this.entityManager.contains(initialValue)) {
-                this.queryResultLabel.setText(String.format("previously managed entity %s has been removed from persistent storage, ignoring", initialValue));
+            if(!this.getEntityManager().contains(initialValue)) {
+                this.getQueryResultLabel().setText(String.format("previously managed entity %s has been removed from persistent storage, ignoring", initialValue));
             }
-            if(!this.queryResults.contains(initialValue)) {
-                this.queryResults.add(initialValue); // ok to add initially (will be overwritten with the next query where the user has to specify a query which retrieves the initial value or not
+            if(!this.getQueryResults().contains(initialValue)) {
+                this.getQueryResults().add(initialValue); // ok to add initially (will be overwritten with the next query where the user has to specify a query which retrieves the initial value or not
             }
-            int initialValueIndex = this.queryResults.indexOf(initialValue);
-            this.queryResultTableSelectionModel.addSelectionInterval(initialValueIndex, initialValueIndex); //no need to clear selection because we're just initializing
+            int initialValueIndex = this.getQueryResults().indexOf(initialValue);
+            this.getQueryResultTableSelectionModel().addSelectionInterval(initialValueIndex, initialValueIndex); //no need to clear selection because we're just initializing
         }
     }
 }

@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
+import javax.swing.GroupLayout;
+import javax.swing.JPanel;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
 
@@ -41,7 +43,7 @@ import richtercloud.reflection.form.builder.jpa.HistoryEntry;
  * @author richter
  * @param <T> the class containing the {@code String} field
  */
-public class StringCheckPanel<T> extends javax.swing.JPanel {
+public class StringCheckPanel<T> extends JPanel {
     private static final long serialVersionUID = 1L;
     private EntityManager entityManager;
     private Class<T> entityClass;
@@ -69,15 +71,15 @@ public class StringCheckPanel<T> extends javax.swing.JPanel {
                 null, //initialValue
                 null //bidirectionalControlPanel (needs to be read-only)
         ); //will be reused by manipulating the queryComboBoxModel
-        javax.swing.GroupLayout queryPanelDialogLayout = new javax.swing.GroupLayout(queryPanelDialog.getContentPane());
+        GroupLayout queryPanelDialogLayout = new GroupLayout(queryPanelDialog.getContentPane());
         queryPanelDialog.getContentPane().setLayout(queryPanelDialogLayout);
         queryPanelDialogLayout.setHorizontalGroup(
-            queryPanelDialogLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(queryPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            queryPanelDialogLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+            .addComponent(queryPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         queryPanelDialogLayout.setVerticalGroup(
-            queryPanelDialogLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(queryPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            queryPanelDialogLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+            .addComponent(queryPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         this.queryPanelDialog.pack();
         this.textField.setText(initialValue);
@@ -195,7 +197,7 @@ public class StringCheckPanel<T> extends javax.swing.JPanel {
     }//GEN-LAST:event_checkButtonActionPerformed
 
     private void showButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showButtonActionPerformed
-        this.queryPanel.getQueryComboBoxModel().addElement(new HistoryEntry(generateQueryText(),
+        this.queryPanel.getQueryComponent().getQueryComboBoxModel().addElement(new HistoryEntry(generateQueryText(),
                 1, //usageCount
                 new Date() //lastUsage
         ));
@@ -262,7 +264,7 @@ public class StringCheckPanel<T> extends javax.swing.JPanel {
 //        c.where(criteria.get(0));
 //        TypedQuery<T> q = this.entityManager.createQuery(c);
 
-        String entityClassQueryIdentifier = QueryPanel.generateEntityClassQueryIdentifier(entityClass);
+        String entityClassQueryIdentifier = QueryComponent.generateEntityClassQueryIdentifier(entityClass);
         String retValue = String.format("SELECT %s from %s %s WHERE %s.%s LIKE '%s'",
                 entityClassQueryIdentifier,
                 entityClass.getSimpleName(),

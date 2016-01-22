@@ -18,20 +18,7 @@ package richtercloud.reflection.form.builder.jpa.panels;
  *
  * @author richter
  */
-public class QueryPanelUpdateEvent {
-    private AbstractQueryPanel source;
-    private Object newSelectionItem;
+public interface QueryComponentListener<E> {
 
-    public QueryPanelUpdateEvent(Object newSelectionItem, AbstractQueryPanel source) {
-        this.newSelectionItem = newSelectionItem;
-        this.source = source;
-    }
-
-    public AbstractQueryPanel getSource() {
-        return source;
-    }
-
-    public Object getNewSelectionItem() {
-        return newSelectionItem;
-    }
+    void onQueryExecuted(QueryComponentEvent<E> event);
 }
