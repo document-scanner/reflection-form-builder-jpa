@@ -18,10 +18,10 @@ package richtercloud.reflection.form.builder.jpa.panels;
  *
  * @author richter
  */
-public class StringCheckPanelUpdateEvent {
+public class StringPanelUpdateEvent {
     private String newValue;
 
-    public StringCheckPanelUpdateEvent(String newValue) {
+    public StringPanelUpdateEvent(String newValue) {
         this.newValue = newValue;
     }
 

@@ -18,7 +18,7 @@ package richtercloud.reflection.form.builder.jpa.panels;
  *
  * @author richter
  */
-public interface StringCheckPanelUpdateListener {
+public interface StringPanelUpdateListener {
 
-    void onUpdate(StringCheckPanelUpdateEvent event);
+    void onUpdate(StringPanelUpdateEvent event);
 }

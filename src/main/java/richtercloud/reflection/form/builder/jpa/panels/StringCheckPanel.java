@@ -43,14 +43,9 @@ import richtercloud.reflection.form.builder.jpa.HistoryEntry;
  * @author richter
  * @param <T> the class containing the {@code String} field
  */
-public class StringCheckPanel<T> extends JPanel {
+public class StringCheckPanel<T> extends AbstractStringPanel<T> {
     private static final long serialVersionUID = 1L;
-    private EntityManager entityManager;
-    private Class<T> entityClass;
-    private String fieldName;
-    private int initialQueryLimit;
     private QueryPanel<T> queryPanel;
-    private Set<StringCheckPanelUpdateListener> updateListeners = new HashSet<>();
     private final String initialValue;
 
     public StringCheckPanel(EntityManager entityManager,
@@ -60,11 +55,8 @@ public class StringCheckPanel<T> extends JPanel {
             String fieldName,
             int initialQueryLimit,
             String bidirectionalHelpDialogTitle) throws IllegalArgumentException, IllegalAccessException {
+        super(entityManager, entityClass, fieldName, initialQueryLimit);
         initComponents();
-        this.entityManager = entityManager;
-        this.entityClass = entityClass;
-        this.fieldName = fieldName;
-        this.initialQueryLimit = initialQueryLimit;
         this.queryPanel = new QueryPanel<>(entityManager,
                 entityClass,
                 reflectionFormBuilder,
@@ -84,15 +76,7 @@ public class StringCheckPanel<T> extends JPanel {
         this.queryPanelDialog.pack();
         this.textField.setText(initialValue);
         this.initialValue = initialValue;
-        reset();
-    }
-
-    public void addUpdateListener(StringCheckPanelUpdateListener updateListener) {
-        this.updateListeners.add(updateListener);
-    }
-
-    public void removeUpdateListener(StringCheckPanelUpdateListener updateListener) {
-        this.updateListeners.remove(updateListener);
+        reset0();
     }
 
     public String retrieveValue() {
@@ -197,7 +181,7 @@ public class StringCheckPanel<T> extends JPanel {
     }//GEN-LAST:event_checkButtonActionPerformed
 
     private void showButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showButtonActionPerformed
-        this.queryPanel.getQueryComponent().getQueryComboBoxModel().addElement(new HistoryEntry(generateQueryText(),
+        this.queryPanel.getQueryComponent().getQueryComboBoxModel().addElement(new HistoryEntry(generateQueryText(this.textField.getText()),
                 1, //usageCount
                 new Date() //lastUsage
         ));
@@ -208,8 +192,8 @@ public class StringCheckPanel<T> extends JPanel {
         //has to be key released because otherwise the text of the text field isn't up-to-date
         this.checkButton.setEnabled(!this.textField.getText().isEmpty());
         updateStatusLabel();
-        for(StringCheckPanelUpdateListener updateListener : this.updateListeners) {
-            updateListener.onUpdate(new StringCheckPanelUpdateEvent(this.textField.getText()));
+        for(StringPanelUpdateListener updateListener : this.getUpdateListeners()) {
+            updateListener.onUpdate(new StringPanelUpdateEvent(this.textField.getText()));
         }
     }//GEN-LAST:event_textFieldKeyReleased
 
@@ -219,7 +203,7 @@ public class StringCheckPanel<T> extends JPanel {
             this.showButton.setEnabled(false);
             return;
         }
-        List<T> checkResult = check();
+        List<T> checkResult = check(this.textField.getText());
         if(checkResult.isEmpty()) {
             this.statusLabel.setText(String.format("no existing entities with the specified value for this property are found in the database"));
             this.showButton.setEnabled(false);
@@ -229,55 +213,11 @@ public class StringCheckPanel<T> extends JPanel {
         }
     }
 
-    /**
-     * Queries the database to check if there's entities which match the current
-     * value of the text field with a LIKE query.
-     * @return
-     */
-    /*
-    internal implementation notes:
-    - retrieving Query.getResultList is the shortest, maybe only way of getting
-    the size of the result set
-    */
-    private List<T> check() {
-        TypedQuery<T> query = entityManager.createQuery(generateQueryText(), entityClass);
-        query.setMaxResults(this.initialQueryLimit);
-        return query.getResultList();
-    }
-
-    /**
-     * Since there's no converter between text and criteria API we need to use
-     * text everywhere.
-     *
-     * @return
-     */
-    private String generateQueryText() {
-        //if there ever is a way to convert to text use the following saver
-        //routine:
-//        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-//        CriteriaQuery<T> c = cb.createQuery(this.entityClass);
-//        Root<T> emp = c.from(this.entityClass);
-//        c.select(emp);
-//        List<Predicate> criteria = new ArrayList<>();
-//        ParameterExpression<String> p = cb.parameter(String.class, this.fieldName);
-//        criteria.add(cb.like(emp.<String>get(this.fieldName), p));
-//        c.where(criteria.get(0));
-//        TypedQuery<T> q = this.entityManager.createQuery(c);
-
-        String entityClassQueryIdentifier = QueryComponent.generateEntityClassQueryIdentifier(entityClass);
-        String retValue = String.format("SELECT %s from %s %s WHERE %s.%s LIKE '%s'",
-                entityClassQueryIdentifier,
-                entityClass.getSimpleName(),
-                entityClassQueryIdentifier,
-                entityClassQueryIdentifier,
-                this.fieldName,
-                "%"+this.textField.getText()+"%" //specify % here in order to
-                    //keep them output of the format string
-        );
-        return retValue;
-    }
-
     public void reset() {
+        reset0();
+    }
+
+    private void reset0() {
         if(initialValue != null && !initialValue.isEmpty()) {
             this.textField.setText(initialValue);
             this.checkButton.setEnabled(true);

@@ -289,7 +289,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         QueryComponent.validateEntityClass(entityClass, entityManager);
         QueryPanel.initTableModel(this.resultTableModel, reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass));
         this.initialValues = initialValues;
-        reset();
+        reset0();
         initComponents();
         this.resultTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
     }
@@ -421,6 +421,10 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
     }
 
     public void reset() {
+        reset0();
+    }
+
+    private void reset0() {
         this.resultList.clear();
         while(this.getQueryResultTableModel().getRowCount() > 0) {
             this.getQueryResultTableModel().removeRow(0);

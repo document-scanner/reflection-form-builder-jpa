@@ -25,6 +25,8 @@ import javax.persistence.OneToOne;
 import javax.swing.GroupLayout;
 import javax.swing.LayoutStyle;
 import javax.swing.ListSelectionModel;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +51,7 @@ import richtercloud.reflection.form.builder.ReflectionFormBuilder;
  * @author richter
  * @param <E> a generic type for the entity class
  */
-public class QueryPanel<E> extends AbstractQueryPanel {
+public class QueryPanel<E> extends AbstractQueryPanel<E> {
     private static final long serialVersionUID = 1L;
     private final static Logger LOGGER = LoggerFactory.getLogger(QueryPanel.class);
 
@@ -64,6 +66,7 @@ public class QueryPanel<E> extends AbstractQueryPanel {
         }
         queryResultTableModel.addRow(queryResultValues.toArray(new Object[queryResultValues.size()]));
     }
+
     public static void initTableModel(DefaultTableModel tableModel, List<Field> entityClassFields) {
         for(Field field : entityClassFields) {
             tableModel.addColumn(field.getName());
@@ -115,7 +118,9 @@ public class QueryPanel<E> extends AbstractQueryPanel {
         }
         return retValue;
     }
+
     private final E initialValue;
+
     /**
      *
      * @param entityManager
@@ -168,7 +173,19 @@ public class QueryPanel<E> extends AbstractQueryPanel {
                 .addContainerGap();
         getLayout().setVerticalGroup(verticalSequentialGroup);
 
-        reset();
+        reset0();
+
+        //only QueryPanel specific
+        this.getQueryResultTableSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                for(QueryPanelUpdateListener updateListener : getUpdateListeners()) {
+                    LOGGER.debug("notifying update listener {} about selection change", updateListener);
+                    updateListener.onUpdate(new QueryPanelUpdateEvent(QueryPanel.this.getQueryResults().get(e.getFirstIndex()),
+                            QueryPanel.this));
+                }
+            }
+        });
     }
 
     public Object getSelectedObject() {
@@ -183,6 +200,10 @@ public class QueryPanel<E> extends AbstractQueryPanel {
     }
 
     public void reset() {
+        reset0();
+    }
+
+    private void reset0() {
         while(this.getQueryResultTableModel().getRowCount() > 0) {
             this.getQueryResultTableModel().removeRow(0);
         }

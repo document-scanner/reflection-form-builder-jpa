@@ -15,6 +15,7 @@
 package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.awt.LayoutManager;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,6 +48,7 @@ import static richtercloud.reflection.form.builder.jpa.panels.QueryPanel.handleI
  * The base class for {@link QueryPanel} and {@link QueryListPanel}.
  *
  * @author richter
+ * @param <E>
  */
 public abstract class AbstractQueryPanel<E> extends JPanel {
     private static final long serialVersionUID = 1L;
@@ -90,16 +92,6 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         this.entityManager = entityManager;
         this.bidirectionalControlPanelSeparator = new JSeparator();
         this.separator = new JSeparator();
-        this.queryResultTableSelectionModel.addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                for(QueryPanelUpdateListener updateListener : updateListeners) {
-                    LOGGER.debug("notifying update listener {} about selection change", updateListener);
-                    updateListener.onUpdate(new QueryPanelUpdateEvent(AbstractQueryPanel.this.queryResults.get(e.getFirstIndex()),
-                            AbstractQueryPanel.this));
-                }
-            }
-        });
         queryResultLabel = new JLabel();
         queryResultTableScrollPane = new JScrollPane();
         queryResultTable = new JTable() {
@@ -132,6 +124,8 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
                         throw new RuntimeException(ex);
                     }
                 }
+                AbstractQueryPanel.this.queryResults.clear();
+                AbstractQueryPanel.this.queryResults.addAll(queryResults);
             }
         });
 
@@ -201,6 +195,15 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         return horizontalParallelGroup;
     }
 
+    /**
+     *
+     * @return
+     */
+    /*
+    internal implementation notes:
+    - return value must not be unmodifiable because subclasses might want to
+    clean queryResults
+    */
     public List<E> getQueryResults() {
         return queryResults;
     }
@@ -214,7 +217,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
     }
 
     public Set<QueryPanelUpdateListener> getUpdateListeners() {
-        return updateListeners;
+        return Collections.unmodifiableSet(updateListeners);
     }
 
     public void clearSelection() {

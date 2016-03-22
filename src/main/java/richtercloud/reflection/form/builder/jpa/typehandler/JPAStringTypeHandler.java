@@ -21,9 +21,10 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
+import richtercloud.reflection.form.builder.jpa.panels.StringAutoCompletePanel;
 import richtercloud.reflection.form.builder.jpa.panels.StringCheckPanel;
-import richtercloud.reflection.form.builder.jpa.panels.StringCheckPanelUpdateEvent;
-import richtercloud.reflection.form.builder.jpa.panels.StringCheckPanelUpdateListener;
+import richtercloud.reflection.form.builder.jpa.panels.StringPanelUpdateEvent;
+import richtercloud.reflection.form.builder.jpa.panels.StringPanelUpdateListener;
 import richtercloud.reflection.form.builder.message.MessageHandler;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 
@@ -56,17 +57,14 @@ public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEven
             JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException,
             IllegalAccessException,
             FieldHandlingException {
-        final StringCheckPanel<?> retValue = new StringCheckPanel(entityManager,
-                declaringClass, //declaringClass
-                reflectionFormBuilder,
-                fieldValue, //fieldValue
-                fieldName, //fieldName
-                this.initialQueryLimit, // initialQueryLimit
-                bidirectionalHelpDialogTitle
-        );
-        retValue.addUpdateListener(new StringCheckPanelUpdateListener() {
+        StringAutoCompletePanel retValue = new StringAutoCompletePanel(entityManager,
+                declaringClass,
+                fieldName,
+                initialQueryLimit,
+                reflectionFormBuilder.getFieldRetriever());
+        retValue.addUpdateListener(new StringPanelUpdateListener() {
             @Override
-            public void onUpdate(StringCheckPanelUpdateEvent event) {
+            public void onUpdate(StringPanelUpdateEvent event) {
                 updateListener.onUpdate(new FieldUpdateEvent<>(event.getNewValue()));
             }
         });
