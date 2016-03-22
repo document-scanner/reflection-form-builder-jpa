@@ -287,7 +287,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         this.resultPanel = new JPanel();
 
         QueryComponent.validateEntityClass(entityClass, entityManager);
-        QueryPanel.initTableModel(this.resultTableModel, reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass));
+        initTableModel(this.resultTableModel, reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass));
         this.initialValues = initialValues;
         reset0();
         initComponents();

@@ -30,6 +30,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 
@@ -65,12 +66,6 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             queryResultValues.add(field.get(queryResult));
         }
         queryResultTableModel.addRow(queryResultValues.toArray(new Object[queryResultValues.size()]));
-    }
-
-    public static void initTableModel(DefaultTableModel tableModel, List<Field> entityClassFields) {
-        for(Field field : entityClassFields) {
-            tableModel.addColumn(field.getName());
-        }
     }
 
     /**

@@ -15,13 +15,9 @@
 package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
 import javax.swing.GroupLayout;
-import javax.swing.JPanel;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
 

@@ -14,15 +14,20 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
+import java.awt.Component;
 import java.awt.LayoutManager;
+import java.lang.reflect.Field;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.GroupLayout;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -33,8 +38,11 @@ import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import static richtercloud.reflection.form.builder.jpa.panels.QueryPanel.handleInstanceToTableModel;
 
@@ -164,6 +172,38 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
                 .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(queryResultLabel);
         layout.setVerticalGroup(verticalSequentialGroup);
+
+        final TableCellRenderer tableCellRenderer = getQueryResultTable().getTableHeader().getDefaultRenderer();
+        this.getQueryResultTable().getTableHeader().setDefaultRenderer(new TableCellRenderer() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object o, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component retValue = tableCellRenderer.getTableCellRendererComponent(table, o, isSelected, hasFocus, row, column);
+                if(retValue instanceof JComponent) {
+                    //might not be the case for some Look and Feels
+                    ((JComponent)retValue).setToolTipText(queryResultTableTooltipTextMap.get(column));
+                }
+                return retValue;
+            }
+        });
+    }
+
+    private final Map<Integer, String> queryResultTableTooltipTextMap = new HashMap<>();
+
+    protected void initTableModel(DefaultTableModel tableModel, List<Field> entityClassFields) {
+        int i=0;
+        for(Field field : entityClassFields) {
+            FieldInfo fieldInfo = field.getAnnotation(FieldInfo.class);
+            if(fieldInfo != null) {
+                tableModel.addColumn(fieldInfo.name());
+                queryResultTableTooltipTextMap.put(i, fieldInfo.description());
+            }else {
+                tableModel.addColumn(field.getName());
+                queryResultTableTooltipTextMap.put(i, "");
+            }
+            i++;
+        }
     }
 
     /**
