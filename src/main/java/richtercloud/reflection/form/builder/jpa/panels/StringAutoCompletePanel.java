@@ -14,16 +14,25 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
+import ca.odell.glazedlists.BasicEventList;
+import ca.odell.glazedlists.CollectionList;
+import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.TextFilterator;
+import ca.odell.glazedlists.matchers.TextMatcherEditor;
+import ca.odell.glazedlists.swing.AutoCompleteSupport;
+import ca.odell.glazedlists.swing.DefaultEventComboBoxModel;
+import ca.odell.glazedlists.swing.EventComboBoxModel;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 import javax.persistence.EntityManager;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.MutableComboBoxModel;
+import javax.swing.event.ListDataEvent;
 import richtercloud.reflection.form.builder.FieldRetriever;
 
 /**
@@ -40,7 +49,8 @@ model and thus can't be used for suggestions
 */
 public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
     private static final long serialVersionUID = 1L;
-    private final MutableComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>();
+    private final EventList<String> comboBoxEventList = new BasicEventList<>();
+    private final DefaultEventComboBoxModel<String> comboBoxModel = new DefaultEventComboBoxModel<>(comboBoxEventList);
     private final FieldRetriever fieldRetriever;
 
     private static Field retrieveFieldByName(FieldRetriever fieldRetriever, Class<?> entityClass, String fieldName) {
@@ -64,6 +74,7 @@ public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
      * @param entityClass
      * @param fieldName
      * @param initialQueryLimit
+     * @param fieldRetriever
      */
     public StringAutoCompletePanel(EntityManager entityManager,
             Class<T> entityClass,
@@ -85,26 +96,51 @@ public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
         if(field == null) {
             throw new IllegalArgumentException();
         }
+
+        try {
+            EventQueue.invokeAndWait(new Runnable() {
+                @Override
+                public void run() {
+                    AutoCompleteSupport<String> autocomplete = AutoCompleteSupport.install(StringAutoCompletePanel.this.comboBox,
+                            comboBoxEventList,
+                            new StringTextFilterator());
+                    autocomplete.setFilterMode(TextMatcherEditor.CONTAINS);
+                }
+            });
+        } catch (InterruptedException | InvocationTargetException ex) {
+            throw new RuntimeException(ex);
+        }
+
         this.comboBox.getEditor().getEditorComponent().addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 try {
                     List<T> checkResults = check((String)comboBox.getEditor().getItem());
-                    while(comboBoxModel.getSize() > 0) {
-                        comboBoxModel.removeElementAt(0);
-                    }
-                    if(!checkResults.isEmpty()) {
+                    if(!lastCheckResults.equals(checkResults)) {
+                        comboBoxEventList.clear();
                         for(T checkResult : checkResults) {
-
-                            comboBoxModel.addElement((String) field.get(checkResult));
+                            comboBoxEventList.add(checkResult.toString());
                         }
-                        comboBox.showPopup();
+                        lastCheckResults = checkResults;
                     }
-                } catch (SecurityException | IllegalArgumentException | IllegalAccessException ex) {
+                } catch (SecurityException | IllegalArgumentException ex) {
                     throw new RuntimeException(ex);
                 }
             }
         });
+    }
+
+    private List<T> lastCheckResults = new LinkedList<>();
+
+    private class StringTextFilterator implements TextFilterator<String> {
+
+        StringTextFilterator() {
+        }
+
+        @Override
+        public void getFilterStrings(List<String> baseList, String element) {
+            baseList.add(element);
+        }
     }
 
     /**
