@@ -17,6 +17,9 @@ package richtercloud.reflection.form.builder.jpa.typehandler;
 import java.lang.reflect.Type;
 import javax.persistence.EntityManager;
 import javax.swing.JComponent;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import richtercloud.reflection.form.builder.ComponentResettable;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -32,7 +35,7 @@ import richtercloud.reflection.form.builder.typehandler.TypeHandler;
  *
  * @author richter
  */
-public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEvent<String>,JPAReflectionFormBuilder, StringCheckPanel<?>> {
+public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEvent<String>,JPAReflectionFormBuilder, StringAutoCompletePanel> {
     private final EntityManager entityManager;
     private final int initialQueryLimit;
     private final MessageHandler messageHandler;
@@ -49,7 +52,7 @@ public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEven
     }
 
     @Override
-    public JComponent handle(Type type,
+    public Pair<JComponent, ComponentResettable<?>> handle(Type type,
             String fieldValue,
             String fieldName,
             Class<?> declaringClass,
@@ -68,11 +71,11 @@ public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEven
                 updateListener.onUpdate(new FieldUpdateEvent<>(event.getNewValue()));
             }
         });
-        return  retValue;
+        return new ImmutablePair<JComponent, ComponentResettable<?>>(retValue, this);
     }
 
     @Override
-    public void reset(StringCheckPanel<?> component) {
+    public void reset(StringAutoCompletePanel component) {
         component.reset();
     }
 

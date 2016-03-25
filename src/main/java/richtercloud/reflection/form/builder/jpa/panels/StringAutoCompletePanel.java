@@ -143,6 +143,12 @@ public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
         }
     }
 
+    @Override
+    public void reset() {
+        comboBox.setSelectedIndex(-1);
+        comboBoxEventList.clear();
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always

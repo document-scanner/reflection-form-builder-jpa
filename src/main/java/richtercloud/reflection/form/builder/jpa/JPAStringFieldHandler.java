@@ -18,11 +18,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import javax.persistence.EntityManager;
 import javax.swing.JComponent;
-import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
+import org.apache.commons.lang3.tuple.Pair;
+import richtercloud.reflection.form.builder.ComponentResettable;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
-import richtercloud.reflection.form.builder.jpa.panels.StringCheckPanel;
+import richtercloud.reflection.form.builder.fieldhandler.ResettableFieldHandler;
+import richtercloud.reflection.form.builder.jpa.panels.StringAutoCompletePanel;
 import richtercloud.reflection.form.builder.jpa.typehandler.JPAStringTypeHandler;
 import richtercloud.reflection.form.builder.message.MessageHandler;
 
@@ -30,7 +32,7 @@ import richtercloud.reflection.form.builder.message.MessageHandler;
  *
  * @author richter
  */
-public class JPAStringFieldHandler implements FieldHandler<String, FieldUpdateEvent<String>, JPAReflectionFormBuilder, StringCheckPanel<?>> {
+public class JPAStringFieldHandler extends ResettableFieldHandler<String, FieldUpdateEvent<String>, JPAReflectionFormBuilder, StringAutoCompletePanel> {
     private final JPAStringTypeHandler jPAStringTypeHandler;
 
     public JPAStringFieldHandler(EntityManager entityManager,
@@ -48,7 +50,7 @@ public class JPAStringFieldHandler implements FieldHandler<String, FieldUpdateEv
     }
 
     @Override
-    public JComponent handle(Field field,
+    public Pair<JComponent, ComponentResettable<?>> handle0(Field field,
             Object instance,
             final FieldUpdateListener<FieldUpdateEvent<String>> updateListener,
             JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException, IllegalAccessException, FieldHandlingException {
@@ -63,7 +65,7 @@ public class JPAStringFieldHandler implements FieldHandler<String, FieldUpdateEv
     }
 
     @Override
-    public void reset(StringCheckPanel<?> component) {
+    public void reset(StringAutoCompletePanel component) {
         this.jPAStringTypeHandler.reset(component);
     }
 

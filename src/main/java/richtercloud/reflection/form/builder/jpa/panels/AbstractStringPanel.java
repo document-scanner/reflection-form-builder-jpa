@@ -26,7 +26,7 @@ import javax.swing.JPanel;
  *
  * @author richter
  */
-public class AbstractStringPanel<T> extends JPanel {
+public abstract class AbstractStringPanel<T> extends JPanel {
     private static final long serialVersionUID = 1L;
     private final EntityManager entityManager;
     private final int initialQueryLimit;
@@ -114,4 +114,9 @@ public class AbstractStringPanel<T> extends JPanel {
     public String getFieldName() {
         return fieldName;
     }
+
+    /**
+     * Resets the component.
+     */
+    public abstract void reset();
 }

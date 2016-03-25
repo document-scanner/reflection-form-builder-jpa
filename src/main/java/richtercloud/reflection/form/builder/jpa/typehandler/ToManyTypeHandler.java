@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.Map;
 import javax.persistence.EntityManager;
 import javax.swing.JComponent;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import richtercloud.reflection.form.builder.ComponentResettable;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
@@ -47,7 +50,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
     }
 
     @Override
-    protected JComponent handleGenericType(Type type,
+    protected Pair<JComponent, ComponentResettable<?>> handleGenericType(Type type,
             List<Object> fieldValue,
             String fieldName,
             Class<?> declaringClass,
@@ -73,7 +76,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
                 updateListener.onUpdate(new FieldUpdateEvent<>(event.getItem()));
             }
         });
-        return retValue;
+        return new ImmutablePair<JComponent, ComponentResettable<?>>(retValue, this);
     }
 
     @Override

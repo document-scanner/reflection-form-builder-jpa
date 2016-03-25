@@ -61,6 +61,12 @@ import richtercloud.reflection.form.builder.panels.NumberPanelUpdateListener;
  * @author richter
  */
 public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends MappingFieldHandler<T,E, JPAReflectionFormBuilder, Component> {
+    private final static ComponentResettable<LongIdPanel> LONG_ID_PANEL_COMPONENT_RESETTER = new ComponentResettable<LongIdPanel>() {
+        @Override
+        public void reset(LongIdPanel component) {
+            component.reset();
+        }
+    };
     private final ElementCollectionTypeHandler elementCollectionTypeHandler;
     private final Map<Type, FieldHandler<?,?,?, ?>> embeddableMapping;
     private final ToManyTypeHandler toManyTypeHandler;
@@ -137,7 +143,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
     }
 
     @Override
-    public Pair<JComponent, ComponentResettable> handle0(Field field,
+    protected Pair<JComponent, ComponentResettable<?>> handle0(Field field,
             Object instance,
             final FieldUpdateListener updateListener,
             JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException,
@@ -177,7 +183,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                         updateListener.onUpdate(new FieldUpdateEvent<>(event.getNewValue()));
                     }
                 });
-                return new ImmutablePair<JComponent, ComponentResettable>(retValue, null); //@TODO:
+                return new ImmutablePair<JComponent, ComponentResettable<?>>(retValue, LONG_ID_PANEL_COMPONENT_RESETTER);
             }else {
                 throw new IllegalArgumentException(String.format("@Id annotated field type %s not supported", field.getGenericType()));
             }
@@ -189,38 +195,38 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             if(fieldValue != null && !(fieldValue instanceof List)) {
                 throw new IllegalArgumentException("field values isn't an instance of List");
             }
-            JComponent retValue = this.elementCollectionTypeHandler.handle(field.getGenericType(),
+            Pair<JComponent, ComponentResettable<?>> retValue = this.elementCollectionTypeHandler.handle(field.getGenericType(),
                     (List<Object>)fieldValue,
                     fieldName,
                     fieldDeclaringClass,
                     updateListener,
                     reflectionFormBuilder);
-            return new ImmutablePair<JComponent, ComponentResettable>(retValue, this.elementCollectionTypeHandler);
+            return retValue;
         }
         if(field.getAnnotation(OneToMany.class) != null || field.getAnnotation(ManyToMany.class) != null) {
-            JComponent retValue = this.toManyTypeHandler.handle(field.getGenericType(),
+            Pair<JComponent, ComponentResettable<?>> retValue = this.toManyTypeHandler.handle(field.getGenericType(),
                     (List<Object>)fieldValue,
                     fieldName,
                     fieldDeclaringClass,
                     updateListener,
                     reflectionFormBuilder);
-            return new ImmutablePair<JComponent, ComponentResettable>(retValue, toManyTypeHandler);
+            return retValue;
         }
         if(field.getAnnotation(OneToOne.class) != null || field.getAnnotation(ManyToOne.class) != null) {
-            JComponent retValue = this.toOneTypeHandler.handle(field.getGenericType(),
+            Pair<JComponent, ComponentResettable<?>> retValue = this.toOneTypeHandler.handle(field.getGenericType(),
                     fieldValue,
                     fieldName,
                     fieldDeclaringClass,
                     updateListener,
                     reflectionFormBuilder);
-            return new ImmutablePair<JComponent, ComponentResettable>(retValue, toOneTypeHandler);
+            return retValue;
         }
         if(field.getType() instanceof Class) {
             Class<?> fieldTypeClass = field.getType();
             if(fieldTypeClass.getAnnotation(Embeddable.class) != null) {
                 FieldHandler fieldHandler = embeddableMapping.get(fieldType);
                 JComponent retValue = fieldHandler.handle(field, instance, updateListener, reflectionFormBuilder);
-                return new ImmutablePair<JComponent, ComponentResettable>(retValue, fieldHandler);
+                return new ImmutablePair<JComponent, ComponentResettable<?>>(retValue, fieldHandler);
             }
         }
         return super.handle0(field, instance, updateListener, reflectionFormBuilder);

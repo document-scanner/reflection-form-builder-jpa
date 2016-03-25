@@ -18,6 +18,9 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import javax.swing.JComponent;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import richtercloud.reflection.form.builder.ComponentResettable;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -33,6 +36,11 @@ import richtercloud.reflection.form.builder.typehandler.TypeHandler;
  * First checks a {@code fieldTypeHandlerMapping} first for a match of the field
  * type. If that match doesn't exist, tries to find a match with the generic
  * type of the field in {@code genericsTypeHandlerMapping}.
+ *
+ * Handle {@link ElementCollection} annotated fields whose generic types are of
+ * primitive wrapper or {@code String} in callers. This makes handling with
+ * {@code List<Object>} in this class much easier.
+ *
  * @author richter
  */
 public class ElementCollectionTypeHandler extends GenericListTypeHandler<JPAReflectionFormBuilder, EmbeddableListPanel> {
@@ -53,13 +61,37 @@ public class ElementCollectionTypeHandler extends GenericListTypeHandler<JPARefl
         component.reset();
     }
 
+    /**
+     *
+     * @param type
+     * @param fieldValue
+     * @param fieldName
+     * @param declaringClass
+     * @param updateListener
+     * @param reflectionFormBuilder
+     * @throws IllegalArgumentException if the generic type of {@code type} as
+     * returned by {@link #retrieveTypeGenericType(java.lang.reflect.Type) } is
+     * {@code String} or a primitive wrapper
+     * @return the result of the handling
+     */
     @Override
-    protected JComponent handleGenericType(Type type, List<Object> fieldValue,
+    protected Pair<JComponent, ComponentResettable<?>> handleGenericType(Type type, List<Object> fieldValue,
             String fieldName,
             Class<?> declaringClass,
             final FieldUpdateListener<FieldUpdateEvent<List<Object>>> updateListener,
             JPAReflectionFormBuilder reflectionFormBuilder) {
         Type genericType = retrieveTypeGenericType(type);
+        if(genericType.equals(String.class)
+                || genericType.equals(Byte.class)
+                || genericType.equals(Boolean.class)
+                || genericType.equals(Character.class)
+                || genericType.equals(Integer.class)
+                || genericType.equals(Long.class)
+                || genericType.equals(Short.class)
+                || genericType.equals(Double.class)
+                || genericType.equals(Float.class)) {
+            throw new IllegalArgumentException(String.format("generic type %s or primitive wrapper not supported (is %s)", String.class, genericType));
+        }
         EmbeddableListPanel retValue = new EmbeddableListPanel(reflectionFormBuilder,
                 (Class<?>) genericType,
                 fieldValue,
@@ -78,6 +110,6 @@ public class ElementCollectionTypeHandler extends GenericListTypeHandler<JPARefl
                 updateListener.onUpdate(new FieldUpdateEvent<>(event.getItem()));
             }
         });
-        return retValue;
+        return new ImmutablePair<JComponent, ComponentResettable<?>>(retValue, this);
     }
 }
