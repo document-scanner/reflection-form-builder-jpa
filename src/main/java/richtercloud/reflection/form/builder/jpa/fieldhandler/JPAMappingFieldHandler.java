@@ -54,6 +54,7 @@ import richtercloud.reflection.form.builder.message.MessageHandler;
 import richtercloud.reflection.form.builder.panels.NumberPanel;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateEvent;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateListener;
+import richtercloud.reflection.form.builder.components.AmountMoneyExchangeRateRetriever;
 
 /**
  * Handles entities and embeddables differently based on two type component-{@link FieldHandler} mappings.
@@ -81,6 +82,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             FieldRetriever fieldRetriever,
             AmountMoneyUsageStatisticsStorage amountMoneyUsageStatisticsStorage,
             AmountMoneyCurrencyStorage amountMoneyCurrencyStorage,
+            AmountMoneyExchangeRateRetriever amountMoneyConversionRateRetriever,
             IdGenerator idGenerator,
             String bidirectionalHelpDialogTitle) {
         JPAAmountMoneyMappingFieldHandlerFactory jPAAmountMoneyClassMappingFactory = new JPAAmountMoneyMappingFieldHandlerFactory(entityManager,
@@ -88,15 +90,20 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                 messageHandler,
                 amountMoneyUsageStatisticsStorage,
                 amountMoneyCurrencyStorage,
+                amountMoneyConversionRateRetriever,
                 bidirectionalHelpDialogTitle);
         AmountMoneyMappingFieldHandlerFactory amountMoneyClassMappingFactory = new AmountMoneyMappingFieldHandlerFactory(amountMoneyUsageStatisticsStorage,
                 amountMoneyCurrencyStorage,
+                amountMoneyConversionRateRetriever,
                 messageHandler);
         JPAAmountMoneyMappingTypeHandlerFactory jPAAmountMoneyTypeHandlerMappingFactory = new JPAAmountMoneyMappingTypeHandlerFactory(entityManager,
                 initialQueryLimit,
                 messageHandler,
                 bidirectionalHelpDialogTitle);
-        AmountMoneyFieldHandler amountMoneyFieldHandler = new AmountMoneyFieldHandler(amountMoneyUsageStatisticsStorage, amountMoneyCurrencyStorage, messageHandler);
+        AmountMoneyFieldHandler amountMoneyFieldHandler = new AmountMoneyFieldHandler(amountMoneyUsageStatisticsStorage,
+                amountMoneyConversionRateRetriever,
+                amountMoneyCurrencyStorage,
+                messageHandler);
         ElementCollectionTypeHandler elementCollectionTypeHandler = new ElementCollectionTypeHandler(jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 messageHandler,

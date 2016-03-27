@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.persistence.EntityManager;
 import richtercloud.reflection.form.builder.components.AmountMoneyCurrencyStorage;
+import richtercloud.reflection.form.builder.components.AmountMoneyExchangeRateRetriever;
 import richtercloud.reflection.form.builder.components.AmountMoneyUsageStatisticsStorage;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.factory.AmountMoneyMappingFieldHandlerFactory;
@@ -30,31 +31,37 @@ import richtercloud.reflection.form.builder.message.MessageHandler;
  * @author richter
  */
 public class JPAAmountMoneyMappingFieldHandlerFactory extends AmountMoneyMappingFieldHandlerFactory {
-    private final EntityManager entityManager;
-    private final int initialQueryLimit;
-    private final String bidirectionalHelpDialogTitle;
-
     public static JPAAmountMoneyMappingFieldHandlerFactory create(EntityManager entityManager,
             int initialQueryLimit,
             MessageHandler messageHandler,
             AmountMoneyUsageStatisticsStorage amountMoneyUsageStatisticsStorage,
             AmountMoneyCurrencyStorage amountMoneyCurrencyStorage,
+            AmountMoneyExchangeRateRetriever amountMoneyConversionRateRetriever,
             String bidirectionalHelpDialogTitle) {
         return new JPAAmountMoneyMappingFieldHandlerFactory(entityManager,
                 initialQueryLimit,
                 messageHandler,
                 amountMoneyUsageStatisticsStorage,
                 amountMoneyCurrencyStorage,
+                amountMoneyConversionRateRetriever,
                 bidirectionalHelpDialogTitle);
     }
+    private final EntityManager entityManager;
+    private final int initialQueryLimit;
+    private final String bidirectionalHelpDialogTitle;
+
 
     public JPAAmountMoneyMappingFieldHandlerFactory(EntityManager entityManager,
             int initialQueryLimit,
             MessageHandler messageHandler,
             AmountMoneyUsageStatisticsStorage amountMoneyUsageStatisticsStorage,
             AmountMoneyCurrencyStorage amountMoneyCurrencyStorage,
+            AmountMoneyExchangeRateRetriever amountMoneyConversionRateRetriever,
             String bidirectionalHelpDialogTitle) {
-        super(amountMoneyUsageStatisticsStorage, amountMoneyCurrencyStorage, messageHandler);
+        super(amountMoneyUsageStatisticsStorage,
+                amountMoneyCurrencyStorage,
+                amountMoneyConversionRateRetriever,
+                messageHandler);
         this.entityManager = entityManager;
         this.initialQueryLimit = initialQueryLimit;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
