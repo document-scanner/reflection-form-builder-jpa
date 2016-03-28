@@ -32,6 +32,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
 import javax.persistence.EntityManager;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ListDataEvent;
 import richtercloud.reflection.form.builder.FieldRetriever;
 
@@ -97,18 +98,19 @@ public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
             throw new IllegalArgumentException();
         }
 
-        try {
-            EventQueue.invokeAndWait(new Runnable() {
-                @Override
-                public void run() {
-                    AutoCompleteSupport<String> autocomplete = AutoCompleteSupport.install(StringAutoCompletePanel.this.comboBox,
-                            comboBoxEventList,
-                            new StringTextFilterator());
-                    autocomplete.setFilterMode(TextMatcherEditor.CONTAINS);
-                }
-            });
-        } catch (InterruptedException | InvocationTargetException ex) {
-            throw new RuntimeException(ex);
+        if(SwingUtilities.isEventDispatchThread()) {
+            installAutocomplete();
+        }else {
+            try {
+                EventQueue.invokeAndWait(new Runnable() {
+                    @Override
+                    public void run() {
+                        installAutocomplete();
+                    }
+                });
+            } catch (InterruptedException | InvocationTargetException ex) {
+                throw new RuntimeException(ex);
+            }
         }
 
         this.comboBox.getEditor().getEditorComponent().addKeyListener(new KeyAdapter() {
@@ -131,6 +133,13 @@ public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
     }
 
     private List<T> lastCheckResults = new LinkedList<>();
+
+    private void installAutocomplete() {
+        AutoCompleteSupport<String> autocomplete = AutoCompleteSupport.install(StringAutoCompletePanel.this.comboBox,
+                comboBoxEventList,
+                new StringTextFilterator());
+        autocomplete.setFilterMode(TextMatcherEditor.CONTAINS);
+    }
 
     private class StringTextFilterator implements TextFilterator<String> {
 

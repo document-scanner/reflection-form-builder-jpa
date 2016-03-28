@@ -22,6 +22,8 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
+import richtercloud.reflection.form.builder.ClassInfo;
+import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
@@ -47,8 +49,17 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
             ReflectionFormBuilder reflectionFormBuilder) {
         DefaultTableColumnModel mainListColumnModel = new DefaultTableColumnModel();
         List<Field> embeddableClassFields = reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(embeddableClass);
-        for(int i=0; i<embeddableClassFields.size(); i++) {
-            mainListColumnModel.addColumn(new TableColumn(i, 100));
+        int i=0;
+        for(Field embeddableClassField : embeddableClassFields) {
+            TableColumn tableColumn = new TableColumn(i, 100);
+            FieldInfo fieldInfo = embeddableClassField.getAnnotation(FieldInfo.class);
+            if(fieldInfo != null) {
+                tableColumn.setHeaderValue(fieldInfo.name());
+            }else {
+                tableColumn.setHeaderValue(embeddableClassField.getName());
+            }
+            mainListColumnModel.addColumn(tableColumn);
+            i += 1;
         }
         return mainListColumnModel;
     }
@@ -76,6 +87,7 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
         }
         this.embeddableClass = embeddableClass;
         this.embeddableFieldHandler = embeddableFieldHandler;
+        reset();
     }
 
     @Override

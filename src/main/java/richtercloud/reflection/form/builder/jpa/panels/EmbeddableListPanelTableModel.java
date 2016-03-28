@@ -25,7 +25,7 @@ import richtercloud.reflection.form.builder.ReflectionFormPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelTableModel;
 
 /**
- *
+ * Doesn't initialize column names which has to be done in caller.
  * @author richter
  */
 public class EmbeddableListPanelTableModel extends DefaultTableModel implements ListPanelTableModel<Object> {
@@ -44,8 +44,9 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
      */
     public EmbeddableListPanelTableModel(Class<?> embeddableClass,
             ReflectionFormBuilder reflectionFormBuilder) {
-        super(0,
-                reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(embeddableClass).size());
+        super(0, //rowCount
+                reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(embeddableClass).size() //columnCount
+        );
         if(embeddableClass == null) {
             throw new IllegalArgumentException("embeddableClass mustn't be null");
         }
@@ -56,9 +57,6 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
         }
         this.embeddableClassConstructor.setAccessible(true);
         this.embeddableClassFields = reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(embeddableClass);
-        for (Field embeddableClassField : embeddableClassFields) {
-            this.addColumn(embeddableClassField.getName());
-        }
     }
 
     /*
@@ -138,8 +136,20 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
         }
     }
 
+    /**
+     * Configures columns 0...n to represent the embeddable {@code aValue}.
+     * Therefore {@code columnIndex} is ignored and a value != 0 causes an
+     * {@link IllegalArgumentException} to be thrown.
+     * @param aValue
+     * @param rowIndex
+     * @param columnIndex
+     * @throws IllegalArgumentException if {@code columnIndex} > 0
+     */
     @Override
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+        if(columnIndex > 0) {
+            throw new IllegalArgumentException("columnIndex > 0 isn't supported");
+        }
         Object embeddable;
         if(rowIndex > this.embeddables.size()) {
             throw new IllegalArgumentException(String.format("rowIndex (%d) must not be larger than the size of embeddables (%d)", rowIndex, this.embeddables.size())); //if this becomes a problem introduce null padding
@@ -154,7 +164,9 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
             embeddable = this.embeddables.get(rowIndex);
         }
         try {
-            this.embeddableClassFields.get(columnIndex).set(embeddable, aValue);
+            for(Field embeddableClassField : this.embeddableClassFields) {
+                embeddableClassField.set(embeddable, embeddableClassField.get(aValue));
+            }
         } catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException(ex);
         }
