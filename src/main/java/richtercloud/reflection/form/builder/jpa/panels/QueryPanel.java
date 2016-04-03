@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  * Allows to run a JPQL query for a specific class while getting feedback about
@@ -120,6 +121,8 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
      *
      * @param entityManager
      * @param entityClass the class for which to the panel for
+     * @param messageHandler used in {@link QueryComponent}s added to this
+     * {@code QueryPanel}
      * @param reflectionFormBuilder
      * @param initialValue
      * @param queryResultTableSelectionMode
@@ -141,11 +144,14 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
     */
     public QueryPanel(EntityManager entityManager,
             Class<? extends E> entityClass,
+            MessageHandler messageHandler,
             ReflectionFormBuilder reflectionFormBuilder,
             E initialValue,
             BidirectionalControlPanel bidirectionalControlPanel) throws IllegalArgumentException, IllegalAccessException {
         super(bidirectionalControlPanel,
-                new QueryComponent<E>(entityManager, entityClass),
+                new QueryComponent<>(entityManager,
+                        entityClass,
+                        messageHandler),
                 reflectionFormBuilder,
                 entityClass,
                 entityManager,

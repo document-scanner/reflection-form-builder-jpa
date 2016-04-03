@@ -26,6 +26,7 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.panels.QueryListPanel;
+import richtercloud.reflection.form.builder.message.MessageHandler;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.typehandler.GenericListTypeHandler;
@@ -38,14 +39,23 @@ import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormBuilder, QueryListPanel> {
     private final EntityManager entityManager;
     private final String bidirectionalHelpDialogTitle;
+    private final MessageHandler messageHandler;
 
     public ToManyTypeHandler(EntityManager entityManager,
+            MessageHandler messageHandler,
             Map<Type, TypeHandler<?, ?, ?, ?>> genericsTypeHandlerMapping,
             Map<Type, TypeHandler<?, ?, ?, ?>> fieldTypeHandlerMapping,
             String bidirectionalHelpDialogTitle) {
         super(genericsTypeHandlerMapping,
                 fieldTypeHandlerMapping);
+        if(entityManager == null) {
+            throw new IllegalArgumentException("entityManager mustn't be null");
+        }
         this.entityManager = entityManager;
+        if(messageHandler == null) {
+            throw new IllegalArgumentException("messageHandler mustn't be null");
+        }
+        this.messageHandler = messageHandler;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
     }
 
@@ -63,6 +73,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
         QueryListPanel retValue = new QueryListPanel(entityManager,
                 reflectionFormBuilder,
                 (Class<?>) type,
+                messageHandler,
                 fieldValue,
                 bidirectionalHelpDialogTitle);
         retValue.addItemListener(new ListPanelItemListener<Object>() {

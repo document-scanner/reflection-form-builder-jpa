@@ -34,6 +34,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.reflection.form.builder.ComponentResettable;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.components.AmountMoneyCurrencyStorage;
+import richtercloud.reflection.form.builder.components.AmountMoneyExchangeRateRetriever;
 import richtercloud.reflection.form.builder.components.AmountMoneyUsageStatisticsStorage;
 import richtercloud.reflection.form.builder.fieldhandler.AmountMoneyFieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
@@ -54,7 +55,6 @@ import richtercloud.reflection.form.builder.message.MessageHandler;
 import richtercloud.reflection.form.builder.panels.NumberPanel;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateEvent;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateListener;
-import richtercloud.reflection.form.builder.components.AmountMoneyExchangeRateRetriever;
 
 /**
  * Handles entities and embeddables differently based on two type component-{@link FieldHandler} mappings.
@@ -109,10 +109,12 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                 messageHandler,
                 amountMoneyFieldHandler);
         ToManyTypeHandler toManyTypeHandler = new ToManyTypeHandler(entityManager,
+                messageHandler,
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 bidirectionalHelpDialogTitle);
         ToOneTypeHandler toOneTypeHandler = new ToOneTypeHandler(entityManager,
+                messageHandler,
                 bidirectionalHelpDialogTitle);
         return new JPAMappingFieldHandler(jPAAmountMoneyClassMappingFactory.generateClassMapping(),
                 amountMoneyClassMappingFactory.generateClassMapping(),

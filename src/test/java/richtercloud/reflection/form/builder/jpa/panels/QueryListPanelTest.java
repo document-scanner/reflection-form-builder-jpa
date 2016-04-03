@@ -22,15 +22,54 @@ import javax.persistence.metamodel.Metamodel;
 import javax.swing.JFrame;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.JPACachedFieldRetriever;
+import richtercloud.reflection.form.builder.message.LoggerMessageHandler;
+import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  *
  * @author richter
  */
 public class QueryListPanelTest {
+    private final static Logger LOGGER = LoggerFactory.getLogger(QueryListPanelTest.class);
+
+
+    @Test
+    public void testInit() throws IllegalArgumentException, IllegalAccessException {
+        EntityManager entityManager = mock(EntityManager.class);
+        Metamodel metamodel = mock(Metamodel.class);
+        when(entityManager.getMetamodel()).thenReturn(metamodel);
+        ReflectionFormBuilder reflectionFormBuilder = mock(ReflectionFormBuilder.class);
+        FieldRetriever fieldRetriever = new JPACachedFieldRetriever();
+        when(reflectionFormBuilder.getFieldRetriever()).thenReturn(fieldRetriever);
+        Class entityClass = A.class;
+        List<Object> initialValues = null;
+        String bidirectionalHelpDialogTitle = "test";
+        MessageHandler messageHandler = new LoggerMessageHandler(LOGGER);
+        QueryListPanel instance = new QueryListPanel(entityManager,
+                reflectionFormBuilder,
+                entityClass,
+                messageHandler,
+                initialValues,
+                bidirectionalHelpDialogTitle);
+        JFrame x = new JFrame();
+        x.getContentPane().add(instance);
+        x.setBounds(0, 0, 200, 200);
+        x.pack();
+        x.setVisible(true);
+    }
+
+    /**
+     * Test of reset method, of class QueryListPanel.
+     */
+    @org.junit.Test
+    public void testReset() {
+        //@TODO
+    }
 
     @Entity
     private class B {
@@ -45,7 +84,6 @@ public class QueryListPanelTest {
             return as;
         }
     }
-
     @Entity
     private class A {
         @ManyToMany
@@ -58,33 +96,6 @@ public class QueryListPanelTest {
         public List<B> getBs() {
             return bs;
         }
-    }
-
-    @Test
-    public void testInit() throws IllegalArgumentException, IllegalAccessException {
-        EntityManager entityManager = mock(EntityManager.class);
-        Metamodel metamodel = mock(Metamodel.class);
-        when(entityManager.getMetamodel()).thenReturn(metamodel);
-        ReflectionFormBuilder reflectionFormBuilder = mock(ReflectionFormBuilder.class);
-        FieldRetriever fieldRetriever = new JPACachedFieldRetriever();
-        when(reflectionFormBuilder.getFieldRetriever()).thenReturn(fieldRetriever);
-        Class entityClass = A.class;
-        List<Object> initialValues = null;
-        String bidirectionalHelpDialogTitle = "test";
-        QueryListPanel instance = new QueryListPanel(entityManager, reflectionFormBuilder, entityClass, initialValues, bidirectionalHelpDialogTitle);
-        JFrame x = new JFrame();
-        x.getContentPane().add(instance);
-        x.setBounds(0, 0, 200, 200);
-        x.pack();
-        x.setVisible(true);
-    }
-
-    /**
-     * Test of reset method, of class QueryListPanel.
-     */
-    @org.junit.Test
-    public void testReset() {
-        //@TODO
     }
 
 }

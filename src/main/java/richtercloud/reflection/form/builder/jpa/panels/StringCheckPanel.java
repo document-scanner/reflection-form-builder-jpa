@@ -20,6 +20,7 @@ import javax.persistence.EntityManager;
 import javax.swing.GroupLayout;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
+import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  * A panel to include an automatic check for existing entites with the value
@@ -46,6 +47,7 @@ public class StringCheckPanel<T> extends AbstractStringPanel<T> {
 
     public StringCheckPanel(EntityManager entityManager,
             Class<T> entityClass,
+            MessageHandler messageHandler,
             ReflectionFormBuilder reflectionFormBuilder,
             String initialValue,
             String fieldName,
@@ -55,6 +57,7 @@ public class StringCheckPanel<T> extends AbstractStringPanel<T> {
         initComponents();
         this.queryPanel = new QueryPanel<>(entityManager,
                 entityClass,
+                messageHandler,
                 reflectionFormBuilder,
                 null, //initialValue
                 null //bidirectionalControlPanel (needs to be read-only)

@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.message.MessageHandler;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
@@ -256,12 +257,19 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
     public QueryListPanel(EntityManager entityManager,
             ReflectionFormBuilder reflectionFormBuilder,
             Class<? extends E> entityClass,
+            MessageHandler messageHandler,
             List<E> initialValues,
             String bidirectionalHelpDialogTitle) throws IllegalArgumentException, IllegalAccessException {
         super(generateBidirectionalControlPanel(entityClass,
-                        reflectionFormBuilder.getFieldRetriever(),
-                        bidirectionalHelpDialogTitle), new QueryComponent<E>(entityManager,
-                entityClass), reflectionFormBuilder, entityClass, entityManager, ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+                reflectionFormBuilder.getFieldRetriever(),
+                bidirectionalHelpDialogTitle),
+                new QueryComponent<E>(entityManager,
+                        entityClass,
+                        messageHandler),
+                reflectionFormBuilder,
+                entityClass,
+                entityManager,
+                ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         LOGGER.debug(String.format("creating %s for entity class %s with initial value %s", QueryListPanel.class, entityClass, initialValues));
         if(entityManager == null) {
             throw new IllegalArgumentException("entityManager mustn't be null");

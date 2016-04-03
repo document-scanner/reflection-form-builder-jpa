@@ -30,6 +30,7 @@ import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -40,6 +41,8 @@ import javax.swing.SpinnerNumberModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
+import richtercloud.reflection.form.builder.message.Message;
+import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  * A component which provides a text field to enter JPQL queries for a
@@ -48,6 +51,7 @@ import richtercloud.reflection.form.builder.jpa.HistoryEntry;
  * visualizes it.
  *
  * @author richter
+ * @param <E> the type of the entity to query
  */
 public class QueryComponent<E> extends JPanel {
     private final static Logger LOGGER = LoggerFactory.getLogger(QueryComponent.class);
@@ -67,6 +71,8 @@ public class QueryComponent<E> extends JPanel {
             return o1.getLastUsage().compareTo(o2.getLastUsage());
         }
     };
+    private static final long serialVersionUID = 1L;
+
     /**
      * Creates a mutable list with one {@link HistoryEntry} to select all
      * entities of type {@code entityClass}.
@@ -80,22 +86,45 @@ public class QueryComponent<E> extends JPanel {
         )));
         return retValue;
     }
+
     public static String generateEntityClassQueryIdentifier(Class<?> entityClass) {
         String retValue = String.valueOf(Character.toLowerCase(entityClass.getSimpleName().charAt(0)));
         return retValue;
     }
+
+    /**
+     * This doesn't work with Hibernate 5.1.0 as JPA provider due to bug
+     * https://hibernate.atlassian.net/browse/HHH-10653!
+     *
+     * Since it's possible to use {@link Class#getSimpleName() } to identify
+     * classes it's not necessary to use parameters which provides queries which
+     * are much more readable if plain text and simple names are used. Note that
+     * JPA 2.1 query API and CriteriaBuilder API are seriously incapable of
+     * retrieving the text of the query (both Query and TypedQuery) after it has
+     * been created with parameters so that it'd be necessary to store
+     * parameters like {@code entityClass} in {@link HistoryEntry}s which is
+     * quite unelegant or keep the parameter escape string (e.g.
+     * {@code :entityClass} in the query).
+     *
+     * @param entityManager
+     * @param entityClass
+     * @return
+     */
     private static String createQueryText(Class<?> entityClass) {
         //Criteria API doesn't allow retrieval of string/text from objects
         //created with CriteriaBuilder, but text should be the first entry in
         //the query combobox -> construct String instead of using
         //CriteriaBuilder
         String entityClassQueryIdentifier = generateEntityClassQueryIdentifier(entityClass);
-        String retValue = String.format("SELECT %s from %s %s",
+        String retValue = String.format("SELECT %s FROM %s %s WHERE TYPE(%s) = %s",
                 entityClassQueryIdentifier,
                 entityClass.getSimpleName(),
-                entityClassQueryIdentifier);
+                entityClassQueryIdentifier,
+                entityClassQueryIdentifier,
+                entityClass.getSimpleName());
         return retValue;
     }
+
     public static void validateEntityClass(Class<?> entityClass, EntityManager entityManager) {
         Metamodel meta = entityManager.getMetamodel();
         try {
@@ -104,6 +133,7 @@ public class QueryComponent<E> extends JPanel {
             throw new IllegalArgumentException(String.format("entityClass %s is not a mapped entity", entityClass), ex);
         }
     }
+
     private EntityManager entityManager;
     private Class<? extends E> entityClass;
     private final SpinnerModel queryLimitSpinnerModel = new SpinnerNumberModel(INITIAL_QUERY_LIMIT_DEFAULT, //value
@@ -111,7 +141,6 @@ public class QueryComponent<E> extends JPanel {
             null, //max
             1 //stepSize
     );
-
     private final SortedComboBoxModel<HistoryEntry> queryComboBoxModel;
     private final QueryComboBoxEditor queryComboBoxEditor;
     /**
@@ -133,12 +162,15 @@ public class QueryComponent<E> extends JPanel {
     private final JSpinner queryLimitSpinner;
     private final JTextArea queryStatusLabel;
     private final JScrollPane queryStatusLabelScrollPane;
-    private Set<QueryComponentListener> listeners = new HashSet<>();
+    private Set<QueryComponentListener<E>> listeners = new HashSet<>();
+    private final MessageHandler messageHandler;
 
     public QueryComponent(EntityManager entityManager,
-            Class<? extends E> entityClass) throws IllegalArgumentException, IllegalAccessException {
+            Class<? extends E> entityClass,
+            MessageHandler messageHandler) throws IllegalArgumentException, IllegalAccessException {
         this(entityManager,
                 entityClass,
+                messageHandler,
                 generateInitialHistoryDefault(entityClass),
                 null, //initialSelectedHistoryEntry (null means point to the first item of initialHistory
                 INITIAL_QUERY_LIMIT_DEFAULT);
@@ -146,6 +178,7 @@ public class QueryComponent<E> extends JPanel {
 
     protected QueryComponent(EntityManager entityManager,
             Class<? extends E> entityClass,
+            MessageHandler messageHandler,
             List<HistoryEntry> initialHistory,
             HistoryEntry initialSelectedHistoryEntry,
             int initialQueryLimit) throws IllegalArgumentException, IllegalAccessException {
@@ -182,9 +215,13 @@ public class QueryComponent<E> extends JPanel {
             }
         }
         this.entityManager = entityManager;
+        if(messageHandler == null) {
+            throw new IllegalArgumentException("messageHandler mustn't be null");
+        }
+        this.messageHandler = messageHandler;
         this.queryLabel.setText(String.format("%s query:", entityClass.getSimpleName()));
         String queryText = createQueryText(entityClass);
-        TypedQuery<? extends E> query = entityManager.createQuery(queryText, entityClass);
+        TypedQuery<? extends E> query = createQuery(queryText);
         this.executeQuery(query, initialQueryLimit, queryText);
     }
 
@@ -305,11 +342,11 @@ public class QueryComponent<E> extends JPanel {
         }
     }
 
-    public void addListener(QueryComponentListener listener) {
+    public void addListener(QueryComponentListener<E> listener) {
         this.listeners.add(listener);
     }
 
-    public void removeListener(QueryComponentListener listener) {
+    public void removeListener(QueryComponentListener<E> listener) {
         this.listeners.remove(listener);
     }
 
@@ -330,9 +367,21 @@ public class QueryComponent<E> extends JPanel {
             String queryText) {
         LOGGER.debug("executing query '{}'", queryText);
         try {
-            List<? extends E> queryResultTmp = query.setMaxResults(queryLimit).getResultList();
-            for(QueryComponentListener listener : listeners) {
-                listener.onQueryExecuted(new QueryComponentEvent(queryResultTmp));
+            List<? extends E> queryResults = query.setMaxResults(queryLimit).getResultList();
+            for(E queryResult : queryResults) {
+                if(!queryResult.getClass().equals(entityClass)) {
+                    this.messageHandler.handle(new Message("The query result "
+                            + "contained entities which are not of the extact "
+                            + "type of this query panel (super and subclasses "
+                            + "aren't allow, consider adding a "
+                            + "`WHERE TYPE([identifier]) = [entity class]` "
+                            + "clause to the query)",
+                            JOptionPane.ERROR_MESSAGE));
+                    return;
+                }
+            }
+            for(QueryComponentListener<E> listener : listeners) {
+                listener.onQueryExecuted(new QueryComponentEvent<>(queryResults));
             }
             this.queryStatusLabel.setText("Query executed successfully.");
             HistoryEntry entry = queryComboBoxEditor.getItem();

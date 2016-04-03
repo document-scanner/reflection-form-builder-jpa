@@ -21,13 +21,19 @@ import java.util.List;
  * @author richter
  */
 public class QueryComponentEvent<E> {
-    private final List<E> queryResults;
+    /*
+    internal implementation notes:
+    - Has generic type `? extends E` rather than `E` in order to allow passing
+    return value of Query.getResultList directly. This is for convenience only
+    and can be changed back in case of trouble.
+    */
+    private final List<? extends E> queryResults;
 
-    public QueryComponentEvent(List<E> queryResults) {
+    public QueryComponentEvent(List<? extends E> queryResults) {
         this.queryResults = queryResults;
     }
 
-    public List<E> getQueryResults() {
+    public List<? extends E> getQueryResults() {
         return queryResults;
     }
 }

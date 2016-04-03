@@ -32,6 +32,7 @@ import richtercloud.reflection.form.builder.jpa.panels.BidirectionalControlPanel
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanel;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
+import richtercloud.reflection.form.builder.message.MessageHandler;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 
 /**
@@ -41,10 +42,19 @@ import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Object>, JPAReflectionFormBuilder, QueryPanel>{
     private final EntityManager entityManager;
     private final String bidirectionalHelpDialogTitle;
+    private final MessageHandler messageHandler;
 
     public ToOneTypeHandler(EntityManager entityManager,
+            MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle) {
+        if(entityManager == null) {
+            throw new IllegalArgumentException("entityManager mustn't be null");
+        }
         this.entityManager = entityManager;
+        if(messageHandler == null) {
+            throw new IllegalArgumentException("messageHandler mustn't be null");
+        }
+        this.messageHandler = messageHandler;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
     }
 
@@ -70,6 +80,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
         BidirectionalControlPanel bidirectionalControlPanel = new BidirectionalControlPanel(declaringClass, bidirectionalHelpDialogTitle, QueryPanel.retrieveMappedByField(entityClassFields), mappedFieldCandidates);
         QueryPanel retValue = new QueryPanel(entityManager,
                 entityClass,
+                messageHandler,
                 reflectionFormBuilder,
                 fieldValue,
                 bidirectionalControlPanel);

@@ -79,6 +79,7 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
         final QueryListPanel retValue = new QueryListPanel(entityManager,
                 reflectionFormBuilder,
                 entityClass,
+                getMessageHandler(),
                 fieldValue,
                 bidirectionalHelpDialogTitle);
         retValue.addItemListener(new ListPanelItemListener<Object>() {

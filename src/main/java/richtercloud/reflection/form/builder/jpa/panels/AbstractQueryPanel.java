@@ -35,11 +35,8 @@ import javax.swing.JSeparator;
 import javax.swing.JTable;
 import javax.swing.LayoutStyle;
 import javax.swing.ListSelectionModel;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.FieldInfo;
@@ -118,7 +115,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         this.queryComponent.addListener(new QueryComponentListener<E>() {
             @Override
             public void onQueryExecuted(QueryComponentEvent<E> event) {
-                List<E> queryResults = event.getQueryResults();
+                List<? extends E> queryResults = event.getQueryResults();
                 while(AbstractQueryPanel.this.queryResultTableModel.getRowCount() > 0) {
                     AbstractQueryPanel.this.queryResultTableModel.removeRow(0);
                 }
