@@ -15,13 +15,11 @@
 package richtercloud.reflection.form.builder.jpa.panels;
 
 import ca.odell.glazedlists.BasicEventList;
-import ca.odell.glazedlists.CollectionList;
 import ca.odell.glazedlists.EventList;
 import ca.odell.glazedlists.TextFilterator;
 import ca.odell.glazedlists.matchers.TextMatcherEditor;
 import ca.odell.glazedlists.swing.AutoCompleteSupport;
 import ca.odell.glazedlists.swing.DefaultEventComboBoxModel;
-import ca.odell.glazedlists.swing.EventComboBoxModel;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -32,8 +30,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
 import javax.persistence.EntityManager;
+import javax.swing.JComboBox;
 import javax.swing.SwingUtilities;
-import javax.swing.event.ListDataEvent;
 import richtercloud.reflection.form.builder.FieldRetriever;
 
 /**
@@ -53,6 +51,7 @@ public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
     private final EventList<String> comboBoxEventList = new BasicEventList<>();
     private final DefaultEventComboBoxModel<String> comboBoxModel = new DefaultEventComboBoxModel<>(comboBoxEventList);
     private final FieldRetriever fieldRetriever;
+    private List<T> lastCheckResults = new LinkedList<>();
 
     private static Field retrieveFieldByName(FieldRetriever fieldRetriever, Class<?> entityClass, String fieldName) {
         Field retValue = null;
@@ -132,7 +131,9 @@ public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
         });
     }
 
-    private List<T> lastCheckResults = new LinkedList<>();
+    public JComboBox<String> getComboBox() {
+        return comboBox;
+    }
 
     private void installAutocomplete() {
         AutoCompleteSupport<String> autocomplete = AutoCompleteSupport.install(StringAutoCompletePanel.this.comboBox,

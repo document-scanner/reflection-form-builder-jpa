@@ -69,14 +69,6 @@ public class LongIdPanel extends NumberPanel<Long> implements IdPanel {
                 .addComponent(nextIdButton)
         );
 
-        this.getValueSpinner().addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(ChangeEvent e) {
-                for(NumberPanelUpdateListener<Long> updateListener : LongIdPanel.this.getUpdateListeners()) {
-                    updateListener.onUpdate(new LongIdPanelUpdateEvent((Long) LongIdPanel.this.getValueSpinner().getValue()));
-                }
-            }
-        });
         this.entityValidator = new EntityValidator(fieldRetriever, messageHandler);
     }
 
@@ -86,16 +78,7 @@ public class LongIdPanel extends NumberPanel<Long> implements IdPanel {
             return false;
         }
         Long nextId = idGenerator.getNextId(this.entity);
-        if(nextId == null) {
-            //don't know a case then this could happen, but it doesn't hurt to
-            //put it here
-            this.getNullCheckBox().setSelected(true);
-            this.getValueSpinner().setEnabled(false);
-        }else {
-            this.getNullCheckBox().setSelected(false);
-            this.getValueSpinner().setEnabled(true);
-        }
-        this.getValueSpinner().setValue(nextId);
+        this.setValue(nextId);
         return true;
     }
 
