@@ -376,7 +376,8 @@ public class QueryComponent<E> extends JPanel {
                             + "aren't allow, consider adding a "
                             + "`WHERE TYPE([identifier]) = [entity class]` "
                             + "clause to the query)",
-                            JOptionPane.ERROR_MESSAGE));
+                            JOptionPane.ERROR_MESSAGE,
+                            "Query error"));
                     return;
                 }
             }

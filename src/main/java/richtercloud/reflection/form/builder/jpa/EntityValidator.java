@@ -39,7 +39,8 @@ public class EntityValidator {
     private final FieldRetriever fieldRetriever;
     private final MessageHandler messageHandler;
 
-    public EntityValidator(FieldRetriever fieldRetriever, MessageHandler messageHandler) {
+    public EntityValidator(FieldRetriever fieldRetriever,
+            MessageHandler messageHandler) {
         this.fieldRetriever = fieldRetriever;
         this.messageHandler = messageHandler;
     }
@@ -111,7 +112,9 @@ public class EntityValidator {
             messageBuilder.append("Fix the corresponding values in the components.");
             messageBuilder.append("</html>");
             String message = messageBuilder.toString();
-            this.messageHandler.handle(new Message(message, JOptionPane.WARNING_MESSAGE));
+            this.messageHandler.handle(new Message(message,
+                    JOptionPane.WARNING_MESSAGE,
+                    "Validation failed"));
             return false;
         }
         return true;

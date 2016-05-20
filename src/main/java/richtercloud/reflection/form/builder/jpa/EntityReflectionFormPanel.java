@@ -197,7 +197,9 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         } catch (IllegalArgumentException | IllegalAccessException ex) {
             String message = String.format("The following exception occured during persisting entity of type '%s': %s", this.getEntityClass(), ExceptionUtils.getRootCauseMessage(ex));
             LOGGER.debug(message, ex);
-            messageHandler.handle(new Message(message, JOptionPane.WARNING_MESSAGE));
+            messageHandler.handle(new Message(message,
+                    JOptionPane.WARNING_MESSAGE,
+                    "Persisting failed"));
             return;
         }
         //check getEntityManager.contains is unnecessary because a instances should be managed
@@ -205,7 +207,9 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
             getEntityManager().getTransaction().begin();
             getEntityManager().remove(instance);
             getEntityManager().getTransaction().commit();
-            this.messageHandler.handle(new Message(String.format("<html>removed entity of type '%s' successfully</html>", this.getEntityClass()), JOptionPane.INFORMATION_MESSAGE));
+            this.messageHandler.handle(new Message(String.format("<html>removed entity of type '%s' successfully</html>", this.getEntityClass()),
+                    JOptionPane.INFORMATION_MESSAGE,
+                    "Removal failed"));
         }catch(EntityExistsException ex) {
             getEntityManager().getTransaction().rollback();
             handlePersistenceException(ex);
@@ -240,14 +244,18 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         }
         if(!editingMode) {
             if(getEntityManager().contains(instance)) {
-                this.messageHandler.handle(new Message("The instance is already saved. In order to edit an already saved instance use the editing mode.", JOptionPane.WARNING_MESSAGE));
+                this.messageHandler.handle(new Message("The instance is already saved. In order to edit an already saved instance use the editing mode.",
+                        JOptionPane.WARNING_MESSAGE,
+                        "Instance already saved"));
                 return;
             }
             try {
                 getEntityManager().getTransaction().begin();
                 getEntityManager().persist(instance);
                 getEntityManager().getTransaction().commit();
-                this.messageHandler.handle(new Message(String.format("<html>persisted entity of type '%s' successfully</html>", this.getEntityClass()), JOptionPane.INFORMATION_MESSAGE));
+                this.messageHandler.handle(new Message(String.format("<html>persisted entity of type '%s' successfully</html>", this.getEntityClass()),
+                        JOptionPane.INFORMATION_MESSAGE,
+                        "Instance persisted successfully"));
             }catch(EntityExistsException ex) {
                 getEntityManager().getTransaction().rollback();
                 handlePersistenceException(ex);
@@ -258,14 +266,18 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
             }
         } else {
             if(!getEntityManager().contains(instance)) {
-                this.messageHandler.handle(new Message("The instance is a new instance. In order to save a new instance use the creation mode.", JOptionPane.WARNING_MESSAGE));
+                this.messageHandler.handle(new Message("The instance is a new instance. In order to save a new instance use the creation mode.",
+                        JOptionPane.WARNING_MESSAGE,
+                        "Need to use creation mode"));
                 return;
             }
             try {
                 getEntityManager().getTransaction().begin();
                 getEntityManager().merge(instance);
                 getEntityManager().getTransaction().commit();
-                this.messageHandler.handle(new Message(String.format("<html>updated entity of type '%s' successfully</html>", this.getEntityClass()), JOptionPane.INFORMATION_MESSAGE));
+                this.messageHandler.handle(new Message(String.format("<html>updated entity of type '%s' successfully</html>", this.getEntityClass()),
+                        JOptionPane.INFORMATION_MESSAGE,
+                        "Instance updated successfully"));
             }catch(EntityExistsException ex) {
                 getEntityManager().getTransaction().rollback();
                 handlePersistenceException(ex);
@@ -286,7 +298,9 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                 ExceptionUtils.getRootCauseMessage(ex) //since ExceptionUtils.getRootCause returns null if ex doesn't have a cause use ExceptionUtils.getRootCauseMessage (which always works)
         );
         LOGGER.debug(message, ex);
-        this.messageHandler.handle(new Message(message, JOptionPane.ERROR_MESSAGE));
+        this.messageHandler.handle(new Message(message,
+                JOptionPane.ERROR_MESSAGE,
+                "Exception occured"));
     }
 
 }
