@@ -19,7 +19,7 @@ import java.lang.reflect.Type;
 import javax.persistence.EntityManager;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.Pair;
-import richtercloud.reflection.form.builder.ComponentResettable;
+import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -50,7 +50,7 @@ public class JPAStringFieldHandler extends ResettableFieldHandler<String, FieldU
     }
 
     @Override
-    public Pair<JComponent, ComponentResettable<?>> handle0(Field field,
+    public Pair<JComponent, ComponentHandler<?>> handle0(Field field,
             Object instance,
             final FieldUpdateListener<FieldUpdateEvent<String>> updateListener,
             JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException, IllegalAccessException, FieldHandlingException {

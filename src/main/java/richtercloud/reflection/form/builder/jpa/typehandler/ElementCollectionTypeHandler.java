@@ -20,7 +20,7 @@ import java.util.Map;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import richtercloud.reflection.form.builder.ComponentResettable;
+import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -75,7 +75,7 @@ public class ElementCollectionTypeHandler extends GenericListTypeHandler<JPARefl
      * @return the result of the handling
      */
     @Override
-    protected Pair<JComponent, ComponentResettable<?>> handleGenericType(Type type, List<Object> fieldValue,
+    protected Pair<JComponent, ComponentHandler<?>> handleGenericType(Type type, List<Object> fieldValue,
             String fieldName,
             Class<?> declaringClass,
             final FieldUpdateListener<FieldUpdateEvent<List<Object>>> updateListener,
@@ -110,6 +110,6 @@ public class ElementCollectionTypeHandler extends GenericListTypeHandler<JPARefl
                 updateListener.onUpdate(new FieldUpdateEvent<>(event.getItem()));
             }
         });
-        return new ImmutablePair<JComponent, ComponentResettable<?>>(retValue, this);
+        return new ImmutablePair<JComponent, ComponentHandler<?>>(retValue, this);
     }
 }

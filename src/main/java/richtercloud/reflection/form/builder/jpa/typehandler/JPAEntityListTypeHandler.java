@@ -23,7 +23,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.reflection.form.builder.ComponentResettable;
+import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -52,7 +52,7 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
     }
 
     @Override
-    public Pair<JComponent, ComponentResettable<?>> handle0(Type type,
+    public Pair<JComponent, ComponentHandler<?>> handle0(Type type,
             List<Object> fieldValue,
             final FieldUpdateListener<FieldUpdateEvent<List<Object>>> updateListener,
             ReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException, IllegalAccessException {
@@ -94,7 +94,7 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
                 updateListener.onUpdate(new FieldUpdateEvent<>(event.getItem()));
             }
         });
-        return new ImmutablePair<JComponent, ComponentResettable<?>>(retValue, this);
+        return new ImmutablePair<JComponent, ComponentHandler<?>>(retValue, this);
     }
 
 }

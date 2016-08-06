@@ -57,18 +57,6 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
     private static final long serialVersionUID = 1L;
     private final static Logger LOGGER = LoggerFactory.getLogger(QueryPanel.class);
 
-    protected static void handleInstanceToTableModel(DefaultTableModel queryResultTableModel,
-            Object queryResult,
-            ReflectionFormBuilder reflectionFormBuilder,
-            Class<?> entityClass) throws IllegalArgumentException,
-            IllegalAccessException {
-        List<Object> queryResultValues = new LinkedList<>();
-        for(Field field : reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass)) {
-            queryResultValues.add(field.get(queryResult));
-        }
-        queryResultTableModel.addRow(queryResultValues.toArray(new Object[queryResultValues.size()]));
-    }
-
     /**
      * Checks every field of the type of every field of {@code entityClass} if
      * it's assignable from (i.e. a superclass) of {@code entityClass} so that
@@ -117,6 +105,21 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
 
     private final E initialValue;
 
+    public QueryPanel(EntityManager entityManager,
+            Class<? extends E> entityClass,
+            MessageHandler messageHandler,
+            ReflectionFormBuilder reflectionFormBuilder,
+            E initialValue,
+            BidirectionalControlPanel bidirectionalControlPanel) throws IllegalArgumentException, IllegalAccessException {
+        this(entityManager,
+                entityClass,
+                messageHandler,
+                reflectionFormBuilder,
+                initialValue,
+                bidirectionalControlPanel,
+                QUERY_RESULT_TABLE_HEIGHT_DEFAULT);
+    }
+
     /**
      *
      * @param entityManager
@@ -147,7 +150,8 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             MessageHandler messageHandler,
             ReflectionFormBuilder reflectionFormBuilder,
             E initialValue,
-            BidirectionalControlPanel bidirectionalControlPanel) throws IllegalArgumentException, IllegalAccessException {
+            BidirectionalControlPanel bidirectionalControlPanel,
+            int queryResultTableHeight) throws IllegalArgumentException, IllegalAccessException {
         super(bidirectionalControlPanel,
                 new QueryComponent<>(entityManager,
                         entityClass,
@@ -156,9 +160,6 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                 entityClass,
                 entityManager,
                 ListSelectionModel.SINGLE_SELECTION);
-        List<Field> entityClassFields = reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass);
-        initTableModel(this.getQueryResultTableModel(),
-                entityClassFields);
         this.initialValue = initialValue;
 
         GroupLayout.ParallelGroup horizontalParallelGroup = getLayout().createParallelGroup();
@@ -170,7 +171,10 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
         verticalSequentialGroup
                 .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(super.getVerticalSequentialGroup())
-                .addComponent(getQueryResultTableScrollPane(), GroupLayout.DEFAULT_SIZE, 251, Short.MAX_VALUE)
+                .addComponent(getQueryResultTableScrollPane(),
+                        GroupLayout.DEFAULT_SIZE,
+                        queryResultTableHeight,
+                        Short.MAX_VALUE)
                 .addContainerGap();
         getLayout().setVerticalGroup(verticalSequentialGroup);
 
@@ -205,9 +209,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
     }
 
     private void reset0() {
-        while(this.getQueryResultTableModel().getRowCount() > 0) {
-            this.getQueryResultTableModel().removeRow(0);
-        }
+        this.getQueryResultTable().setModel(new DefaultTableModel());
         if(initialValue != null) {
             if(!this.getEntityManager().contains(initialValue)) {
                 this.getQueryResultLabel().setText(String.format("previously managed entity %s has been removed from persistent storage, ignoring", initialValue));

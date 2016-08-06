@@ -15,6 +15,7 @@
 package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.LayoutManager;
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -24,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
 import javax.persistence.EntityManager;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.GroupLayout;
@@ -35,13 +37,14 @@ import javax.swing.JSeparator;
 import javax.swing.JTable;
 import javax.swing.LayoutStyle;
 import javax.swing.ListSelectionModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.FieldInfo;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
-import static richtercloud.reflection.form.builder.jpa.panels.QueryPanel.handleInstanceToTableModel;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -58,19 +61,13 @@ import static richtercloud.reflection.form.builder.jpa.panels.QueryPanel.handleI
 public abstract class AbstractQueryPanel<E> extends JPanel {
     private static final long serialVersionUID = 1L;
     private final static Logger LOGGER = LoggerFactory.getLogger(AbstractQueryPanel.class);
-    private Set<QueryPanelUpdateListener> updateListeners = new HashSet<>();
+    public final static int QUERY_RESULT_TABLE_HEIGHT_DEFAULT = 100;
+    private final Set<QueryPanelUpdateListener> updateListeners = new HashSet<>();
     private final JSeparator bidirectionalControlPanelSeparator;
-    private final BidirectionalControlPanel bidirectionalControlPanel;
     private final JLabel queryResultLabel;
     private final JTable queryResultTable;
     private final JScrollPane queryResultTableScrollPane;
-    private ListSelectionModel queryResultTableSelectionModel = new DefaultListSelectionModel();
-    /*
-    internal implementation notes:
-    - set a model stub initially, overwrite in construction in order to allow
-    initialization with parameterless constructor and initComponents
-    */
-    private DefaultTableModel queryResultTableModel = new DefaultTableModel();
+    private final ListSelectionModel queryResultTableSelectionModel = new DefaultListSelectionModel();
     private final QueryComponent<E> queryComponent;
     /**
      * Pointer to the last query results received as QueryComponent event.
@@ -82,15 +79,24 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
     private final JSeparator separator;
     private final GroupLayout.SequentialGroup verticalSequentialGroup;
     private final GroupLayout.ParallelGroup horizontalParallelGroup;
+    private final Map<Integer, String> queryResultTableTooltipTextMap = new HashMap<>();
 
     public AbstractQueryPanel(BidirectionalControlPanel bidirectionalControlPanel,
             QueryComponent<E> queryComponent,
-            ReflectionFormBuilder reflectionFormBuilder,
+            final ReflectionFormBuilder reflectionFormBuilder,
             Class<?> entityClass,
             EntityManager entityManager,
             int queryResultTableSelectionMode) {
         super();
-        this.bidirectionalControlPanel = bidirectionalControlPanel;
+        if(entityManager == null) {
+            throw new IllegalArgumentException("entityManager mustn't be null");
+        }
+        if(reflectionFormBuilder == null) {
+            throw new IllegalArgumentException("reflectionFormBuilder mustn't be null");
+        }
+        if(entityClass == null) {
+            throw new IllegalArgumentException("entityClass mustn't be null");
+        }
         this.queryComponent = queryComponent;
         this.reflectionFormBuilder = reflectionFormBuilder;
         this.entityClass = entityClass;
@@ -107,8 +113,10 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
             }
         };
 
+        QueryComponent.validateEntityClass(entityClass, entityManager);
+
         queryResultLabel.setText("Query result:");
-        queryResultTable.setModel(this.queryResultTableModel);
+        queryResultTable.setModel(new DefaultTableModel());
         queryResultTable.setSelectionModel(this.queryResultTableSelectionModel);
         queryResultTableScrollPane.setViewportView(queryResultTable);
         this.queryResultTableSelectionModel.setSelectionMode(queryResultTableSelectionMode);
@@ -116,21 +124,19 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
             @Override
             public void onQueryExecuted(QueryComponentEvent<E> event) {
                 List<? extends E> queryResults = event.getQueryResults();
-                while(AbstractQueryPanel.this.queryResultTableModel.getRowCount() > 0) {
-                    AbstractQueryPanel.this.queryResultTableModel.removeRow(0);
-                }
+                AbstractQueryPanel.this.queryResults.clear();
+                AbstractQueryPanel.this.queryResults.addAll(queryResults);
+                DefaultTableModel queryResultModel = initTableModel(queryResults,
+                        reflectionFormBuilder.getFieldRetriever());
+                AbstractQueryPanel.this.queryResultTable.setModel(queryResultModel);
                 for(E queryResult : queryResults) {
                     try {
-                        handleInstanceToTableModel(AbstractQueryPanel.this.queryResultTableModel,
-                                queryResult,
-                                AbstractQueryPanel.this.reflectionFormBuilder,
-                                AbstractQueryPanel.this.entityClass);
+                        AbstractQueryPanel.this.handleInstanceToTableModel(queryResultModel,
+                                queryResult);
                     } catch (IllegalArgumentException | IllegalAccessException ex) {
                         throw new RuntimeException(ex);
                     }
                 }
-                AbstractQueryPanel.this.queryResults.clear();
-                AbstractQueryPanel.this.queryResults.addAll(queryResults);
             }
         });
 
@@ -144,17 +150,17 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         }
         horizontalParallelGroup
                 .addComponent(queryComponent)
-                    .addComponent(separator)
-                    .addGroup(layout.createSequentialGroup()
+                .addComponent(separator)
+                .addGroup(layout.createSequentialGroup()
                         .addComponent(queryResultLabel)
                         .addGap(0, 0, Short.MAX_VALUE));
 
         layout.setHorizontalGroup(
-            layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(horizontalParallelGroup)
-                .addContainerGap())
+                layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createSequentialGroup()
+                                .addContainerGap()
+                                .addGroup(horizontalParallelGroup)
+                                .addContainerGap())
         );
         this.verticalSequentialGroup = layout.createSequentialGroup();
         if(bidirectionalControlPanel != null) {
@@ -170,9 +176,8 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
                 .addComponent(queryResultLabel);
         layout.setVerticalGroup(verticalSequentialGroup);
 
-        final TableCellRenderer tableCellRenderer = getQueryResultTable().getTableHeader().getDefaultRenderer();
-        this.getQueryResultTable().getTableHeader().setDefaultRenderer(new TableCellRenderer() {
-            private static final long serialVersionUID = 1L;
+        final TableCellRenderer tableCellRenderer = queryResultTable.getTableHeader().getDefaultRenderer();
+        queryResultTable.getTableHeader().setDefaultRenderer(new TableCellRenderer() {
 
             @Override
             public Component getTableCellRendererComponent(JTable table, Object o, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -186,21 +191,72 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         });
     }
 
-    private final Map<Integer, String> queryResultTableTooltipTextMap = new HashMap<>();
+    private final Set<Class<?>> lastQueryClasses = new HashSet<>();
 
-    protected void initTableModel(DefaultTableModel tableModel, List<Field> entityClassFields) {
-        int i=0;
-        for(Field field : entityClassFields) {
-            FieldInfo fieldInfo = field.getAnnotation(FieldInfo.class);
-            if(fieldInfo != null) {
-                tableModel.addColumn(fieldInfo.name());
-                queryResultTableTooltipTextMap.put(i, fieldInfo.description());
-            }else {
-                tableModel.addColumn(field.getName());
-                queryResultTableTooltipTextMap.put(i, "");
+    /**
+     * Checks whether it's necessary to add or remove columns from
+     * {@code queryResultTableModel} after changing subtypes flag and eventually
+     * including subclasses which weren't included in the last query result.
+     *
+     * Adds a discriminator column to {@code tableModel} of {@code queryResults}
+     * contains more than one differentiable class.
+     *
+     * Since there's no way to remove columns once added to a
+     * {@link DefaultTableModel} a model has to be recreated every time it ought
+     * to be changed.
+     *
+     * @param tableModel
+     * @param queryResults the query result returned from {@link QueryComponent}
+     * (assumed to be of correct (sub)type(s) depending on whether
+     * {@link QueryComponent} is configured to return subtypes or not)
+     */
+    /*
+    internal implementation notes:
+    - recreation of table model is tolerable effort and support KISS pattern
+    */
+    protected DefaultTableModel initTableModel(List<?> queryResults,
+            FieldRetriever fieldRetriever) {
+        DefaultTableModel tableModel = new DefaultTableModel();
+        lastQueryClasses.clear();
+        for(Object queryResult: queryResults) {
+            if(!lastQueryClasses.contains(queryResult.getClass())) {
+                lastQueryClasses.add(queryResult.getClass());
             }
-            i++;
         }
+        if(lastQueryClasses.size() > 1) {
+            tableModel.addColumn("Type");
+        }
+
+        Set<Field> seenFields = new HashSet<>();
+        int i=1;
+        for(Class<?> lastQueryClass : lastQueryClasses) {
+            for(Field field : fieldRetriever.retrieveRelevantFields(lastQueryClass)) {
+                if(seenFields.contains(field)) {
+                    continue;
+                }
+                FieldInfo fieldInfo = field.getAnnotation(FieldInfo.class);
+                if(fieldInfo != null) {
+                    tableModel.addColumn(fieldInfo.name());
+                    queryResultTableTooltipTextMap.put(i, fieldInfo.description());
+                }else {
+                    tableModel.addColumn(field.getName());
+                    queryResultTableTooltipTextMap.put(i, "");
+                }
+                i++;
+                seenFields.add(field);
+            }
+        }
+        return tableModel;
+    }
+
+    protected void handleInstanceToTableModel(DefaultTableModel tableModel,
+            Object queryResult) throws IllegalArgumentException,
+            IllegalAccessException {
+        List<Object> queryResultValues = new LinkedList<>();
+        for(Field field : reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass)) {
+            queryResultValues.add(field.get(queryResult));
+        }
+        tableModel.addRow(queryResultValues.toArray(new Object[queryResultValues.size()]));
     }
 
     /**
@@ -212,7 +268,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
     - can't add a check whether mgr is a GroupLayout and fail with
     IllegalArgumentException because setLayout is called in JPanel's constructor
     and requires a reference to this which can't be referenced because super
-    constructor is called
+    constructor is called -> keep this implementation as marker for this note
     */
     @Override
     public void setLayout(LayoutManager mgr) {
@@ -265,10 +321,6 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         return queryComponent;
     }
 
-    public DefaultTableModel getQueryResultTableModel() {
-        return queryResultTableModel;
-    }
-
     public JTable getQueryResultTable() {
         return queryResultTable;
     }
@@ -296,5 +348,4 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
     public ListSelectionModel getQueryResultTableSelectionModel() {
         return queryResultTableSelectionModel;
     }
-
 }

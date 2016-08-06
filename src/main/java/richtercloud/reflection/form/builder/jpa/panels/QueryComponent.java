@@ -28,6 +28,7 @@ import javax.persistence.metamodel.Metamodel;
 import javax.swing.BorderFactory;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -50,9 +51,24 @@ import richtercloud.reflection.form.builder.message.MessageHandler;
  * methods to retrieve the query result to be used in a component which
  * visualizes it.
  *
+ * Query results are generally limited to exact type of {@code entityClass} or
+ * subtypes in order to minimize validation efforts (there should be no use case
+ * where types are needed which don't match the type of field they're assigned
+ * to). Whether the exact type or subtypes ought to be matched is controlled
+ * with a checkbox which allows the user to choose. This exposes the object
+ * oriented structure of entites to the user, but that's not a problem and not
+ * worth to be hidden.
+ *
  * @author richter
  * @param <E> the type of the entity to query
  */
+/*
+internal implementation notes:
+- Subtypes checkbox also easily solves the issue that a exact type switch is
+necessary to be specified at instantiation of QueryComponent which is usually
+done in type handlers which don't know about field annotations (could be fixed,
+though).
+*/
 public class QueryComponent<E> extends JPanel {
     private final static Logger LOGGER = LoggerFactory.getLogger(QueryComponent.class);
     /**
@@ -160,6 +176,7 @@ public class QueryComponent<E> extends JPanel {
     private final JLabel queryLabel;
     private final JLabel queryLimitLabel;
     private final JSpinner queryLimitSpinner;
+    private final JCheckBox subtypeCheckBox = new JCheckBox("Subtypes");
     private final JTextArea queryStatusLabel;
     private final JScrollPane queryStatusLabelScrollPane;
     private Set<QueryComponentListener<E>> listeners = new HashSet<>();
@@ -282,6 +299,8 @@ public class QueryComponent<E> extends JPanel {
                         .addGap(18, 18, 18)
                         .addComponent(queryLimitSpinner, GroupLayout.DEFAULT_SIZE, 179, Short.MAX_VALUE)
                         .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(subtypeCheckBox)
+                        .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(queryButton))
                     .addComponent(queryStatusLabelScrollPane, GroupLayout.Alignment.TRAILING)
                     .addGroup(layout.createSequentialGroup()
@@ -304,7 +323,8 @@ public class QueryComponent<E> extends JPanel {
                     .addComponent(queryButton)
                     .addComponent(queryComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(queryLimitSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(queryLimitLabel))
+                    .addComponent(queryLimitLabel)
+                    .addComponent(subtypeCheckBox))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(queryStatusLabelScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)));
     }
@@ -369,16 +389,26 @@ public class QueryComponent<E> extends JPanel {
         try {
             List<? extends E> queryResults = query.setMaxResults(queryLimit).getResultList();
             for(E queryResult : queryResults) {
-                if(!queryResult.getClass().equals(entityClass)) {
-                    this.messageHandler.handle(new Message("The query result "
-                            + "contained entities which are not of the extact "
-                            + "type of this query panel (super and subclasses "
-                            + "aren't allow, consider adding a "
-                            + "`WHERE TYPE([identifier]) = [entity class]` "
-                            + "clause to the query)",
-                            JOptionPane.ERROR_MESSAGE,
-                            "Query error"));
-                    return;
+                if(!subtypeCheckBox.isSelected()) {
+                    if(!queryResult.getClass().equals(entityClass)) {
+                        this.messageHandler.handle(new Message("The query result "
+                                + "contained entities which are not of the extact "
+                                + "type of this query panel (super and subclasses "
+                                + "aren't allow, consider adding a "
+                                + "`WHERE TYPE([identifier]) = [entity class]` "
+                                + "clause to the query)",
+                                JOptionPane.ERROR_MESSAGE,
+                                "Query error"));
+                        return;
+                    }
+                } else {
+                    if(!entityClass.isAssignableFrom(queryResult.getClass())) {
+                        this.messageHandler.handle(new Message(String.format("The query result "
+                                + "contained entities which are not a subtype of "
+                                + "the entity class %s.", entityClass.getSimpleName()),
+                                JOptionPane.ERROR_MESSAGE,
+                                "Query error"));
+                    }
                 }
             }
             for(QueryComponentListener<E> listener : listeners) {

@@ -49,5 +49,4 @@ public abstract class JPAReflectionFormPanel<T, U extends ReflectionFormPanelUpd
     public EntityManager getEntityManager() {
         return entityManager;
     }
-
 }

@@ -31,7 +31,7 @@ import javax.persistence.OneToOne;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import richtercloud.reflection.form.builder.ComponentResettable;
+import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.components.AmountMoneyCurrencyStorage;
 import richtercloud.reflection.form.builder.components.AmountMoneyExchangeRateRetriever;
@@ -62,7 +62,7 @@ import richtercloud.reflection.form.builder.panels.NumberPanelUpdateListener;
  * @author richter
  */
 public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends MappingFieldHandler<T,E, JPAReflectionFormBuilder, Component> {
-    private final static ComponentResettable<LongIdPanel> LONG_ID_PANEL_COMPONENT_RESETTER = new ComponentResettable<LongIdPanel>() {
+    private final static ComponentHandler<LongIdPanel> LONG_ID_PANEL_COMPONENT_RESETTER = new ComponentHandler<LongIdPanel>() {
         @Override
         public void reset(LongIdPanel component) {
             component.reset();
@@ -152,7 +152,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
     }
 
     @Override
-    protected Pair<JComponent, ComponentResettable<?>> handle0(Field field,
+    protected Pair<JComponent, ComponentHandler<?>> handle0(Field field,
             Object instance,
             final FieldUpdateListener updateListener,
             JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException,
@@ -192,7 +192,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                         updateListener.onUpdate(new FieldUpdateEvent<>(event.getNewValue()));
                     }
                 });
-                return new ImmutablePair<JComponent, ComponentResettable<?>>(retValue, LONG_ID_PANEL_COMPONENT_RESETTER);
+                return new ImmutablePair<JComponent, ComponentHandler<?>>(retValue, LONG_ID_PANEL_COMPONENT_RESETTER);
             }else {
                 throw new IllegalArgumentException(String.format("@Id annotated field type %s not supported", field.getGenericType()));
             }
@@ -204,7 +204,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             if(fieldValue != null && !(fieldValue instanceof List)) {
                 throw new IllegalArgumentException("field values isn't an instance of List");
             }
-            Pair<JComponent, ComponentResettable<?>> retValue = this.elementCollectionTypeHandler.handle(field.getGenericType(),
+            Pair<JComponent, ComponentHandler<?>> retValue = this.elementCollectionTypeHandler.handle(field.getGenericType(),
                     (List<Object>)fieldValue,
                     fieldName,
                     fieldDeclaringClass,
@@ -213,7 +213,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             return retValue;
         }
         if(field.getAnnotation(OneToMany.class) != null || field.getAnnotation(ManyToMany.class) != null) {
-            Pair<JComponent, ComponentResettable<?>> retValue = this.toManyTypeHandler.handle(field.getGenericType(),
+            Pair<JComponent, ComponentHandler<?>> retValue = this.toManyTypeHandler.handle(field.getGenericType(),
                     (List<Object>)fieldValue,
                     fieldName,
                     fieldDeclaringClass,
@@ -222,7 +222,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             return retValue;
         }
         if(field.getAnnotation(OneToOne.class) != null || field.getAnnotation(ManyToOne.class) != null) {
-            Pair<JComponent, ComponentResettable<?>> retValue = this.toOneTypeHandler.handle(field.getGenericType(),
+            Pair<JComponent, ComponentHandler<?>> retValue = this.toOneTypeHandler.handle(field.getGenericType(),
                     fieldValue,
                     fieldName,
                     fieldDeclaringClass,
@@ -235,7 +235,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             if(fieldTypeClass.getAnnotation(Embeddable.class) != null) {
                 FieldHandler fieldHandler = embeddableMapping.get(fieldType);
                 JComponent retValue = fieldHandler.handle(field, instance, updateListener, reflectionFormBuilder);
-                return new ImmutablePair<JComponent, ComponentResettable<?>>(retValue, fieldHandler);
+                return new ImmutablePair<JComponent, ComponentHandler<?>>(retValue, fieldHandler);
             }
         }
         return super.handle0(field, instance, updateListener, reflectionFormBuilder);

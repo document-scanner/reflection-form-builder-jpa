@@ -62,7 +62,6 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
     private final JButton resetButton = new JButton("Reset");
     private final MessageHandler messageHandler;
     private final boolean editingMode;
-    private final FieldRetriever fieldRetriever;
     /**
      * {@link EntityReflectionFormPanel} needs an {@link IdPanel} if facilities
      * for automatic ID generation at saving should be provided.
@@ -111,7 +110,6 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         if(fieldRetriever == null) {
             throw new IllegalArgumentException("fieldRetriever mustn't be null");
         }
-        this.fieldRetriever = fieldRetriever;
         this.editingMode = editingMode;
         saveButton.addActionListener(new ActionListener() {
             @Override

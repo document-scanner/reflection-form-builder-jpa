@@ -23,7 +23,7 @@ import javax.persistence.EntityManager;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import richtercloud.reflection.form.builder.ComponentResettable;
+import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -59,7 +59,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
     }
 
     @Override
-    public Pair<JComponent, ComponentResettable<?>> handle(Type type,
+    public Pair<JComponent, ComponentHandler<?>> handle(Type type,
             Object fieldValue,
             String fieldName,
             Class<?> declaringClass,
@@ -90,7 +90,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
                 updateListener.onUpdate(new FieldUpdateEvent<>(event.getNewSelectionItem()));
             }
         });
-        return new ImmutablePair<JComponent, ComponentResettable<?>>(retValue, this);
+        return new ImmutablePair<JComponent, ComponentHandler<?>>(retValue, this);
     }
 
     @Override

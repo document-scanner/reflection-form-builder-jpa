@@ -76,6 +76,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
      *
      * @param entityClass
      * @param entityClassFields
+     * @param fieldRetriever
      * @return
      */
     public static Set<Field> retrieveMappedFieldCandidates(Class<?> entityClass,
@@ -186,6 +187,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         }
         return retValue;
     }
+
     /**
      * checks both the {@code entityClass} fields' annotations and the mapped
      * field candidates annotations for XToMany annoations with {@code mappedBy}
@@ -212,6 +214,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         }
         return null;
     }
+
     private static Field checkMappedByField(Field field) {
         OneToMany entityClassFieldOneToMany = field.getAnnotation(OneToMany.class);
         //ManyToOne doesn't have a mappedBy field, but it needs to be
@@ -232,7 +235,21 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         }
         return null;
     }
-    private final DefaultTableModel resultTableModel = new DefaultTableModel();
+
+    private static BidirectionalControlPanel generateBidirectionalControlPanel(Class<?> entityClass,
+            FieldRetriever fieldRetriever,
+            String bidirectionalHelpDialogTitle) {
+        List<Field> entityClassFields = fieldRetriever.retrieveRelevantFields(entityClass);
+        Set<Field> mappedFieldCandidates = retrieveMappedFieldCandidates(entityClass,
+                entityClassFields,
+                fieldRetriever);
+        BidirectionalControlPanel bidirectionalControlPanel = new BidirectionalControlPanel(entityClass,
+                bidirectionalHelpDialogTitle,
+                retrieveMappedByField(entityClassFields, mappedFieldCandidates),
+                mappedFieldCandidates);
+        return bidirectionalControlPanel;
+    }
+
     private final List<Object> resultList = new LinkedList<>();
     private final JButton addButton;
     private final JButton removeButton;
@@ -243,6 +260,21 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
     private final Set<ListPanelItemListener<Object>> updateListeners = new HashSet<>();
     private final JSplitPane resultSplitPane;
     private final JPanel resultPanel;
+
+    public QueryListPanel(EntityManager entityManager,
+            ReflectionFormBuilder reflectionFormBuilder,
+            Class<? extends E> entityClass,
+            MessageHandler messageHandler,
+            List<E> initialValues,
+            String bidirectionalHelpDialogTitle) throws IllegalArgumentException, IllegalAccessException {
+        this(entityManager,
+                reflectionFormBuilder,
+                entityClass,
+                messageHandler,
+                initialValues,
+                bidirectionalHelpDialogTitle,
+                QUERY_RESULT_TABLE_HEIGHT_DEFAULT);
+    }
 
     /**
      *
@@ -255,11 +287,12 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
      * @throws IllegalAccessException
      */
     public QueryListPanel(EntityManager entityManager,
-            ReflectionFormBuilder reflectionFormBuilder,
+            final ReflectionFormBuilder reflectionFormBuilder,
             Class<? extends E> entityClass,
             MessageHandler messageHandler,
             List<E> initialValues,
-            String bidirectionalHelpDialogTitle) throws IllegalArgumentException, IllegalAccessException {
+            String bidirectionalHelpDialogTitle,
+            int queryResultTableHeight) throws IllegalArgumentException, IllegalAccessException {
         super(generateBidirectionalControlPanel(entityClass,
                 reflectionFormBuilder.getFieldRetriever(),
                 bidirectionalHelpDialogTitle),
@@ -271,15 +304,6 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                 entityManager,
                 ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         LOGGER.debug(String.format("creating %s for entity class %s with initial value %s", QueryListPanel.class, entityClass, initialValues));
-        if(entityManager == null) {
-            throw new IllegalArgumentException("entityManager mustn't be null");
-        }
-        if(reflectionFormBuilder == null) {
-            throw new IllegalArgumentException("reflectionFormBuilder mustn't be null");
-        }
-        if(entityClass == null) {
-            throw new IllegalArgumentException("entityClass mustn't be null");
-        }
         removeButton = new JButton();
         addButton = new JButton();
         resultTableLabel = new JLabel();
@@ -294,29 +318,22 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         this.resultSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         this.resultPanel = new JPanel();
 
-        QueryComponent.validateEntityClass(entityClass, entityManager);
-        initTableModel(this.resultTableModel, reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass));
+        this.getQueryComponent().addListener(new QueryComponentListener<E>() {
+            @Override
+            public void onQueryExecuted(QueryComponentEvent<E> event) {
+                DefaultTableModel resultTableModel = initTableModel(event.getQueryResults(),
+                        reflectionFormBuilder.getFieldRetriever());
+                resultTable.setModel(resultTableModel);
+            }
+        });
+
         this.initialValues = initialValues;
+        initComponents(queryResultTableHeight);
         reset0();
-        initComponents();
         this.resultTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
     }
 
-    private static BidirectionalControlPanel generateBidirectionalControlPanel(Class<?> entityClass,
-            FieldRetriever fieldRetriever,
-            String bidirectionalHelpDialogTitle) {
-        List<Field> entityClassFields = fieldRetriever.retrieveRelevantFields(entityClass);
-        Set<Field> mappedFieldCandidates = retrieveMappedFieldCandidates(entityClass,
-                        entityClassFields,
-                        fieldRetriever);
-        BidirectionalControlPanel bidirectionalControlPanel = new BidirectionalControlPanel(entityClass,
-                bidirectionalHelpDialogTitle,
-                retrieveMappedByField(entityClassFields, mappedFieldCandidates),
-                mappedFieldCandidates);
-        return bidirectionalControlPanel;
-    }
-
-    private void initComponents() throws IllegalArgumentException, IllegalAccessException {
+    private void initComponents(int queryResultTableHeight) throws IllegalArgumentException, IllegalAccessException {
         removeButton.setText("Remove");
         removeButton.addActionListener(new java.awt.event.ActionListener() {
             @Override
@@ -335,7 +352,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
 
         resultTableLabel.setText("Selected entities:");
 
-        resultTable.setModel(this.resultTableModel);
+        resultTable.setModel(new DefaultTableModel());
         resultTableScrollPane.setViewportView(resultTable);
 
         GroupLayout resultPanelLayout = new GroupLayout(resultPanel);
@@ -354,7 +371,11 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                     .addComponent(addButton)
                     .addComponent(resultTableLabel))
                 .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(resultTableScrollPane, GroupLayout.DEFAULT_SIZE, 167, Short.MAX_VALUE)
+                .addComponent(resultTableScrollPane, //component
+                        GroupLayout.DEFAULT_SIZE, //min
+                        queryResultTableHeight, //pref
+                        Short.MAX_VALUE //max
+                )
                 .addContainerGap());
         resultSplitPane.setLeftComponent(getQueryResultTableScrollPane());
         resultSplitPane.setRightComponent(resultPanel);
@@ -368,15 +389,24 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             .addGroup(getLayout().createSequentialGroup()
                 .addContainerGap()
                 .addGroup(getLayout().createParallelGroup(GroupLayout.Alignment.LEADING)
-                    .addGroup(super.getHorizontalParallelGroup())
-                    .addComponent(resultSplitPane))
+                    .addGroup(GroupLayout.Alignment.LEADING, super.getHorizontalParallelGroup())
+                    .addComponent(resultSplitPane,
+                            GroupLayout.DEFAULT_SIZE,
+                            queryResultTableHeight,
+                            Short.MAX_VALUE))
                 .addContainerGap()));
         getLayout().setHorizontalGroup(horizontalParallelGroup);
         GroupLayout.SequentialGroup verticalSequentialGroup = getLayout().createSequentialGroup();
         verticalSequentialGroup.addGroup(getLayout().createSequentialGroup()
                 .addGroup(super.getVerticalSequentialGroup())
-                .addComponent(resultSplitPane));
+                .addComponent(resultSplitPane,
+                            GroupLayout.DEFAULT_SIZE, //min
+                            queryResultTableHeight+resultPanel.getPreferredSize().height+resultSplitPane.getDividerSize(), //pref
+                            Short.MAX_VALUE//max
+                            ));
         getLayout().setVerticalGroup(verticalSequentialGroup);
+        this.resultSplitPane.setContinuousLayout(true);
+        this.resultSplitPane.setDividerLocation(0.5d);
     }
 
     public void addItemListener(ListPanelItemListener<Object> updateListener) {
@@ -392,10 +422,8 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         for(int index : indices) {
             Object queryResult = this.getQueryResults().get(index);
             try {
-                QueryPanel.handleInstanceToTableModel(this.resultTableModel,
-                        queryResult,
-                        getReflectionFormBuilder(),
-                        getEntityClass());
+                handleInstanceToTableModel((DefaultTableModel)this.resultTable.getModel(),
+                        queryResult);
             } catch (IllegalArgumentException | IllegalAccessException ex) {
                 LOGGER.info("an exception occured while executing the query", ex);
                 this.getQueryComponent().getQueryStatusLabel().setText(String.format("<html>%s</html>", ex.getMessage()));
@@ -419,7 +447,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         }
         Collections.sort(selectedRowsSorted, AbstractListPanel.DESCENDING_ORDER);
         for(int selectedRow : selectedRowsSorted) {
-            this.resultTableModel.removeRow(selectedRow);
+            ((DefaultTableModel)this.resultTable.getModel()).removeRow(selectedRow);
             Object queryResult = this.getQueryResults().get(selectedRow);
             this.resultList.remove(queryResult);
             for(ListPanelItemListener<Object> updateListener : updateListeners) {
@@ -434,9 +462,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
 
     private void reset0() {
         this.resultList.clear();
-        while(this.getQueryResultTableModel().getRowCount() > 0) {
-            this.getQueryResultTableModel().removeRow(0);
-        }
+        this.resultTable.setModel(new DefaultTableModel());
         if(initialValues != null) {
             this.resultList.addAll(initialValues); //before initComponents (simply use resultList for initialization)
             for(E initialValue : initialValues) {
