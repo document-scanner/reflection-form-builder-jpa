@@ -16,7 +16,6 @@ package richtercloud.reflection.form.builder.jpa;
 
 import java.lang.reflect.Field;
 import java.util.Map;
-import javax.persistence.Embeddable;
 import javax.persistence.EntityManager;
 import javax.swing.JComponent;
 import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateListener;

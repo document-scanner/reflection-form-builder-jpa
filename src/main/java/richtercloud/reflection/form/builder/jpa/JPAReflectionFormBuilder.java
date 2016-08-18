@@ -18,16 +18,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
-import javax.persistence.Embedded;
 import javax.persistence.EntityManager;
-import javax.persistence.Id;
 import javax.swing.JComponent;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.message.MessageHandler;
-import richtercloud.reflection.form.builder.panels.NumberPanel;
 
 /**
  * Handles generation of {@link JPAReflectionFormPanel} from root entity class

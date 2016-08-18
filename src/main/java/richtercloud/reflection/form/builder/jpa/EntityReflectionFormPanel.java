@@ -20,7 +20,6 @@ import java.awt.event.ContainerEvent;
 import java.awt.event.ContainerListener;
 import java.lang.reflect.Field;
 import java.util.Map;
-import javax.persistence.Embeddable;
 import javax.persistence.EntityExistsException;
 import javax.persistence.EntityManager;
 import javax.persistence.RollbackException;

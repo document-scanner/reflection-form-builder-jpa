@@ -16,7 +16,6 @@ package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import javax.persistence.EntityManager;
@@ -30,7 +29,6 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.message.MessageHandler;

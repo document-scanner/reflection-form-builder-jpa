@@ -14,8 +14,6 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
-import richtercloud.reflection.form.builder.jpa.EntityReflectionFormPanel;
-
 /**
  * An interface to be able to trigger ID generation from both within GUI components (e.g. {@link LongIdPanel} and at saving (e.g. in {@link EntityReflectionFormPanel} when automatic generation of IDs at saving is desired).
  *

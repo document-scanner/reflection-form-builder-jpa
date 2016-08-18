@@ -15,7 +15,6 @@
 package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.LayoutManager;
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -25,7 +24,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
 import javax.persistence.EntityManager;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.GroupLayout;
@@ -37,7 +35,6 @@ import javax.swing.JSeparator;
 import javax.swing.JTable;
 import javax.swing.LayoutStyle;
 import javax.swing.ListSelectionModel;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import org.slf4j.Logger;

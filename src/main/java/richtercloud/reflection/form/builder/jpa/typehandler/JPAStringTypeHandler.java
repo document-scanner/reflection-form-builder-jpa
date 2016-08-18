@@ -25,7 +25,6 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.panels.StringAutoCompletePanel;
-import richtercloud.reflection.form.builder.jpa.panels.StringCheckPanel;
 import richtercloud.reflection.form.builder.jpa.panels.StringPanelUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.StringPanelUpdateListener;
 import richtercloud.reflection.form.builder.message.MessageHandler;
