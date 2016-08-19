@@ -77,6 +77,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
     private final GroupLayout.SequentialGroup verticalSequentialGroup;
     private final GroupLayout.ParallelGroup horizontalParallelGroup;
     private final Map<Integer, String> queryResultTableTooltipTextMap = new HashMap<>();
+    private final Set<Class<?>> lastQueryClasses = new HashSet<>();
 
     public AbstractQueryPanel(BidirectionalControlPanel bidirectionalControlPanel,
             QueryComponent<E> queryComponent,
@@ -187,8 +188,6 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
             }
         });
     }
-
-    private final Set<Class<?>> lastQueryClasses = new HashSet<>();
 
     /**
      * Checks whether it's necessary to add or remove columns from
