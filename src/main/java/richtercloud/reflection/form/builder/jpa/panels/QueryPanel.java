@@ -182,6 +182,9 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
         this.getQueryResultTableSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
+                if(e.getFirstIndex() >= QueryPanel.this.getQueryResults().size()) {
+                    return;
+                }
                 for(QueryPanelUpdateListener updateListener : getUpdateListeners()) {
                     LOGGER.debug("notifying update listener {} about selection change", updateListener);
                     updateListener.onUpdate(new QueryPanelUpdateEvent(QueryPanel.this.getQueryResults().get(e.getFirstIndex()),
