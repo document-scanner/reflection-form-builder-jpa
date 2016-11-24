@@ -17,17 +17,23 @@ package richtercloud.reflection.form.builder.jpa;
 /**
  *
  * @author richter
+ * @param <T> the type of the ID (if you want to generate an ID which covers
+ * multiple fields, return a {@link Entry} or a custom data container instance)
  */
 /*
 internal implementation notes:
-- passing instances to components only requires reflection based creation which needs to be ensured for JPA anyway
+- passing instances to components only requires reflection based creation which
+needs to be ensured for JPA anyway
+- This interface is no longer used in document-scanner where it was used for
+programmatic ID generation (with the option of manual ID assignment), but it
+will be kept in the reflection-form-builder library
 */
-public interface IdGenerator {
+public interface IdGenerator<T> {
 
     /**
      * Get the next available Id for the entity {@code instance}.
      * @param instance
      * @return the next id
      */
-    Long getNextId(Object instance);
+    T getNextId(Object instance);
 }

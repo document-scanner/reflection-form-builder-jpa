@@ -18,9 +18,10 @@ import java.util.Date;
 import java.util.List;
 import javax.persistence.EntityManager;
 import javax.swing.GroupLayout;
+import javax.swing.ListSelectionModel;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
-import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  * A panel to include an automatic check for existing entites with the value
@@ -60,7 +61,8 @@ public class StringCheckPanel<T> extends AbstractStringPanel<T> {
                 messageHandler,
                 reflectionFormBuilder,
                 null, //initialValue
-                null //bidirectionalControlPanel (needs to be read-only)
+                null, //bidirectionalControlPanel (needs to be read-only)
+                ListSelectionModel.SINGLE_SELECTION
         ); //will be reused by manipulating the queryComboBoxModel
         GroupLayout queryPanelDialogLayout = new GroupLayout(queryPanelDialog.getContentPane());
         queryPanelDialog.getContentPane().setLayout(queryPanelDialogLayout);

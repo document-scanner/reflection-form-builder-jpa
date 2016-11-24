@@ -16,18 +16,24 @@ package richtercloud.reflection.form.builder.jpa;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.swing.JOptionPane;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import richtercloud.message.handler.ConfirmMessageHandler;
+import richtercloud.message.handler.Message;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.FieldRetriever;
-import richtercloud.reflection.form.builder.message.Message;
-import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  * Code reusage for the validation routine including handling of validation
@@ -35,14 +41,78 @@ import richtercloud.reflection.form.builder.message.MessageHandler;
  *
  * @author richter
  */
+/*
+internal implementation notes:
+- References to entity properties can't be specified here because they aren't#
+part of the framework -> use WarningHandler
+*/
 public class EntityValidator {
+    private final static Logger LOGGER = LoggerFactory.getLogger(EntityValidator.class);
     private final FieldRetriever fieldRetriever;
     private final MessageHandler messageHandler;
+    private final static ValidatorFactory VALIDATOR_FACTORY = Validation.buildDefaultValidatorFactory();
+    private final static Validator VALIDATOR = VALIDATOR_FACTORY.getValidator();
+    private final ConfirmMessageHandler confirmMessageHandler;
+    private final Map<Class<?>, WarningHandler<?>> warningHandlers;
+    private final static Comparator<Class<?>> CLASS_COMPARATOR = new Comparator<Class<?>>() {
+        @Override
+        public int compare(Class<?> o1, Class<?> o2) {
+            if(o1.equals(o2)) {
+                return 0;
+            }else if(o1.isAssignableFrom(o2)) {
+                return 1;
+            }
+            return -1;
+        }
+    };
 
     public EntityValidator(FieldRetriever fieldRetriever,
-            MessageHandler messageHandler) {
+            MessageHandler messageHandler,
+            ConfirmMessageHandler confirmMessageHandler,
+            Map<Class<?>, WarningHandler<?>> warningHandlers) {
         this.fieldRetriever = fieldRetriever;
         this.messageHandler = messageHandler;
+        this.confirmMessageHandler = confirmMessageHandler;
+        this.warningHandlers = warningHandlers;
+    }
+
+    /**
+     * Validates {@code instance} contained in the {@link Warnings} validation
+     * group and requests user input in a {@link ConfirmMessageHandler} if a
+     * validation constraint is violated.
+     *
+     * @param instance
+     * @return {@code false} if validation exception of the {@link Warnings}
+     * group failed and the user canceled the saving or if a
+     * {@link WarningHandler#handleWarning(java.lang.Object) } returned
+     * {@code false} (indicating as well that a user canceled the saving),
+     * {@code true} otherwise
+     */
+    public boolean handleWarnings(Object instance) {
+        Set<ConstraintViolation<Object>> violations = VALIDATOR.validate(instance,
+                Warnings.class);
+        if(!violations.isEmpty()) {
+            for(ConstraintViolation<Object> violation : violations) {
+                int answer = confirmMessageHandler.confirm(new Message(violation.getMessage(),
+                        JOptionPane.WARNING_MESSAGE,
+                        "Warning"));
+                if(answer != JOptionPane.YES_OPTION) {
+                    return false;
+                }
+            }
+        }
+        WarningHandler warningHandler = warningHandlers.get(instance.getClass());
+        if(warningHandler == null) {
+            List<Class<?>> warningHandlerClasses = new LinkedList<>(warningHandlers.keySet());
+            Collections.sort(warningHandlerClasses, CLASS_COMPARATOR);
+            warningHandler = warningHandlers.get(warningHandlerClasses.get(0));
+        }
+        if(warningHandler == null) {
+            LOGGER.debug(String.format("warningHandlers doesn't "
+                    + "contain a %s for instances of type %s or superclasses", WarningHandler.class, instance.getClass()));
+            return true;
+        }
+        return warningHandler.handleWarning(instance);
     }
 
     /**
@@ -53,9 +123,7 @@ public class EntityValidator {
      * {@code false} otherwise
      */
     public boolean validate(Object instance, Class<?>... groups) {
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        Validator validator = factory.getValidator();
-        Set<ConstraintViolation<Object>> violations = validator.validate(instance,
+        Set<ConstraintViolation<Object>> violations = VALIDATOR.validate(instance,
                 groups);
         if(!violations.isEmpty()) {
             StringBuilder messageBuilder = new StringBuilder(1000);

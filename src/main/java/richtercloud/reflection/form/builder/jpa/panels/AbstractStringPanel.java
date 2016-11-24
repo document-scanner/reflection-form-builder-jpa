@@ -101,7 +101,7 @@ public abstract class AbstractStringPanel<T> extends JPanel {
                 entityClassQueryIdentifier,
                 entityClassQueryIdentifier,
                 this.fieldName,
-                "%"+textFieldText+"%" //specify % here in order to
+                "%"+textFieldText.replaceAll("'", "\\'")+"%" //specify % here in order to
                     //keep them output of the format string
         );
         return retValue;

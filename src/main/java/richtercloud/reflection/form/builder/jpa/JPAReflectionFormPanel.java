@@ -33,11 +33,19 @@ public abstract class JPAReflectionFormPanel<T, U extends ReflectionFormPanelUpd
     private final static Logger LOGGER = LoggerFactory.getLogger(JPAReflectionFormPanel.class);
     private EntityManager entityManager;
 
+    /**
+     * Creates a {@code JPAReflectionFormPanel}.
+     * @param entityManager
+     * @param instance
+     * @param entityClass
+     * @param fieldMapping
+     * @param fieldHandler the {@link FieldHandler} to perform reset actions
+     */
     public JPAReflectionFormPanel(EntityManager entityManager,
             T instance,
             Class<? extends T> entityClass,
             Map<Field, JComponent> fieldMapping,
-            FieldHandler fieldHandler) throws IllegalArgumentException, IllegalAccessException {
+            FieldHandler fieldHandler) {
         super(fieldMapping,
                 instance,
                 entityClass,

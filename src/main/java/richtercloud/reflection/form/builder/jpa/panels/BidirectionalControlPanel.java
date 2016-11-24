@@ -16,7 +16,11 @@ package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.awt.Component;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.util.Set;
+import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
@@ -24,7 +28,12 @@ import javax.swing.JOptionPane;
 
 /**
  * Provides control to trigger bidirectional mapping and set the field to be
- * used for such a mapping on the corresponding class.
+ * used for such a mapping on the corresponding class. In case a relationship
+ * annotation ({@link OneToOne}, {@link OneToMany} or {@link ManyToMany})
+ * configures the mapping with a valid {@code mappedBy} parameter, the controls
+ * to set the mapped field are disabled and display the field which is
+ * configured because if JPA overwrites the field there's no sense in letting
+ * the user configure anything.
  *
  * This component will probably be used in a {@link QueryPanel} or
  * {@link QueryListPanel}.
@@ -64,7 +73,7 @@ public class BidirectionalControlPanel extends javax.swing.JPanel {
             if(value instanceof Field) {
                 Field valueCast = (Field) value;
                 return super.getListCellRendererComponent(list,
-                        valueCast.getName(),
+                        String.format("%s.%s", valueCast.getDeclaringClass().getSimpleName(), valueCast.getName()),
                         index,
                         isSelected,
                         cellHasFocus);
@@ -80,9 +89,18 @@ public class BidirectionalControlPanel extends javax.swing.JPanel {
      * Creates new form BidirectionalControlPanel
      * @param entityClass
      * @param bidirectionalHelpDialogTitle
-     * @param mappedByField
-     * @param mappedFieldCandidates
+     * @param mappedByField the field which is annotated with relationshiop
+     * annotation ({@link OneToOne}, {@link OneToMany} or {@link ManyToMany})
+     * and has a valid {@code mappedBy} parameter
+     * @param mappedFieldCandidates candidates for choice which can be mapped to
+     * the field this {@code BidirectionalControlPanel} is used for (can include
+     * {@code mappedByField} because properties can be mapped to themselves)
      */
+    /*
+    internal implementation notes:
+    - there's no need for a flag whether the components ought to be disabled or
+    not because mappedByField can simply be checked
+    */
     public BidirectionalControlPanel(Class<?> entityClass,
             String bidirectionalHelpDialogTitle,
             Field mappedByField,
@@ -95,7 +113,64 @@ public class BidirectionalControlPanel extends javax.swing.JPanel {
             this.mappedFieldComboBoxModel.addElement(mappedFieldCandidate);
         }
         initComponents();
-        updateMappedFieldComponents();
+        if(mappedByField != null) {
+            OneToOne mappedByFieldOneToOne = mappedByField.getAnnotation(OneToOne.class);
+            OneToMany mappedByFieldOneToMany = mappedByField.getAnnotation(OneToMany.class);
+            ManyToMany mappedByFieldManyToMany = mappedByField.getAnnotation(ManyToMany.class);
+
+            Class<?> mappedByTargetClass = null;
+            String mappedByTargetName = null;
+            if(mappedByFieldOneToOne != null) {
+                mappedByTargetClass = mappedByFieldOneToOne.targetEntity();
+                mappedByTargetName = mappedByFieldOneToOne.mappedBy();
+            }else if(mappedByFieldOneToMany != null) {
+                mappedByTargetClass = mappedByFieldOneToMany.targetEntity();
+                mappedByTargetName = mappedByFieldOneToMany.mappedBy();
+            }else if(mappedByFieldManyToMany != null) {
+                mappedByTargetClass = mappedByFieldManyToMany.targetEntity();
+                mappedByTargetName = mappedByFieldManyToMany.mappedBy();
+            }
+            if(mappedByTargetName != null) {
+                //mappedBy parameter has been specified on a relationship annotation
+                if(mappedByTargetClass == null
+                        || void.class.equals(mappedByTargetClass //indicates to use the generic type of the collection type of the field (see source of relationshiop annotations for details)
+                        )) {
+                    //targetEntity might not have been specified by retrieved from
+                    //field generic type
+                    if(mappedByField.getGenericType() instanceof ParameterizedType) {
+                        ParameterizedType mappedByFieldParameterizedType = (ParameterizedType)mappedByField.getGenericType();
+                        if(mappedByFieldParameterizedType.getActualTypeArguments().length != 1) {
+                            throw new IllegalArgumentException(); //@TODO:
+                        }
+                        if(!(mappedByFieldParameterizedType.getActualTypeArguments()[0] instanceof Class)) {
+                            throw new IllegalArgumentException(); //@TODO:
+                        }
+                        mappedByTargetClass = (Class<?>) mappedByFieldParameterizedType.getActualTypeArguments()[0];
+                    }
+                    if(mappedByTargetClass == null) {
+                        throw new IllegalArgumentException("field annotated with replationship annotation and mappedBy attribute offers no way to figure out the target entity class"); //this shouldn't happen with a working JPA provider
+                    }
+                    Field mappedByTargetField;
+                    try {
+                        mappedByTargetField = mappedByTargetClass.getDeclaredField(mappedByTargetName);
+                    } catch (NoSuchFieldException | SecurityException ex) {
+                        throw new RuntimeException(ex); //this should never happen
+                    }
+                    this.mappedFieldComboBoxModel.addElement(mappedByTargetField);
+                    this.mappedFieldComboBox.setEnabled(false);
+                    this.bidirectionalCheckBox.setEnabled(false);
+                }
+            }else {
+                updateMappedFieldComponents();
+            }
+        }else {
+            updateMappedFieldComponents();
+        }
+    }
+
+    public Field getMappedField() {
+        Field retValue = (Field) this.mappedFieldComboBoxModel.getSelectedItem();
+        return retValue;
     }
 
     /**

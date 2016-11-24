@@ -16,15 +16,23 @@ package richtercloud.reflection.form.builder.jpa;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import javax.persistence.EntityManager;
+import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.swing.JComponent;
+import richtercloud.message.handler.ConfirmMessageHandler;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
-import richtercloud.reflection.form.builder.message.MessageHandler;
+import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
+import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
+import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 
 /**
  * Handles generation of {@link JPAReflectionFormPanel} from root entity class
@@ -42,11 +50,17 @@ FieldHandler for how to provide a portable interface
 */
 public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFieldRetriever> {
     private EntityManager entityManager;
+    private final IdApplier idApplier;
+    private final ConfirmMessageHandler confirmMessageHandler;
+    private final Map<Class<?>, WarningHandler<?>> warningHandlers;
 
     public JPAReflectionFormBuilder(EntityManager entityManager,
             String fieldDescriptionDialogTitle,
             MessageHandler messageHandler,
-            JPACachedFieldRetriever fieldRetriever) {
+            ConfirmMessageHandler confirmMessageHandler,
+            JPACachedFieldRetriever fieldRetriever,
+            IdApplier idApplier,
+            Map<Class<?>, WarningHandler<?>> warningHandlers) {
         super(fieldDescriptionDialogTitle,
                 messageHandler,
                 fieldRetriever);
@@ -54,6 +68,12 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFie
             throw new IllegalArgumentException("entityManager mustn't be null");
         }
         this.entityManager = entityManager;
+        if(idApplier == null) {
+            throw new IllegalArgumentException("idApplier mustn't be null");
+        }
+        this.idApplier = idApplier;
+        this.confirmMessageHandler = confirmMessageHandler;
+        this.warningHandlers = warningHandlers;
     }
 
     public ReflectionFormPanel transformEntityClass(Class<?> entityClass,
@@ -67,9 +87,12 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFie
                 entityClass,
                 fieldMapping,
                 this.getMessageHandler(),
+                confirmMessageHandler,
                 editingMode,
                 this.getFieldRetriever(),
-                fieldHandler);
+                fieldHandler,
+                this.idApplier,
+                this.warningHandlers);
         transformClass(entityClass,
                 instance,
                 fieldMapping,
@@ -113,5 +136,48 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFie
                 retValue,
                 fieldHandler);
         return retValue;
+    }
+
+    @Override
+    protected void onFieldUpdate(FieldUpdateEvent event, Field field, Object instance) throws IllegalArgumentException, IllegalAccessException {
+        if(event instanceof MappedFieldUpdateEvent) {
+            MappedFieldUpdateEvent eventCast = (MappedFieldUpdateEvent) event;
+            if(eventCast.getMappedField() != null) {
+                if(field.getAnnotation(OneToOne.class) != null) {
+                    Object fieldValueOld = field.get(instance); //get old field value because event.getNewValue might be null
+                    eventCast.getMappedField().set(fieldValueOld,
+                            event.getNewValue());
+                }else if(field.getAnnotation(OneToMany.class) != null
+                        || field.getAnnotation(ManyToMany.class) != null) {
+                    Collection fieldValueList = (Collection) field.get(instance);
+                    Collection newValueList = (Collection) event.getNewValue();
+                    for(Object fieldValue : fieldValueList) {
+                        if(!newValueList.contains(fieldValue)) {
+                            eventCast.getMappedField().set(fieldValue, null); //reference has been removed
+                        }
+                    }
+                    if(field.getAnnotation(OneToMany.class) != null) {
+                        for(Object newValue : newValueList) {
+                            eventCast.getMappedField().set(newValue, instance);
+                        }
+                    }else {
+                        //ManyToMany != null
+                        for(Object newValue : newValueList) {
+                            //add instance to list of reference on mapped site
+                            //= get old field value, add instance and set the
+                            //result as new value
+                            //@TODO: figure out whether to add value is always appropriate (give different collection, like Set, List, etc.)
+                            Collection mappedFieldValue = (Collection) eventCast.getMappedField().get(newValue);
+                            mappedFieldValue.add(newValue);
+                            eventCast.getMappedField().set(newValue,
+                                    mappedFieldValue); //set reference on all element of event.newValue (will make unnecessary changes, but they shouldn't hurt)
+                        }
+                    }
+                }else {
+                    throw new IllegalArgumentException();
+                }
+            }
+        }
+        super.onFieldUpdate(event, field, instance);
     }
 }

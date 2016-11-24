@@ -12,33 +12,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package richtercloud.reflection.form.builder.jpa;
+package richtercloud.reflection.form.builder.jpa.panels;
+
+import javax.swing.JTable;
+import javax.swing.table.TableModel;
 
 /**
  *
  * @author richter
+ * @param <E> the entity type
  */
-public class SequentialIdGenerator implements IdGenerator<Long> {
-    private final static SequentialIdGenerator INSTANCE = new SequentialIdGenerator();
+public class EntityTable<E> extends JTable {
 
-    public static SequentialIdGenerator getInstance() {
-        return INSTANCE;
-    }
-    private long nextId = 0;
+    private static final long serialVersionUID = 1L;
 
-    protected SequentialIdGenerator() {
+    public EntityTable(EntityTableModel<E> dm) {
+        super(dm);
     }
 
-    /**
-     * Returns the next id value, regardless which type is passed as
-     * {@code clazz} argument.
-     * @param instance
-     * @return
-     */
     @Override
-    public Long getNextId(Object instance) {
-        this.nextId += 1;
-        return nextId;
+    public void setModel(TableModel dataModel) {
+        if(!(dataModel instanceof EntityTableModel)) {
+            throw new IllegalArgumentException(String.format("dataModel has to be a %s", EntityTableModel.class.getName()));
+        }
+        super.setModel(dataModel);
     }
 
+    @Override
+    public EntityTableModel<E> getModel() {
+        return (EntityTableModel<E>) super.getModel();
+    }
 }

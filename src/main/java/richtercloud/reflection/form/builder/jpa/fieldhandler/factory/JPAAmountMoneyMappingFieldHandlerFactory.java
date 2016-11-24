@@ -18,13 +18,13 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import javax.persistence.EntityManager;
-import richtercloud.reflection.form.builder.components.AmountMoneyCurrencyStorage;
-import richtercloud.reflection.form.builder.components.AmountMoneyExchangeRateRetriever;
-import richtercloud.reflection.form.builder.components.AmountMoneyUsageStatisticsStorage;
+import richtercloud.message.handler.MessageHandler;
+import richtercloud.reflection.form.builder.components.money.AmountMoneyCurrencyStorage;
+import richtercloud.reflection.form.builder.components.money.AmountMoneyExchangeRateRetriever;
+import richtercloud.reflection.form.builder.components.money.AmountMoneyUsageStatisticsStorage;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.factory.AmountMoneyMappingFieldHandlerFactory;
 import richtercloud.reflection.form.builder.jpa.JPAStringFieldHandler;
-import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  *

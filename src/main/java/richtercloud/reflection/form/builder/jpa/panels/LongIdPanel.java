@@ -14,39 +14,46 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.LayoutStyle;
-import javax.validation.Validation;
-import javax.validation.ValidatorFactory;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
-import richtercloud.reflection.form.builder.jpa.EntityValidator;
-import richtercloud.reflection.form.builder.jpa.IdGenerator;
-import richtercloud.reflection.form.builder.message.MessageHandler;
+import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.panels.NumberPanel;
 
 /**
  *
  * @author richter
  */
-public class LongIdPanel extends NumberPanel<Long> implements IdPanel {
+public class LongIdPanel extends NumberPanel<Long> {
     private static final long serialVersionUID = 1L;
-    private static final ValidatorFactory FACTORY = Validation.buildDefaultValidatorFactory();
-    private final IdGenerator idGenerator;
     private final Object entity;
     private final MessageHandler messageHandler;
     private JButton nextIdButton = new JButton();
-    private final EntityValidator entityValidator;
+    private final IdApplier idApplier;
+    private final FieldRetriever fieldRetriever;
 
-    public LongIdPanel(IdGenerator idGenerator,
-            Object entity,
+    public LongIdPanel(Object entity,
             Long initialValue,
             MessageHandler messageHandler,
-            FieldRetriever fieldRetriever) {
-        super(initialValue);
-        this.idGenerator = idGenerator;
+            FieldRetriever fieldRetriever,
+            boolean readOnly,
+            IdApplier idApplier) {
+        super(initialValue,
+                readOnly);
         this.entity = entity;
         this.messageHandler = messageHandler;
+        if(fieldRetriever == null) {
+            throw new IllegalArgumentException("fieldRetriever mustn't be null");
+        }
+        this.fieldRetriever = fieldRetriever;
+        if(idApplier == null) {
+            throw new IllegalArgumentException("idApplier mustn't be null");
+        }
+        this.idApplier = idApplier;
         nextIdButton.setText("Next id");
         nextIdButton.addActionListener(new java.awt.event.ActionListener() {
             @Override
@@ -65,22 +72,10 @@ public class LongIdPanel extends NumberPanel<Long> implements IdPanel {
             .addGroup(this.getLayoutVerticalGroup())
                 .addComponent(nextIdButton)
         );
-
-        this.entityValidator = new EntityValidator(fieldRetriever, messageHandler);
-    }
-
-    @Override
-    public boolean applyNextId() {
-        if(!this.entityValidator.validate(entity, IdGenerationValidation.class)) {
-            return false;
-        }
-        Long nextId = idGenerator.getNextId(this.entity);
-        this.setValue(nextId);
-        return true;
     }
 
     private void nextIdButtonActionPerformed(java.awt.event.ActionEvent evt) {
-        applyNextId();
+        idApplier.applyId(entity, new HashSet<>(Arrays.asList(this)));
     }
 
 }

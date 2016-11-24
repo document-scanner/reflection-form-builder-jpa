@@ -15,30 +15,19 @@
 package richtercloud.reflection.form.builder.jpa;
 
 /**
+ * The purpose of the class is to allow references to resource without the need
+ * for injection in Java EE.
  *
  * @author richter
  */
-public class SequentialIdGenerator implements IdGenerator<Long> {
-    private final static SequentialIdGenerator INSTANCE = new SequentialIdGenerator();
-
-    public static SequentialIdGenerator getInstance() {
-        return INSTANCE;
-    }
-    private long nextId = 0;
-
-    protected SequentialIdGenerator() {
-    }
+public interface WarningHandler<T> {
 
     /**
-     * Returns the next id value, regardless which type is passed as
-     * {@code clazz} argument.
+     * Allows to perform whether specific warnings ought to be given for an
+     * instance before saving it after creation or editing.
      * @param instance
-     * @return
+     * @return {@code true} if no warning has caused the user to cancel the
+     * saving, {@code false} otherwise
      */
-    @Override
-    public Long getNextId(Object instance) {
-        this.nextId += 1;
-        return nextId;
-    }
-
+    boolean handleWarning(T instance);
 }

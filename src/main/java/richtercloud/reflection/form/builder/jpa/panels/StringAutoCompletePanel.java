@@ -32,10 +32,12 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.swing.JComboBox;
 import javax.swing.SwingUtilities;
+import javax.swing.text.JTextComponent;
 import richtercloud.reflection.form.builder.FieldRetriever;
 
 /**
- *
+ * Displays existing values in the database in a popup menu in order to inform
+ * about similar or equal values which have already been used and persisted.
  * @author richter
  * @param <T>
  */
@@ -45,6 +47,8 @@ internal implementation notes:
 model and thus can't be used for suggestions
 - glazedlists not checked for far because installation is fairly uncomfortable
 (i.e. more complicated than implementing auto-completion)
+- A previous undocumented implementation added entities.toString in the popup
+instead of the field values. Adding field values makes more sense.
 */
 public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
     private static final long serialVersionUID = 1L;
@@ -116,15 +120,18 @@ public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
             @Override
             public void keyPressed(KeyEvent e) {
                 try {
-                    List<T> checkResults = check((String)comboBox.getEditor().getItem());
+                    String textFieldText = ((JTextComponent)comboBox.getEditor().getEditorComponent()).getText();
+                    assert textFieldText != null;
+                    List<T> checkResults = check(textFieldText);
                     if(!lastCheckResults.equals(checkResults)) {
                         comboBoxEventList.clear();
                         for(T checkResult : checkResults) {
-                            comboBoxEventList.add(checkResult.toString());
+                            String fieldValue = (String) field.get(checkResult);
+                            comboBoxEventList.add(fieldValue);
                         }
                         lastCheckResults = checkResults;
                     }
-                } catch (SecurityException | IllegalArgumentException ex) {
+                } catch (SecurityException | IllegalArgumentException | IllegalAccessException ex) {
                     throw new RuntimeException(ex);
                 }
             }

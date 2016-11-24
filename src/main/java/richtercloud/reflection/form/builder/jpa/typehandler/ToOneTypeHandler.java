@@ -21,18 +21,20 @@ import java.util.List;
 import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.swing.JComponent;
+import javax.swing.ListSelectionModel;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
+import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.panels.BidirectionalControlPanel;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanel;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
-import richtercloud.reflection.form.builder.message.MessageHandler;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 
 /**
@@ -75,19 +77,23 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
         Class<?> entityClass = (Class<?>)type;
         List<Field> entityClassFields = reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass);
         Set<Field> mappedFieldCandidates = QueryPanel.retrieveMappedFieldCandidates(entityClass,
-                        entityClassFields,
-                        reflectionFormBuilder.getFieldRetriever());
-        BidirectionalControlPanel bidirectionalControlPanel = new BidirectionalControlPanel(declaringClass, bidirectionalHelpDialogTitle, QueryPanel.retrieveMappedByField(entityClassFields), mappedFieldCandidates);
-        QueryPanel retValue = new QueryPanel(entityManager,
+                        entityClassFields);
+        BidirectionalControlPanel bidirectionalControlPanel = new BidirectionalControlPanel(declaringClass,
+                bidirectionalHelpDialogTitle,
+                QueryPanel.retrieveMappedByFieldPanel(entityClassFields),
+                mappedFieldCandidates);
+        final QueryPanel retValue = new QueryPanel(entityManager,
                 entityClass,
                 messageHandler,
                 reflectionFormBuilder,
                 fieldValue,
-                bidirectionalControlPanel);
+                bidirectionalControlPanel,
+                ListSelectionModel.SINGLE_SELECTION);
         retValue.addUpdateListener(new QueryPanelUpdateListener() {
             @Override
             public void onUpdate(QueryPanelUpdateEvent event) {
-                updateListener.onUpdate(new FieldUpdateEvent<>(event.getNewSelectionItem()));
+                updateListener.onUpdate(new MappedFieldUpdateEvent<>(event.getNewSelectionItem(),
+                        retValue.getBidirectionalControlPanel().getMappedField()));
             }
         });
         return new ImmutablePair<JComponent, ComponentHandler<?>>(retValue, this);

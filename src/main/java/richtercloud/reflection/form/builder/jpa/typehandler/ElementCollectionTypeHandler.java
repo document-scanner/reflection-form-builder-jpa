@@ -15,18 +15,19 @@
 package richtercloud.reflection.form.builder.jpa.typehandler;
 
 import java.lang.reflect.Type;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.panels.EmbeddableListPanel;
-import richtercloud.reflection.form.builder.message.MessageHandler;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.typehandler.GenericListTypeHandler;
@@ -102,12 +103,12 @@ public class ElementCollectionTypeHandler extends GenericListTypeHandler<JPARefl
 
             @Override
             public void onItemAdded(ListPanelItemEvent<Object> event) {
-                updateListener.onUpdate(new FieldUpdateEvent<>(event.getItem()));
+                updateListener.onUpdate(new FieldUpdateEvent<List<Object>>(new LinkedList<>(event.getItem())));
             }
 
             @Override
             public void onItemRemoved(ListPanelItemEvent<Object> event) {
-                updateListener.onUpdate(new FieldUpdateEvent<>(event.getItem()));
+                updateListener.onUpdate(new FieldUpdateEvent<List<Object>>(new LinkedList<>(event.getItem())));
             }
         });
         return new ImmutablePair<JComponent, ComponentHandler<?>>(retValue, this);

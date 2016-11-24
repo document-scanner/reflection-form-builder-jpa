@@ -18,9 +18,9 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import javax.persistence.EntityManager;
+import richtercloud.message.handler.MessageHandler;
 import static richtercloud.reflection.form.builder.fieldhandler.factory.MappingFieldHandlerFactory.createStringTypeToken;
 import richtercloud.reflection.form.builder.jpa.typehandler.JPAStringTypeHandler;
-import richtercloud.reflection.form.builder.message.MessageHandler;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 import richtercloud.reflection.form.builder.typehandler.factory.MappingTypeHandlerFactory;
 

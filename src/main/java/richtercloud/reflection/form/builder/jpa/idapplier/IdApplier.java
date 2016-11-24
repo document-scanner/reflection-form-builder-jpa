@@ -12,33 +12,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package richtercloud.reflection.form.builder.jpa;
+package richtercloud.reflection.form.builder.jpa.idapplier;
+
+import java.util.Set;
+import javax.swing.JComponent;
 
 /**
  *
  * @author richter
+ * @param <C> allows to enforce an interface or component type in order to
+ * coordinate actions which concern multiple ID field components (consider using
+ * setter factories in order to overcome the shortcoming of Java Swing which
+ * doesn't base JComponent on an interface)
  */
-public class SequentialIdGenerator implements IdGenerator<Long> {
-    private final static SequentialIdGenerator INSTANCE = new SequentialIdGenerator();
+public interface IdApplier<C extends JComponent> {
 
-    public static SequentialIdGenerator getInstance() {
-        return INSTANCE;
-    }
-    private long nextId = 0;
-
-    protected SequentialIdGenerator() {
-    }
-
-    /**
-     * Returns the next id value, regardless which type is passed as
-     * {@code clazz} argument.
-     * @param instance
-     * @return
-     */
-    @Override
-    public Long getNextId(Object instance) {
-        this.nextId += 1;
-        return nextId;
-    }
-
+    boolean applyId(Object entity, Set<C> idFieldComponents);
 }

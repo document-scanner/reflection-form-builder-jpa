@@ -24,11 +24,11 @@ import org.junit.Test;
 import static org.mockito.Mockito.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.message.handler.LoggerMessageHandler;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.JPACachedFieldRetriever;
-import richtercloud.reflection.form.builder.message.LoggerMessageHandler;
-import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  *

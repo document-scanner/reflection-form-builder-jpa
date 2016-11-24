@@ -41,9 +41,9 @@ import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.message.handler.Message;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
-import richtercloud.reflection.form.builder.message.Message;
-import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  * A component which provides a text field to enter JPQL queries for a
@@ -151,7 +151,7 @@ public class QueryComponent<E> extends JPanel {
     }
 
     private EntityManager entityManager;
-    private Class<? extends E> entityClass;
+    private Class<E> entityClass;
     private final SpinnerModel queryLimitSpinnerModel = new SpinnerNumberModel(INITIAL_QUERY_LIMIT_DEFAULT, //value
             1, //min
             null, //max
@@ -162,7 +162,7 @@ public class QueryComponent<E> extends JPanel {
     /**
      * the {@code query} argument of the last execution of {@link #executeQuery(javax.persistence.TypedQuery, int, java.lang.String) }
      */
-    private TypedQuery<? extends E> lastQuery;
+    private TypedQuery<E> lastQuery;
     /**
      * the {@code queryLimit} arugment of the last execution of {@link #executeQuery(javax.persistence.TypedQuery, int, java.lang.String) }
      */
@@ -179,11 +179,11 @@ public class QueryComponent<E> extends JPanel {
     private final JCheckBox subtypeCheckBox = new JCheckBox("Subtypes");
     private final JTextArea queryStatusLabel;
     private final JScrollPane queryStatusLabelScrollPane;
-    private Set<QueryComponentListener<E>> listeners = new HashSet<>();
+    private final Set<QueryComponentListener<E>> listeners = new HashSet<>();
     private final MessageHandler messageHandler;
 
     public QueryComponent(EntityManager entityManager,
-            Class<? extends E> entityClass,
+            Class<E> entityClass,
             MessageHandler messageHandler) throws IllegalArgumentException, IllegalAccessException {
         this(entityManager,
                 entityClass,
@@ -193,12 +193,28 @@ public class QueryComponent<E> extends JPanel {
                 INITIAL_QUERY_LIMIT_DEFAULT);
     }
 
+    /**
+     * Creates a {@code QueryComponent}.
+     * @param entityManager
+     * @param entityClass
+     * @param messageHandler
+     * @param initialHistory
+     * @param initialSelectedHistoryEntry
+     * @param initialQueryLimit
+     * @throws IllegalArgumentException
+     */
+    /*
+    internal implementation notes:
+    - There's no sense in passing initial listeners in the constructor because
+    their method implementations most likely require usage of variables which
+    aren't available until the call of the superclass constructor has returned
+    */
     protected QueryComponent(EntityManager entityManager,
-            Class<? extends E> entityClass,
+            Class<E> entityClass,
             MessageHandler messageHandler,
             List<HistoryEntry> initialHistory,
             HistoryEntry initialSelectedHistoryEntry,
-            int initialQueryLimit) throws IllegalArgumentException, IllegalAccessException {
+            int initialQueryLimit) throws IllegalArgumentException {
         if(entityClass == null) {
             throw new IllegalArgumentException("entityClass mustn't be null");
         }
@@ -238,7 +254,7 @@ public class QueryComponent<E> extends JPanel {
         this.messageHandler = messageHandler;
         this.queryLabel.setText(String.format("%s query:", entityClass.getSimpleName()));
         String queryText = createQueryText(entityClass);
-        TypedQuery<? extends E> query = createQuery(queryText);
+        TypedQuery<E> query = createQuery(queryText);
         this.executeQuery(query, initialQueryLimit, queryText);
     }
 
@@ -293,11 +309,17 @@ public class QueryComponent<E> extends JPanel {
         horizontalParallelGroup.addGroup(layout.createSequentialGroup()
                         .addComponent(queryLabel)
                         .addGap(18, 18, 18)
-                        .addComponent(queryComboBox, 0, 283, Short.MAX_VALUE)
+                        .addComponent(queryComboBox,
+                                0,
+                                250,
+                                Short.MAX_VALUE)
                         .addGap(18, 18, 18)
                         .addComponent(queryLimitLabel)
                         .addGap(18, 18, 18)
-                        .addComponent(queryLimitSpinner, GroupLayout.DEFAULT_SIZE, 179, Short.MAX_VALUE)
+                        .addComponent(queryLimitSpinner,
+                                0,
+                                150,
+                                Short.MAX_VALUE)
                         .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(subtypeCheckBox)
                         .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
@@ -329,7 +351,7 @@ public class QueryComponent<E> extends JPanel {
                 .addComponent(queryStatusLabelScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)));
     }
 
-    private void queryButtonActionPerformed(java.awt.event.ActionEvent evt) {
+    public void runQuery() {
         //although queryComboBox's model should never be empty in the current
         //implementation, there's check nevertheless so that future changes
         //don't cause too much trouble (adding a function to delete history
@@ -354,12 +376,16 @@ public class QueryComponent<E> extends JPanel {
             return;
         }
         int queryLimit = (int) queryLimitSpinner.getValue();
-        TypedQuery<? extends E> query = this.createQuery(queryText); //handles displaying
+        TypedQuery<E> query = this.createQuery(queryText); //handles displaying
             //exceptions which occured during query execution (explaining
             //syntax errors)
         if(query != null) {
             this.executeQuery(query, queryLimit, queryText);
         }
+    }
+
+    private void queryButtonActionPerformed(java.awt.event.ActionEvent evt) {
+        runQuery();
     }
 
     public void addListener(QueryComponentListener<E> listener) {
@@ -382,12 +408,12 @@ public class QueryComponent<E> extends JPanel {
     the text of the query because there's no way to retrieve text from Criteria
     objects
     */
-    private void executeQuery(TypedQuery<? extends E> query,
+    private void executeQuery(TypedQuery<E> query,
             int queryLimit,
             String queryText) {
         LOGGER.debug("executing query '{}'", queryText);
         try {
-            List<? extends E> queryResults = query.setMaxResults(queryLimit).getResultList();
+            List<E> queryResults = query.setMaxResults(queryLimit).getResultList();
             for(E queryResult : queryResults) {
                 if(!subtypeCheckBox.isSelected()) {
                     if(!queryResult.getClass().equals(entityClass)) {
@@ -408,6 +434,7 @@ public class QueryComponent<E> extends JPanel {
                                 + "the entity class %s.", entityClass.getSimpleName()),
                                 JOptionPane.ERROR_MESSAGE,
                                 "Query error"));
+                        return;
                     }
                 }
             }
@@ -438,9 +465,9 @@ public class QueryComponent<E> extends JPanel {
         executeQuery(lastQuery, lastQueryLimit, lastQueryText);
     }
 
-    private TypedQuery<? extends E> createQuery(String queryText) {
+    private TypedQuery<E> createQuery(String queryText) {
         try {
-            TypedQuery<? extends E> query = this.entityManager.createQuery(queryText, this.entityClass);
+            TypedQuery<E> query = this.entityManager.createQuery(queryText, this.entityClass);
             return query;
         }catch(Exception ex) {
             LOGGER.info("an exception occured while executing the query", ex);

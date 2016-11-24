@@ -14,6 +14,7 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -27,13 +28,13 @@ public class QueryComponentEvent<E> {
     return value of Query.getResultList directly. This is for convenience only
     and can be changed back in case of trouble.
     */
-    private final List<? extends E> queryResults;
+    private final List<E> queryResults;
 
-    public QueryComponentEvent(List<? extends E> queryResults) {
+    public QueryComponentEvent(List<E> queryResults) {
         this.queryResults = queryResults;
     }
 
-    public List<? extends E> getQueryResults() {
-        return queryResults;
+    public List<E> getQueryResults() {
+        return Collections.unmodifiableList(queryResults);
     }
 }

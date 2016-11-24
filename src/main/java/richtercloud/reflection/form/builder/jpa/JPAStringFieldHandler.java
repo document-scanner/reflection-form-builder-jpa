@@ -19,6 +19,7 @@ import java.lang.reflect.Type;
 import javax.persistence.EntityManager;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.Pair;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
@@ -26,7 +27,6 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.ResettableFieldHandler;
 import richtercloud.reflection.form.builder.jpa.panels.StringAutoCompletePanel;
 import richtercloud.reflection.form.builder.jpa.typehandler.JPAStringTypeHandler;
-import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  *

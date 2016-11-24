@@ -16,12 +16,16 @@ package richtercloud.reflection.form.builder.jpa;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ContainerEvent;
-import java.awt.event.ContainerListener;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import javax.persistence.EntityExistsException;
 import javax.persistence.EntityManager;
+import javax.persistence.Id;
+import javax.persistence.IdClass;
 import javax.persistence.RollbackException;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
@@ -31,17 +35,30 @@ import javax.validation.groups.Default;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.message.handler.ConfirmMessageHandler;
+import richtercloud.message.handler.Message;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
-import richtercloud.reflection.form.builder.jpa.panels.IdPanel;
-import richtercloud.reflection.form.builder.message.Message;
-import richtercloud.reflection.form.builder.message.MessageHandler;
+import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 
 /**
  * A {@link JPAReflectionFormPanel} with an implementation to save and delete
  * entities (fails with an {@link Embeddable} because they're not stored like
  * entities). Also provides a "Reset" button to reset the form.
+ *
+ * When new or edited entities are saved, validation occurs for the
+ * {@link Default} validation group which makes the save action fail if the
+ * validation fails.
+ *
+ * In order to allow a warning about certain conditions to be
+ * forwarded to the user (and eventually request her_his confirmation) both the
+ * {@link Warning} validation group is validated and constraint validations are
+ * handled with a {@link ConfirmMessageHandler} which allows to cancel saving in
+ * it <i>and</i> {@link EntityValidator#handleWarnings(java.lang.Object) } is
+ * used in order to allow forwarding warning which require resources which need
+ * to be passed in a constructor (validation API doesn't allow retrieval of
+ * resources except for injection in Java EE).
  *
  * @author richter
  */
@@ -61,11 +78,6 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
     private final JButton resetButton = new JButton("Reset");
     private final MessageHandler messageHandler;
     private final boolean editingMode;
-    /**
-     * {@link EntityReflectionFormPanel} needs an {@link IdPanel} if facilities
-     * for automatic ID generation at saving should be provided.
-     */
-    private IdPanel idPanel;
     private final EntityValidator entityValidator;
     /*
     internal implementation notes:
@@ -76,6 +88,8 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
     */
     private final GroupLayout.Group horizontalEntityControlsGroup = getLayout().createParallelGroup();
     private final GroupLayout.Group verticalEntityControlsGroup = getLayout().createSequentialGroup();
+    private final IdApplier idApplier;
+    private final JPACachedFieldRetriever fieldRetriever;
 
     /**
      *
@@ -86,17 +100,26 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
      * @param messageHandler
      * @param editingMode if {@code true} the save button with update an exiting entity and a delete button will be provided, otherwise it will persist a new entity and no delete button will be provided
      * @param fieldRetriever
+     * @param fieldHandler the {@link FieldHandler} to perform reset actions
      * @throws IllegalArgumentException
      * @throws IllegalAccessException
      */
+    /*
+    internal implementation notes:
+    - no need to pass refences to @Id annotated fields because they can be
+    retrieved from JPACachedFieldRetriever
+    */
     public EntityReflectionFormPanel(EntityManager entityManager,
             Object instance,
             Class<?> entityClass,
             Map<Field, JComponent> fieldMapping,
             MessageHandler messageHandler,
+            ConfirmMessageHandler confirmMessageHandler,
             boolean editingMode,
-            FieldRetriever fieldRetriever,
-            FieldHandler fieldHandler) throws IllegalArgumentException, IllegalAccessException {
+            JPACachedFieldRetriever fieldRetriever,
+            FieldHandler fieldHandler,
+            IdApplier idApplier,
+            Map<Class<?>, WarningHandler<?>> warningHandlers) throws IllegalArgumentException, IllegalAccessException {
         super(entityManager,
                 instance,
                 entityClass,
@@ -110,6 +133,14 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
             throw new IllegalArgumentException("fieldRetriever mustn't be null");
         }
         this.editingMode = editingMode;
+        if(idApplier == null) {
+            throw new IllegalArgumentException("idApplier mustn't be null");
+        }
+        this.idApplier = idApplier;
+        if(fieldRetriever == null) {
+            throw new IllegalArgumentException("fieldRetriever mustn't be null");
+        }
+        this.fieldRetriever = fieldRetriever;
         saveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent evt) {
@@ -156,27 +187,10 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         getLayout().setHorizontalGroup(horizontalEntityControlsGroup);
         getLayout().setVerticalGroup(verticalEntityControlsGroup);
         this.validate();
-        this.addContainerListener(new ContainerListener() {
-            @Override
-            public void componentAdded(ContainerEvent e) {
-                if(!(e.getChild() instanceof IdPanel)) {
-                    return;
-                }
-                if(idPanel == null) {
-                    idPanel = (IdPanel) e.getChild();
-                }else {
-                    throw new IllegalArgumentException("This EntityReflectionFormPanel already contains an IdPanel. Adding a further IdPanel isn't allowed");
-                }
-            }
-
-            @Override
-            public void componentRemoved(ContainerEvent e) {
-                if(e.getChild() instanceof IdPanel) {
-                    idPanel = null;
-                }
-            }
-        });
-        this.entityValidator = new EntityValidator(fieldRetriever, messageHandler);
+        this.entityValidator = new EntityValidator(fieldRetriever,
+                messageHandler,
+                confirmMessageHandler,
+                warningHandlers);
     }
 
     public GroupLayout.Group getVerticalEntityControlsGroup() {
@@ -188,17 +202,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
     }
 
     protected void deleteButtonActionPerformed(ActionEvent evt) {
-        Object instance;
-        try {
-            instance = this.retrieveInstance();
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
-            String message = String.format("The following exception occured during persisting entity of type '%s': %s", this.getEntityClass(), ExceptionUtils.getRootCauseMessage(ex));
-            LOGGER.debug(message, ex);
-            messageHandler.handle(new Message(message,
-                    JOptionPane.WARNING_MESSAGE,
-                    "Persisting failed"));
-            return;
-        }
+        Object instance = this.retrieveInstance();
         //check getEntityManager.contains is unnecessary because a instances should be managed
         try {
             getEntityManager().getTransaction().begin();
@@ -222,57 +226,127 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         }
     }
 
-    protected void saveButtonActionPerformed(ActionEvent evt) {
-        if(!this.idPanel.applyNextId()) {
-            //can be called without any precautions
-            //because it can be invoked multiple times and it doesn't matter if
-            //the concrete ID value changes
-            return;
+    private Set<JComponent> retrieveIdFieldComponents(Set<Field> idFields) {
+        Set<JComponent> retValue = new HashSet<>();
+        for(Field idField : idFields) {
+            JComponent idFieldComponent = this.getFieldMapping().get(idField);
+            assert idFieldComponent != null;
+            retValue.add(idFieldComponent);
         }
-        Object instance;
-        try {
-            instance = this.retrieveInstance();
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
-            throw new RuntimeException(ex); //doesn't make sense to expose to user
+        return retValue;
+    }
+
+    protected void saveButtonActionPerformed(ActionEvent evt) {
+        Object instance = this.retrieveInstance();
+            //might be in all sorts of JPA states (attached, detached, etc.)
+
+        if(!editingMode) {
+            //only (try to) change id if not in editing mode
+            Set<Field> idFields = this.fieldRetriever.getIdFields(getEntityClass());
+            Set<JComponent> idFieldComponents = retrieveIdFieldComponents(idFields);
+            idApplier.applyId(instance, idFieldComponents);
         }
 
         if(!this.entityValidator.validate(instance, Default.class)) {
             return;
         }
+        if(!this.entityValidator.handleWarnings(instance)) {
+            return;
+        }
+        //There's no sense in checking whether instance is contained in
+        //entityManager because this test is only relevant in order to avoid
+        //persisting instances with duplicate IDs which can just be tried and
+        //fail with useful feedback
         if(!editingMode) {
-            if(getEntityManager().contains(instance)) {
-                this.messageHandler.handle(new Message("The instance is already saved. In order to edit an already saved instance use the editing mode.",
-                        JOptionPane.WARNING_MESSAGE,
-                        "Instance already saved"));
-                return;
-            }
             try {
+                //check whether the entity with the specified ID has already
+                //been persisted in order to avoid a potentially incomprehensive
+                //error message
+                Object primaryKey;
+                Set<Field> idFields = fieldRetriever.getIdFields(getEntityClass());
+                assert !idFields.isEmpty();
+                boolean keySet = false;
+                if(idFields.size() == 1) {
+                    try {
+                        primaryKey = idFields.iterator().next().get(instance);
+                        if(primaryKey != null) {
+                            keySet = true;
+                        }
+                    } catch (IllegalArgumentException | IllegalAccessException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }else {
+                    IdClass idClass = getEntityClass().getDeclaredAnnotation(IdClass.class);
+                    if(idClass == null) {
+                        throw new IllegalStateException(String.format("class '%s' with more than one fields annotated with '%s' has no '%s' annotation which violates JPA specifications", getEntityClass(), Id.class, IdClass.class));
+                    }
+                    Class<?> primaryKeyClass = idClass.value();
+                    Constructor<?> primaryKeyClassConstructor;
+                    try {
+                        primaryKeyClassConstructor = primaryKeyClass.getDeclaredConstructor();
+                    } catch (NoSuchMethodException | SecurityException ex) {
+                        throw new IllegalStateException(String.format("Class '%s' which is used as value of '%s' annotation on '%s' failed. Make sure it has an accessible zero-argument constructor.",
+                                primaryKeyClass,
+                                IdClass.class,
+                                getEntityClass()));
+                    }
+                    try {
+                        primaryKey = primaryKeyClassConstructor.newInstance();
+                        for(Field idField : idFields) {
+                            Field primaryKeyIdField;
+                            try {
+                                primaryKeyIdField = primaryKeyClass.getDeclaredField(idField.getName());
+                            } catch (NoSuchFieldException | SecurityException ex) {
+                                throw new RuntimeException(ex);
+                            }
+                            Object primaryKeyIdFieldValue = idField.get(instance);
+                            if(primaryKeyIdFieldValue != null) {
+                                keySet = true;
+                            }
+                            primaryKeyIdField.set(primaryKey,
+                                    primaryKeyIdFieldValue);
+                        }
+                    } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }
+                if(keySet) {
+                    //otherwise either the one ID field value is null or all
+                    //ID field values are null
+                    Object existingInstance = getEntityManager().find(getEntityClass(), primaryKey);
+                    if(existingInstance != null) {
+                        this.messageHandler.handle(new Message(String.format("An instance of type '%s' with ID '%s' has already been persisted. Change the ID or edit the existing instance in editing mode.",
+                                        getEntityClass(),
+                                        primaryKey),
+                                JOptionPane.ERROR_MESSAGE,
+                                "Entity already persisted"));
+                        return;
+                    }
+                }
+
+                //persist
                 getEntityManager().getTransaction().begin();
                 getEntityManager().persist(instance);
                 getEntityManager().getTransaction().commit();
                 this.messageHandler.handle(new Message(String.format("<html>persisted entity of type '%s' successfully</html>", this.getEntityClass()),
                         JOptionPane.INFORMATION_MESSAGE,
                         "Instance persisted successfully"));
+                getEntityManager().detach(instance); //detaching necessary in
+                    //order to be able to change one single value and save again
             }catch(EntityExistsException ex) {
                 getEntityManager().getTransaction().rollback();
                 handlePersistenceException(ex);
-
             }catch(RollbackException ex) {
                  //cannot call entityManager.getTransaction().rollback() here because transaction isn' active
                 handlePersistenceException(ex);
             }
         } else {
-            if(!getEntityManager().contains(instance)) {
-                this.messageHandler.handle(new Message("The instance is a new instance. In order to save a new instance use the creation mode.",
-                        JOptionPane.WARNING_MESSAGE,
-                        "Need to use creation mode"));
-                return;
-            }
             try {
                 getEntityManager().getTransaction().begin();
                 getEntityManager().merge(instance);
                 getEntityManager().getTransaction().commit();
-                this.messageHandler.handle(new Message(String.format("<html>updated entity of type '%s' successfully</html>", this.getEntityClass()),
+                getEntityManager().detach(instance);
+                this.messageHandler.handle(new Message(String.format("<html>Updated entity of type '%s' successfully.</html>", this.getEntityClass()),
                         JOptionPane.INFORMATION_MESSAGE,
                         "Instance updated successfully"));
             }catch(EntityExistsException ex) {

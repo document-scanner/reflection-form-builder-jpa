@@ -15,8 +15,10 @@
 package richtercloud.reflection.form.builder.jpa;
 
 import java.lang.reflect.Field;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Set;
 import javax.persistence.Id;
 import javax.persistence.Transient;
 import richtercloud.reflection.form.builder.CachedFieldRetriever;
@@ -27,6 +29,13 @@ import richtercloud.reflection.form.builder.CachedFieldRetriever;
  */
 public class JPACachedFieldRetriever extends CachedFieldRetriever {
 
+    /**
+     * Retrieves relevant fields from super class and removes fields with
+     * {@link Transient} annotation because they're irrelevant in JPA. Moves
+     * fields annotated with {@link Id} to the beginning of the returned list.
+     * @param entityClass
+     * @return the list of relevant fields
+     */
     @Override
     public List<Field> retrieveRelevantFields(Class<?> entityClass) {
         if(entityClass == null) {
@@ -40,16 +49,35 @@ public class JPACachedFieldRetriever extends CachedFieldRetriever {
                 relevantFieldsIt.remove();
             }
         }
+        //move @Id annotated fields to the beginning of the list
+        Set<Field> idFields = new HashSet<>();
         relevantFieldsIt = relevantFields.listIterator();
         while(relevantFieldsIt.hasNext()) {
             Field relevantFieldsNxt = relevantFieldsIt.next();
             if(relevantFieldsNxt.getAnnotation(Id.class) != null) {
                 relevantFieldsIt.remove();
-                relevantFields.add(0, relevantFieldsNxt);
-                break;
+                idFields.add(relevantFieldsNxt);
             }
         }
-
+        for(Field idField : idFields) {
+            relevantFields.add(0, idField);
+        }
         return relevantFields;
+    }
+
+    /**
+     * Get all fields annotated with {@link Id}.
+     * @param entityClass
+     * @return the ID fields
+     */
+    public Set<Field> getIdFields(Class<?> entityClass) {
+        Set<Field> retValue = new HashSet<>();
+        List<Field> fields = retrieveRelevantFields(entityClass);
+        for(Field field : fields) {
+            if(field.getAnnotation(Id.class) != null) {
+                retValue.add(field);
+            }
+        }
+        return retValue;
     }
 }

@@ -15,30 +15,8 @@
 package richtercloud.reflection.form.builder.jpa;
 
 /**
- *
+ * The marker for the warnings validation group.
  * @author richter
  */
-public class SequentialIdGenerator implements IdGenerator<Long> {
-    private final static SequentialIdGenerator INSTANCE = new SequentialIdGenerator();
-
-    public static SequentialIdGenerator getInstance() {
-        return INSTANCE;
-    }
-    private long nextId = 0;
-
-    protected SequentialIdGenerator() {
-    }
-
-    /**
-     * Returns the next id value, regardless which type is passed as
-     * {@code clazz} argument.
-     * @param instance
-     * @return
-     */
-    @Override
-    public Long getNextId(Object instance) {
-        this.nextId += 1;
-        return nextId;
-    }
-
+public interface Warnings {
 }

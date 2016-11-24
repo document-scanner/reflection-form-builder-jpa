@@ -31,11 +31,12 @@ import javax.persistence.OneToOne;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
-import richtercloud.reflection.form.builder.components.AmountMoneyCurrencyStorage;
-import richtercloud.reflection.form.builder.components.AmountMoneyExchangeRateRetriever;
-import richtercloud.reflection.form.builder.components.AmountMoneyUsageStatisticsStorage;
+import richtercloud.reflection.form.builder.components.money.AmountMoneyCurrencyStorage;
+import richtercloud.reflection.form.builder.components.money.AmountMoneyExchangeRateRetriever;
+import richtercloud.reflection.form.builder.components.money.AmountMoneyUsageStatisticsStorage;
 import richtercloud.reflection.form.builder.fieldhandler.AmountMoneyFieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
@@ -43,15 +44,14 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.MappingFieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.factory.AmountMoneyMappingFieldHandlerFactory;
-import richtercloud.reflection.form.builder.jpa.IdGenerator;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.fieldhandler.factory.JPAAmountMoneyMappingFieldHandlerFactory;
+import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.jpa.panels.LongIdPanel;
 import richtercloud.reflection.form.builder.jpa.typehandler.ElementCollectionTypeHandler;
 import richtercloud.reflection.form.builder.jpa.typehandler.ToManyTypeHandler;
 import richtercloud.reflection.form.builder.jpa.typehandler.ToOneTypeHandler;
 import richtercloud.reflection.form.builder.jpa.typehandler.factory.JPAAmountMoneyMappingTypeHandlerFactory;
-import richtercloud.reflection.form.builder.message.MessageHandler;
 import richtercloud.reflection.form.builder.panels.NumberPanel;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateEvent;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateListener;
@@ -72,9 +72,9 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
     private final Map<Type, FieldHandler<?,?,?, ?>> embeddableMapping;
     private final ToManyTypeHandler toManyTypeHandler;
     private final ToOneTypeHandler toOneTypeHandler;
-    private final IdGenerator idGenerator;
     private final MessageHandler messageHandler;
     private final FieldRetriever fieldRetriever;
+    private final IdApplier idApplier;
 
     public static JPAMappingFieldHandler create(EntityManager entityManager,
             int initialQueryLimit,
@@ -82,26 +82,26 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             FieldRetriever fieldRetriever,
             AmountMoneyUsageStatisticsStorage amountMoneyUsageStatisticsStorage,
             AmountMoneyCurrencyStorage amountMoneyCurrencyStorage,
-            AmountMoneyExchangeRateRetriever amountMoneyConversionRateRetriever,
-            IdGenerator idGenerator,
-            String bidirectionalHelpDialogTitle) {
+            AmountMoneyExchangeRateRetriever amountMoneyExchangeRateRetriever,
+            String bidirectionalHelpDialogTitle,
+            IdApplier idApplier) {
         JPAAmountMoneyMappingFieldHandlerFactory jPAAmountMoneyClassMappingFactory = new JPAAmountMoneyMappingFieldHandlerFactory(entityManager,
                 initialQueryLimit,
                 messageHandler,
                 amountMoneyUsageStatisticsStorage,
                 amountMoneyCurrencyStorage,
-                amountMoneyConversionRateRetriever,
+                amountMoneyExchangeRateRetriever,
                 bidirectionalHelpDialogTitle);
         AmountMoneyMappingFieldHandlerFactory amountMoneyClassMappingFactory = new AmountMoneyMappingFieldHandlerFactory(amountMoneyUsageStatisticsStorage,
                 amountMoneyCurrencyStorage,
-                amountMoneyConversionRateRetriever,
+                amountMoneyExchangeRateRetriever,
                 messageHandler);
         JPAAmountMoneyMappingTypeHandlerFactory jPAAmountMoneyTypeHandlerMappingFactory = new JPAAmountMoneyMappingTypeHandlerFactory(entityManager,
                 initialQueryLimit,
                 messageHandler,
                 bidirectionalHelpDialogTitle);
         AmountMoneyFieldHandler amountMoneyFieldHandler = new AmountMoneyFieldHandler(amountMoneyUsageStatisticsStorage,
-                amountMoneyConversionRateRetriever,
+                amountMoneyExchangeRateRetriever,
                 amountMoneyCurrencyStorage,
                 messageHandler);
         ElementCollectionTypeHandler elementCollectionTypeHandler = new ElementCollectionTypeHandler(jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
@@ -122,9 +122,9 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                 elementCollectionTypeHandler,
                 toManyTypeHandler,
                 toOneTypeHandler,
-                idGenerator,
                 messageHandler,
-                fieldRetriever);
+                fieldRetriever,
+                idApplier);
     }
 
     public JPAMappingFieldHandler(Map<Type, FieldHandler<?, ?,?, ?>> classMapping,
@@ -133,22 +133,26 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             ElementCollectionTypeHandler elementCollectionTypeHandler,
             ToManyTypeHandler oneToManyTypeHandler,
             ToOneTypeHandler toOneTypeHandler,
-            IdGenerator idGenerator,
             MessageHandler messageHandler,
-            FieldRetriever fieldRetriever) {
+            FieldRetriever fieldRetriever,
+            IdApplier idApplier) {
         super(classMapping,
                 primitiveMapping);
         this.elementCollectionTypeHandler = elementCollectionTypeHandler;
         this.embeddableMapping = embeddableMapping;
         this.toManyTypeHandler = oneToManyTypeHandler;
         this.toOneTypeHandler = toOneTypeHandler;
-        this.idGenerator = idGenerator;
         this.messageHandler = messageHandler;
         this.fieldRetriever = fieldRetriever;
+        this.idApplier = idApplier;
     }
 
     public MessageHandler getMessageHandler() {
         return messageHandler;
+    }
+
+    public IdApplier getIdApplier() {
+        return idApplier;
     }
 
     @Override
@@ -177,11 +181,12 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                 Long fieldValueCast = (Long) field.get(instance);
                 NumberPanel<Long> retValue;
                 if(fieldType.equals(Long.class)) {
-                    retValue = new LongIdPanel(this.idGenerator,
-                            instance,
+                    retValue = new LongIdPanel(instance,
                             fieldValueCast, //initialValue
                             messageHandler,
-                            fieldRetriever);
+                            fieldRetriever,
+                            false, //readOnly
+                            idApplier);
                 }else {
                     throw new IllegalArgumentException(String.format("field type %s is not supported", fieldValue.getClass()));
                 }
@@ -234,10 +239,17 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             Class<?> fieldTypeClass = field.getType();
             if(fieldTypeClass.getAnnotation(Embeddable.class) != null) {
                 FieldHandler fieldHandler = embeddableMapping.get(fieldType);
-                JComponent retValue = fieldHandler.handle(field, instance, updateListener, reflectionFormBuilder);
-                return new ImmutablePair<JComponent, ComponentHandler<?>>(retValue, fieldHandler);
+                JComponent retValue = fieldHandler.handle(field,
+                        instance,
+                        updateListener,
+                        reflectionFormBuilder);
+                return new ImmutablePair<JComponent, ComponentHandler<?>>(retValue,
+                        fieldHandler);
             }
         }
-        return super.handle0(field, instance, updateListener, reflectionFormBuilder);
+        return super.handle0(field,
+                instance,
+                updateListener,
+                reflectionFormBuilder);
     }
 }

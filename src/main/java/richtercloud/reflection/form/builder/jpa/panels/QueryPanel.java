@@ -15,7 +15,9 @@
 package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import javax.persistence.EntityManager;
@@ -23,15 +25,12 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.swing.GroupLayout;
 import javax.swing.LayoutStyle;
-import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
-import richtercloud.reflection.form.builder.message.MessageHandler;
 
 /**
  * Allows to run a JPQL query for a specific class while getting feedback about
@@ -67,8 +66,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
      * @return
      */
     public static Set<Field> retrieveMappedFieldCandidates(Class<?> entityClass,
-            List<Field> entityClassFields,
-            FieldRetriever fieldRetriever) {
+            List<Field> entityClassFields) {
         Set<Field> retValue = new HashSet<>();
         for(Field entityClassField : entityClassFields) {
             for(Field entityClassFieldField : entityClassField.getType().getDeclaredFields()) {
@@ -86,36 +84,65 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
         return retValue;
     }
 
-    public static Field retrieveMappedByField(List<Field> entityClassFields) {
-        Field retValue = null;
+    /**
+     *
+     * @param entityClassFields
+     * @return
+     */
+    public static Field retrieveMappedByFieldPanel(List<Field> entityClassFields) {
         for(Field entityClassField : entityClassFields) {
             OneToOne entityClassFieldOneToOne = entityClassField.getAnnotation(OneToOne.class);
             if(entityClassFieldOneToOne != null) {
                 String mappedBy = entityClassFieldOneToOne.mappedBy();
-                if(mappedBy != null) {
+                if(mappedBy != null && !mappedBy.isEmpty()) {
                     //if mappedBy is specified the user isn't given a choice
-                    retValue = entityClassField;
+                    return entityClassField;
                 }
             }
         }
-        return retValue;
+        return null;
     }
 
     private final E initialValue;
 
     public QueryPanel(EntityManager entityManager,
-            Class<? extends E> entityClass,
+            Class<E> entityClass,
             MessageHandler messageHandler,
             ReflectionFormBuilder reflectionFormBuilder,
             E initialValue,
-            BidirectionalControlPanel bidirectionalControlPanel) throws IllegalArgumentException, IllegalAccessException {
+            BidirectionalControlPanel bidirectionalControlPanel,
+            int queryResultTableSelectionMode) throws IllegalArgumentException, IllegalAccessException {
         this(entityManager,
                 entityClass,
                 messageHandler,
                 reflectionFormBuilder,
                 initialValue,
                 bidirectionalControlPanel,
-                QUERY_RESULT_TABLE_HEIGHT_DEFAULT);
+                QUERY_RESULT_TABLE_HEIGHT_DEFAULT,
+                queryResultTableSelectionMode);
+    }
+
+    public QueryPanel(EntityManager entityManager,
+            Class<E> entityClass,
+            MessageHandler messageHandler,
+            ReflectionFormBuilder reflectionFormBuilder,
+            E initialValue,
+            Set<Class<?>> entityClasses,
+            int queryResultTableHeight,
+            String bidirectionalHelpDialogTitle,
+            int queryResultTableSelectionMode) throws IllegalArgumentException, IllegalAccessException {
+        this(entityManager,
+                entityClass,
+                messageHandler,
+                reflectionFormBuilder,
+                initialValue,
+                new BidirectionalControlPanel(entityClass,
+                        bidirectionalHelpDialogTitle,
+                        retrieveMappedByFieldPanel(reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass)),
+                        retrieveMappedFieldCandidates(entityClass,
+                                reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass))),
+                queryResultTableHeight,
+                queryResultTableSelectionMode);
     }
 
     /**
@@ -127,11 +154,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
      * @param reflectionFormBuilder
      * @param initialValue
      * @param queryResultTableSelectionMode
-     * @param initialHistory a list of history entries which ought to be selectable in the query history combo box (won't be modified)
-     * @param initialQueryLimit When the component is created an initial query is executed. This property
-     * limits its result length. Set to {@code 0} in order to skip initial
-     * query.
-     * @param initialSelectedHistoryEntry the query which ought to be selected initially (if {@code null} the first item of {@code predefinedQueries} will be selected initially or there will be no selected item if {@code intiialHistory} is empty.
+     * @param queryResultTableHeight
      * @param bidirectionalControlPanel
      * @throws java.lang.IllegalAccessException
      * @throws IllegalArgumentException if {@code initialSelectedHistoryEntry} is not {@code null}, but not contained in {@code initialHistory}
@@ -144,12 +167,13 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
     composition-over-inheritance)
     */
     public QueryPanel(EntityManager entityManager,
-            Class<? extends E> entityClass,
+            Class<E> entityClass,
             MessageHandler messageHandler,
             ReflectionFormBuilder reflectionFormBuilder,
             E initialValue,
             BidirectionalControlPanel bidirectionalControlPanel,
-            int queryResultTableHeight) throws IllegalArgumentException, IllegalAccessException {
+            int queryResultTableHeight,
+            int queryResultTableSelectionMode) throws IllegalArgumentException, IllegalAccessException {
         super(bidirectionalControlPanel,
                 new QueryComponent<>(entityManager,
                         entityClass,
@@ -157,7 +181,9 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                 reflectionFormBuilder,
                 entityClass,
                 entityManager,
-                ListSelectionModel.SINGLE_SELECTION);
+                messageHandler,
+                queryResultTableSelectionMode,
+                new LinkedList<>(Arrays.asList(initialValue)));
         this.initialValue = initialValue;
 
         GroupLayout.ParallelGroup horizontalParallelGroup = getLayout().createParallelGroup();
@@ -182,26 +208,27 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
         this.getQueryResultTableSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                if(e.getFirstIndex() >= QueryPanel.this.getQueryResults().size()) {
+                if(e.getFirstIndex() >= QueryPanel.this.getQueryResultTable().getModel().getRowCount()) {
                     return;
                 }
                 for(QueryPanelUpdateListener updateListener : getUpdateListeners()) {
                     LOGGER.debug("notifying update listener {} about selection change", updateListener);
-                    updateListener.onUpdate(new QueryPanelUpdateEvent(QueryPanel.this.getQueryResults().get(e.getFirstIndex()),
+                    updateListener.onUpdate(new QueryPanelUpdateEvent(QueryPanel.this.getQueryResultTable().getModel().getEntities().get(e.getFirstIndex()),
                             QueryPanel.this));
                 }
             }
         });
+        getQueryComponent().runQuery();
     }
 
-    public Object getSelectedObject() {
-        int index = this.getQueryResultTable().getSelectedRow();
-        if(index < 0) {
-            //can happen during layout validation/initialization
-            return null;
-        }
+    public List<Object> getSelectedObjects() {
+        int[] indeces = this.getQueryResultTable().getSelectedRows();
         //assume that if index is >= 0 that this.queryResults is != null as well
-        Object retValue = this.getQueryResults().get(index);
+        List<Object> retValue = new LinkedList<>();
+        for(int index : indeces) {
+            Object selectedValue = this.getQueryResultTable().getModel().getEntities().get(index);
+            retValue.add(selectedValue);
+        }
         return retValue;
     }
 
@@ -210,15 +237,23 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
     }
 
     private void reset0() {
-        this.getQueryResultTable().setModel(new DefaultTableModel());
+        try {
+            this.getQueryResultTable().setModel(new EntityTableModel<E>(getReflectionFormBuilder().getFieldRetriever()));
+        } catch (IllegalArgumentException | IllegalAccessException ex) {
+            throw new RuntimeException(ex);
+        }
         if(initialValue != null) {
             if(!this.getEntityManager().contains(initialValue)) {
                 this.getQueryResultLabel().setText(String.format("previously managed entity %s has been removed from persistent storage, ignoring", initialValue));
             }
-            if(!this.getQueryResults().contains(initialValue)) {
-                this.getQueryResults().add(initialValue); // ok to add initially (will be overwritten with the next query where the user has to specify a query which retrieves the initial value or not
+            if(!this.getQueryResultTable().getModel().getEntities().contains(initialValue)) {
+                try {
+                    this.getQueryResultTable().getModel().addEntity(initialValue); // ok to add initially (will be overwritten with the next query where the user has to specify a query which retrieves the initial value or not
+                } catch (IllegalArgumentException | IllegalAccessException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
-            int initialValueIndex = this.getQueryResults().indexOf(initialValue);
+            int initialValueIndex = this.getQueryResultTable().getModel().getEntities().indexOf(initialValue);
             this.getQueryResultTableSelectionModel().addSelectionInterval(initialValueIndex, initialValueIndex); //no need to clear selection because we're just initializing
         }
     }
