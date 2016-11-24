@@ -218,7 +218,8 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                 }
             }
         });
-        getQueryComponent().runQuery();
+        getQueryComponent().runQuery(true //async (at creation)
+        );
     }
 
     public List<Object> getSelectedObjects() {

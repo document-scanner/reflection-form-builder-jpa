@@ -39,6 +39,7 @@ import javax.swing.JTextArea;
 import javax.swing.LayoutStyle;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.Message;
@@ -351,7 +352,7 @@ public class QueryComponent<E> extends JPanel {
                 .addComponent(queryStatusLabelScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)));
     }
 
-    public void runQuery() {
+    public void runQuery(boolean async) {
         //although queryComboBox's model should never be empty in the current
         //implementation, there's check nevertheless so that future changes
         //don't cause too much trouble (adding a function to delete history
@@ -380,12 +381,23 @@ public class QueryComponent<E> extends JPanel {
             //exceptions which occured during query execution (explaining
             //syntax errors)
         if(query != null) {
-            this.executeQuery(query, queryLimit, queryText);
+            if(!async) {
+                LOGGER.debug("running query synchronously");
+                this.executeQuery(query, queryLimit, queryText);
+            }else {
+                LOGGER.debug("running query asynchronously");
+                this.setEnabled(false);
+                SwingUtilities.invokeLater(() -> {
+                    QueryComponent.this.executeQuery(query, queryLimit, queryText);
+                    QueryComponent.this.setEnabled(true);
+                });
+            }
         }
     }
 
     private void queryButtonActionPerformed(java.awt.event.ActionEvent evt) {
-        runQuery();
+        runQuery(false //async
+        );
     }
 
     public void addListener(QueryComponentListener<E> listener) {
