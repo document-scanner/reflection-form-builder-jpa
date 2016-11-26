@@ -112,7 +112,7 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFie
             FieldHandlingException {
         return transformEntityClass(entityClass,
                 entityToUpdate,
-                false,
+                false, //editingMode
                 fieldHandler);
     }
 
