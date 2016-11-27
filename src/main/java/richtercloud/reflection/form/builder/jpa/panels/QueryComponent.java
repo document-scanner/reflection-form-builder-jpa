@@ -312,48 +312,55 @@ public class QueryComponent<E> extends JPanel {
         this.setLayout(layout);
         GroupLayout.ParallelGroup horizontalParallelGroup = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
         horizontalParallelGroup.addGroup(layout.createSequentialGroup()
-                        .addComponent(queryLabel)
-                        .addGap(18, 18, 18)
-                        .addComponent(queryComboBox,
-                                0,
-                                250,
-                                Short.MAX_VALUE)
-                        .addGap(18, 18, 18)
-                        .addComponent(queryLimitLabel)
-                        .addGap(18, 18, 18)
-                        .addComponent(queryLimitSpinner,
-                                0,
-                                150,
-                                Short.MAX_VALUE)
-                        .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(subtypeCheckBox)
-                        .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(queryButton))
-                    .addComponent(queryStatusLabelScrollPane, GroupLayout.Alignment.TRAILING)
-                    .addGroup(layout.createSequentialGroup()
+                .addComponent(queryLabel)
+                .addGap(18, 18, 18)
+                .addComponent(queryComboBox,
+                        0,
+                        250,
+                        Short.MAX_VALUE)
+                .addGap(18, 18, 18)
+                .addComponent(queryLimitLabel)
+                .addGap(18, 18, 18)
+                .addComponent(queryLimitSpinner,
+                        0,
+                        150,
+                        Short.MAX_VALUE)
+                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(subtypeCheckBox)
+                .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(queryButton)
+        ).addComponent(queryStatusLabelScrollPane, GroupLayout.Alignment.TRAILING)
+                .addGroup(layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE));
 
         layout.setHorizontalGroup(
-            layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(horizontalParallelGroup)
-                .addContainerGap())
+                layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createSequentialGroup()
+                                .addContainerGap()
+                                .addGroup(horizontalParallelGroup)
+                                .addContainerGap())
         );
 
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(queryLabel)
-                    .addComponent(queryButton)
-                    .addComponent(queryComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(queryLimitSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(queryLimitLabel)
-                    .addComponent(subtypeCheckBox))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(queryStatusLabelScrollPane, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)));
+        layout.setVerticalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createSequentialGroup()
+                        .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                                .addComponent(queryLabel)
+                                .addComponent(queryButton)
+                                .addComponent(queryComboBox,
+                                        GroupLayout.PREFERRED_SIZE,
+                                        GroupLayout.DEFAULT_SIZE,
+                                        GroupLayout.PREFERRED_SIZE)
+                                .addComponent(queryLimitSpinner, GroupLayout.PREFERRED_SIZE,
+                                        GroupLayout.DEFAULT_SIZE,
+                                        GroupLayout.PREFERRED_SIZE)
+                                .addComponent(queryLimitLabel)
+                                .addComponent(subtypeCheckBox))
+                        .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(queryStatusLabelScrollPane,
+                                GroupLayout.PREFERRED_SIZE,
+                                GroupLayout.DEFAULT_SIZE,
+                                GroupLayout.PREFERRED_SIZE)));
     }
 
     public void runQuery(boolean async) {
