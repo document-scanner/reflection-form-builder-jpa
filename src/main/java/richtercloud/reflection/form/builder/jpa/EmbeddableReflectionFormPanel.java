@@ -48,7 +48,6 @@ public class EmbeddableReflectionFormPanel<T> extends JPAReflectionFormPanel<T, 
                 entityClass,
                 fieldMapping,
                 fieldHandler);
-        this.validate();
     }
 
 }
