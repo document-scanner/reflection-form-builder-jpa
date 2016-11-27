@@ -21,14 +21,15 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import javax.persistence.metamodel.Metamodel;
 import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -97,10 +98,17 @@ public class QueryComponent<E> extends JPanel {
      * @return
      */
     public static List<HistoryEntry> generateInitialHistoryDefault(Class<?> entityClass) {
-        List<HistoryEntry> retValue = new ArrayList<>(Arrays.asList(new HistoryEntry(createQueryText(entityClass), //queryText
-                1, //usageCount
-                new Date() //lastUsage
-        )));
+        List<HistoryEntry> retValue = new ArrayList<>(Arrays.asList(new HistoryEntry(createQueryText(entityClass,
+                                false //forbidSubtypes
+                        ), //queryText
+                        1, //usageCount
+                        new Date() //lastUsage
+                ),
+                new HistoryEntry(createQueryText(entityClass,
+                                true //forbidSubtypes
+                        ),
+                        1,
+                        new Date())));
         return retValue;
     }
 
@@ -127,18 +135,22 @@ public class QueryComponent<E> extends JPanel {
      * @param entityClass
      * @return
      */
-    private static String createQueryText(Class<?> entityClass) {
+    private static String createQueryText(Class<?> entityClass,
+            boolean forbidSubtypes) {
         //Criteria API doesn't allow retrieval of string/text from objects
         //created with CriteriaBuilder, but text should be the first entry in
         //the query combobox -> construct String instead of using
         //CriteriaBuilder
         String entityClassQueryIdentifier = generateEntityClassQueryIdentifier(entityClass);
-        String retValue = String.format("SELECT %s FROM %s %s WHERE TYPE(%s) = %s",
+        String retValue = String.format("SELECT %s FROM %s %s%s",
                 entityClassQueryIdentifier,
                 entityClass.getSimpleName(),
                 entityClassQueryIdentifier,
-                entityClassQueryIdentifier,
-                entityClass.getSimpleName());
+                forbidSubtypes
+                        ? String.format(" WHERE TYPE(%s) = %s",
+                                entityClassQueryIdentifier,
+                                entityClass.getSimpleName())
+                        : "");
         return retValue;
     }
 
@@ -177,7 +189,16 @@ public class QueryComponent<E> extends JPanel {
     private final JLabel queryLabel;
     private final JLabel queryLimitLabel;
     private final JSpinner queryLimitSpinner;
-    private final JCheckBox subtypeCheckBox = new JCheckBox("Subtypes");
+    public final static String SUBTYPES_ALLOW = "Allow subtypes";
+    public final static String SUBTYPES_FILTER = "Filter subtypes";
+    public final static String SUBTYPES_FORBID = "Forbid/Fail on subtypes";
+    /**
+     * Allows handling for different proceedure for subtypes in queries (allow,
+     * filter, fail on occurance).
+     */
+    private final JComboBox<String> subtypeComboBox = new JComboBox<>(new DefaultComboBoxModel<>(new String[]{SUBTYPES_ALLOW,
+        SUBTYPES_FILTER,
+        SUBTYPES_FORBID}));
     private final JTextArea queryStatusLabel;
     private final JScrollPane queryStatusLabelScrollPane;
     private final Set<QueryComponentListener<E>> listeners = new HashSet<>();
@@ -253,8 +274,11 @@ public class QueryComponent<E> extends JPanel {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
         this.messageHandler = messageHandler;
+        this.subtypeComboBox.setSelectedItem(SUBTYPES_FILTER);
         this.queryLabel.setText(String.format("%s query:", entityClass.getSimpleName()));
-        String queryText = createQueryText(entityClass);
+        String queryText = createQueryText(entityClass,
+                false //forbidSubtypes
+        );
         TypedQuery<E> query = createQuery(queryText);
         SwingUtilities.invokeLater(() -> {
             this.executeQuery(query, initialQueryLimit, queryText);
@@ -326,7 +350,7 @@ public class QueryComponent<E> extends JPanel {
                         150,
                         Short.MAX_VALUE)
                 .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(subtypeCheckBox)
+                .addComponent(subtypeComboBox)
                 .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(queryButton)
         ).addComponent(queryStatusLabelScrollPane, GroupLayout.Alignment.TRAILING)
@@ -355,7 +379,7 @@ public class QueryComponent<E> extends JPanel {
                                         GroupLayout.DEFAULT_SIZE,
                                         GroupLayout.PREFERRED_SIZE)
                                 .addComponent(queryLimitLabel)
-                                .addComponent(subtypeCheckBox))
+                                .addComponent(subtypeComboBox))
                         .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(queryStatusLabelScrollPane,
                                 GroupLayout.PREFERRED_SIZE,
@@ -437,8 +461,14 @@ public class QueryComponent<E> extends JPanel {
         LOGGER.debug("executing query '{}'", queryText);
         try {
             List<E> queryResults = query.setMaxResults(queryLimit).getResultList();
-            for(E queryResult : queryResults) {
-                if(!subtypeCheckBox.isSelected()) {
+            ListIterator<E> queryResultsItr = queryResults.listIterator();
+            while(queryResultsItr.hasNext()) {
+                E queryResult = queryResultsItr.next();
+                //first check whether query requests are assignable from entity
+                //class in order to avoid nonsense - or in the case of
+                //SUBTYPES_FORBID for equality...
+                assert subtypeComboBox.getSelectedItem() != null;
+                if(subtypeComboBox.getSelectedItem().equals(SUBTYPES_FORBID)) {
                     if(!queryResult.getClass().equals(entityClass)) {
                         this.messageHandler.handle(new Message("The query result "
                                 + "contained entities which are not of the extact "
@@ -458,6 +488,12 @@ public class QueryComponent<E> extends JPanel {
                                 JOptionPane.ERROR_MESSAGE,
                                 "Query error"));
                         return;
+                    }
+                }
+                //...then eventually filter
+                if(subtypeComboBox.getSelectedItem().equals(SUBTYPES_FILTER)) {
+                    if(!queryResult.getClass().equals(entityClass)) {
+                        queryResultsItr.remove();
                     }
                 }
             }
