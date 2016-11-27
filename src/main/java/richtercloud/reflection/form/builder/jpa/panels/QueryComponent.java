@@ -256,7 +256,11 @@ public class QueryComponent<E> extends JPanel {
         this.queryLabel.setText(String.format("%s query:", entityClass.getSimpleName()));
         String queryText = createQueryText(entityClass);
         TypedQuery<E> query = createQuery(queryText);
-        this.executeQuery(query, initialQueryLimit, queryText);
+        SwingUtilities.invokeLater(() -> {
+            this.executeQuery(query, initialQueryLimit, queryText);
+            LOGGER.debug("Query finished executing");
+        }); //avoid delay on Query.getResultList
+        LOGGER.debug("Executing query asynchronously");
     }
 
     public List<HistoryEntry> getQueryHistory() {

@@ -19,6 +19,9 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.swing.GroupLayout;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
@@ -43,6 +46,7 @@ import richtercloud.reflection.form.builder.jpa.HistoryEntry;
  */
 public class StringCheckPanel<T> extends AbstractStringPanel<T> {
     private static final long serialVersionUID = 1L;
+    private final static Logger LOGGER = LoggerFactory.getLogger(StringCheckPanel.class);
     private QueryPanel<T> queryPanel;
     private final String initialValue;
 
@@ -77,7 +81,11 @@ public class StringCheckPanel<T> extends AbstractStringPanel<T> {
         this.queryPanelDialog.pack();
         this.textField.setText(initialValue);
         this.initialValue = initialValue;
-        reset0();
+        SwingUtilities.invokeLater(() -> {
+            reset0();
+            LOGGER.debug("Query finished executing");
+        }); //avoid delay on Query.getResultList
+        LOGGER.debug("Executing query asynchronously");
     }
 
     public String retrieveValue() {
