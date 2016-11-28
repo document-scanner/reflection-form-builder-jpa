@@ -274,7 +274,7 @@ public class QueryComponent<E> extends JPanel {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
         this.messageHandler = messageHandler;
-        this.subtypeComboBox.setSelectedItem(SUBTYPES_FILTER);
+        this.subtypeComboBox.setSelectedItem(SUBTYPES_ALLOW);
         this.queryLabel.setText(String.format("%s query:", entityClass.getSimpleName()));
         String queryText = createQueryText(entityClass,
                 false //forbidSubtypes
