@@ -60,6 +60,7 @@ public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEven
             IllegalAccessException,
             FieldHandlingException {
         StringAutoCompletePanel retValue = new StringAutoCompletePanel(entityManager,
+                fieldValue, //initialValue
                 declaringClass,
                 fieldName,
                 initialQueryLimit,

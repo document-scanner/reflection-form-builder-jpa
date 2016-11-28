@@ -82,6 +82,7 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
      * @param fieldRetriever
      */
     public StringAutoCompletePanel(EntityManager entityManager,
+            String initialValue,
             Class<?> entityClass,
             String fieldName,
             int initialQueryLimit,
@@ -107,11 +108,15 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
 
         if(SwingUtilities.isEventDispatchThread()) {
             installAutocomplete();
+            this.comboBoxEventList.add(initialValue);
+                //avoid `java.lang.IllegalStateException: Events to DefaultEventComboBoxModel must arrive on the EDT - consider adding GlazedListsSwing.swingThreadProxyList(source) somewhere in your list pipeline`
         }else {
             try {
                 EventQueue.invokeAndWait(new Runnable() {
                     @Override
                     public void run() {
+                        StringAutoCompletePanel.this.comboBoxEventList.add(initialValue);
+                            //avoid `java.lang.IllegalStateException: Events to DefaultEventComboBoxModel must arrive on the EDT - consider adding GlazedListsSwing.swingThreadProxyList(source) somewhere in your list pipeline`
                         installAutocomplete();
                     }
                 });
@@ -120,6 +125,7 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
             }
         }
 
+        this.comboBox.setSelectedItem(initialValue);
         this.comboBox.getEditor().getEditorComponent().addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
