@@ -22,6 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
@@ -103,9 +104,14 @@ public class EntityValidator {
         }
         WarningHandler warningHandler = warningHandlers.get(instance.getClass());
         if(warningHandler == null) {
+            //figure out whether there's a WarningHandler for a subclass (in the
+            //order or inheritance)
             List<Class<?>> warningHandlerClasses = new LinkedList<>(warningHandlers.keySet());
+            warningHandlerClasses = warningHandlerClasses.stream().filter(clazz -> clazz.isAssignableFrom(instance.getClass())).collect(Collectors.toList());
             Collections.sort(warningHandlerClasses, CLASS_COMPARATOR);
-            warningHandler = warningHandlers.get(warningHandlerClasses.get(0));
+            if(!warningHandlerClasses.isEmpty()) {
+                warningHandler = warningHandlers.get(warningHandlerClasses.get(0));
+            }
         }
         if(warningHandler == null) {
             LOGGER.debug(String.format("warningHandlers doesn't "
