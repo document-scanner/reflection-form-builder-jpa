@@ -26,16 +26,16 @@ import javax.swing.JPanel;
  *
  * @author richter
  */
-public abstract class AbstractStringPanel<T> extends JPanel {
+public abstract class AbstractStringPanel extends JPanel {
     private static final long serialVersionUID = 1L;
     private final EntityManager entityManager;
     private final int initialQueryLimit;
-    private final Class<T> entityClass;
+    private final Class<?> entityClass;
     private final String fieldName;
     private final Set<StringPanelUpdateListener> updateListeners = new HashSet<>();
 
     public AbstractStringPanel(EntityManager entityManager,
-            Class<T> entityClass,
+            Class<?> entityClass,
             String fieldName,
             int initialQueryLimit) {
         this.entityManager = entityManager;
@@ -67,8 +67,8 @@ public abstract class AbstractStringPanel<T> extends JPanel {
     - retrieving Query.getResultList is the shortest, maybe only way of getting
     the size of the result set
     */
-    protected List<T> check(String textFieldText) {
-        TypedQuery<T> query = entityManager.createQuery(generateQueryText(textFieldText),
+    protected List<?> check(String textFieldText) {
+        TypedQuery<?> query = entityManager.createQuery(generateQueryText(textFieldText),
                 entityClass);
         query.setMaxResults(this.initialQueryLimit);
         return query.getResultList();
@@ -107,7 +107,7 @@ public abstract class AbstractStringPanel<T> extends JPanel {
         return retValue;
     }
 
-    public Class<T> getEntityClass() {
+    public Class<?> getEntityClass() {
         return entityClass;
     }
 

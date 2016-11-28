@@ -44,14 +44,14 @@ import richtercloud.reflection.form.builder.jpa.HistoryEntry;
  * @author richter
  * @param <T> the class containing the {@code String} field
  */
-public class StringCheckPanel<T> extends AbstractStringPanel<T> {
+public class StringCheckPanel extends AbstractStringPanel {
     private static final long serialVersionUID = 1L;
     private final static Logger LOGGER = LoggerFactory.getLogger(StringCheckPanel.class);
-    private QueryPanel<T> queryPanel;
+    private QueryPanel<?> queryPanel;
     private final String initialValue;
 
     public StringCheckPanel(EntityManager entityManager,
-            Class<T> entityClass,
+            Class<?> entityClass,
             MessageHandler messageHandler,
             ReflectionFormBuilder reflectionFormBuilder,
             String initialValue,
@@ -212,7 +212,7 @@ public class StringCheckPanel<T> extends AbstractStringPanel<T> {
             this.showButton.setEnabled(false);
             return;
         }
-        List<T> checkResult = check(this.textField.getText());
+        List<?> checkResult = check(this.textField.getText());
         if(checkResult.isEmpty()) {
             this.statusLabel.setText(String.format("no existing entities with the specified value for this property are found in the database"));
             this.showButton.setEnabled(false);

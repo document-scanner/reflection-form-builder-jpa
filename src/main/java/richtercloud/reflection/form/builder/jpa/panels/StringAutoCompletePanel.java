@@ -39,7 +39,6 @@ import richtercloud.reflection.form.builder.FieldRetriever;
  * Displays existing values in the database in a popup menu in order to inform
  * about similar or equal values which have already been used and persisted.
  * @author richter
- * @param <T>
  */
 /*
 internal implementation notes:
@@ -49,13 +48,15 @@ model and thus can't be used for suggestions
 (i.e. more complicated than implementing auto-completion)
 - A previous undocumented implementation added entities.toString in the popup
 instead of the field values. Adding field values makes more sense.
+- removed parameter T because it didn't seem to have any use, document well when
+adding again
 */
-public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
+public class StringAutoCompletePanel extends AbstractStringPanel {
     private static final long serialVersionUID = 1L;
     private final EventList<String> comboBoxEventList = new BasicEventList<>();
     private final DefaultEventComboBoxModel<String> comboBoxModel = new DefaultEventComboBoxModel<>(comboBoxEventList);
     private final FieldRetriever fieldRetriever;
-    private List<T> lastCheckResults = new LinkedList<>();
+    private List<?> lastCheckResults = new LinkedList<>();
 
     private static Field retrieveFieldByName(FieldRetriever fieldRetriever, Class<?> entityClass, String fieldName) {
         Field retValue = null;
@@ -81,11 +82,14 @@ public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
      * @param fieldRetriever
      */
     public StringAutoCompletePanel(EntityManager entityManager,
-            Class<T> entityClass,
+            Class<?> entityClass,
             String fieldName,
             int initialQueryLimit,
             FieldRetriever fieldRetriever) {
-        super(entityManager, entityClass, fieldName, initialQueryLimit);
+        super(entityManager,
+                entityClass,
+                fieldName,
+                initialQueryLimit);
         this.fieldRetriever = fieldRetriever;
         initComponents();
         this.comboBox.addActionListener(new ActionListener() {
@@ -122,10 +126,10 @@ public class StringAutoCompletePanel<T> extends AbstractStringPanel<T> {
                 try {
                     String textFieldText = ((JTextComponent)comboBox.getEditor().getEditorComponent()).getText();
                     assert textFieldText != null;
-                    List<T> checkResults = check(textFieldText);
+                    List<?> checkResults = check(textFieldText);
                     if(!lastCheckResults.equals(checkResults)) {
                         comboBoxEventList.clear();
-                        for(T checkResult : checkResults) {
+                        for(Object checkResult : checkResults) {
                             String fieldValue = (String) field.get(checkResult);
                             comboBoxEventList.add(fieldValue);
                         }
