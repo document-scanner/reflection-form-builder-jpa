@@ -215,9 +215,4 @@ public class EntityTableModel<E> extends DefaultTableModel {
         }
         this.entities.clear();
     }
-
-    @Override
-    public Class<?> getColumnClass(int columnIndex) {
-        return fields.get(columnIndex).getType();
-    }
 }
