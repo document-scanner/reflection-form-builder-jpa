@@ -178,7 +178,9 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                 new QueryComponent<>(storage,
                         entityClass,
                         messageHandler,
-                        reflectionFormBuilder.getFieldRetriever()),
+                        reflectionFormBuilder.getFieldRetriever(),
+                        true //async
+                ),
                 reflectionFormBuilder,
                 entityClass,
                 storage,

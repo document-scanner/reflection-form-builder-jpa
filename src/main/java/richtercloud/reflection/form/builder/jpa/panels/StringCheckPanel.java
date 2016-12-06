@@ -58,7 +58,8 @@ public class StringCheckPanel extends AbstractStringPanel {
             String initialValue,
             String fieldName,
             int initialQueryLimit,
-            String bidirectionalHelpDialogTitle) throws IllegalArgumentException, IllegalAccessException {
+            String bidirectionalHelpDialogTitle,
+            boolean async) throws IllegalArgumentException, IllegalAccessException {
         super(storage,
                 entityClass,
                 fieldName,
@@ -85,11 +86,7 @@ public class StringCheckPanel extends AbstractStringPanel {
         this.queryPanelDialog.pack();
         this.textField.setText(initialValue);
         this.initialValue = initialValue;
-        SwingUtilities.invokeLater(() -> {
-            reset0();
-            LOGGER.debug("Query finished executing");
-        }); //avoid delay on Query.getResultList
-        LOGGER.debug("Executing query asynchronously");
+        reset0(async);
     }
 
     public String retrieveValue() {
@@ -191,7 +188,8 @@ public class StringCheckPanel extends AbstractStringPanel {
 
     private void checkButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkButtonActionPerformed
         try {
-            updateStatusLabel();
+            updateStatusLabel(false //async
+            );
         } catch (StorageException ex) {
             throw new RuntimeException(ex);
         }
@@ -209,7 +207,8 @@ public class StringCheckPanel extends AbstractStringPanel {
         //has to be key released because otherwise the text of the text field isn't up-to-date
         this.checkButton.setEnabled(!this.textField.getText().isEmpty());
         try {
-            updateStatusLabel();
+            updateStatusLabel(false //async
+            );
         } catch (StorageException ex) {
             throw new RuntimeException(ex);
         }
@@ -218,13 +217,34 @@ public class StringCheckPanel extends AbstractStringPanel {
         }
     }//GEN-LAST:event_textFieldKeyReleased
 
-    private void updateStatusLabel() throws StorageException {
+    private void updateStatusLabel(boolean async) throws StorageException {
         if(this.textField.getText().isEmpty()) {
             this.statusLabel.setText(" ");
             this.showButton.setEnabled(false);
             return;
         }
-        List<?> checkResult = check(this.textField.getText());
+        if(!async) {
+            List<?> checkResult = check(this.textField.getText());
+            updateStatusLabelPostQuery(checkResult);
+        }else {
+            Thread thread = new Thread(() -> {
+                this.setEnabled(false);
+                List<?> checkResult;
+                try {
+                    checkResult = check(textField.getText());
+                } catch (StorageException ex) {
+                    throw new RuntimeException(ex);
+                }
+                SwingUtilities.invokeLater(() -> {
+                    updateStatusLabelPostQuery(checkResult);
+                    StringCheckPanel.this.setEnabled(true);
+                });
+            });
+            thread.start();
+        }
+    }
+
+    private void updateStatusLabelPostQuery(List<?> checkResult) {
         if(checkResult.isEmpty()) {
             this.statusLabel.setText(String.format("no existing entities with the specified value for this property are found in the database"));
             this.showButton.setEnabled(false);
@@ -235,10 +255,11 @@ public class StringCheckPanel extends AbstractStringPanel {
     }
 
     public void reset() {
-        reset0();
+        reset0(false //async
+        );
     }
 
-    private void reset0() {
+    private void reset0(boolean async) {
         if(initialValue != null && !initialValue.isEmpty()) {
             this.textField.setText(initialValue);
             this.checkButton.setEnabled(true);
@@ -247,7 +268,7 @@ public class StringCheckPanel extends AbstractStringPanel {
             this.checkButton.setEnabled(false);
         }
         try {
-            updateStatusLabel();
+            updateStatusLabel(async);
         } catch (StorageException ex) {
             throw new RuntimeException(ex);
         }

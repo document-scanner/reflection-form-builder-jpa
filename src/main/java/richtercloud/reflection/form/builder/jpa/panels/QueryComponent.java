@@ -45,6 +45,7 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.reflection.form.builder.storage.StorageException;
 
 /**
  * A component which provides a text field to enter JPQL queries for a
@@ -201,14 +202,16 @@ public class QueryComponent<E> extends JPanel {
     public QueryComponent(PersistenceStorage storage,
             Class<E> entityClass,
             MessageHandler messageHandler,
-            FieldRetriever fieldRetriever) throws IllegalArgumentException, IllegalAccessException {
+            FieldRetriever fieldRetriever,
+            boolean async) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
                 messageHandler,
                 generateInitialHistoryDefault(entityClass),
                 null, //initialSelectedHistoryEntry (null means point to the first item of initialHistory
                 INITIAL_QUERY_LIMIT_DEFAULT,
-                fieldRetriever);
+                fieldRetriever,
+                async);
     }
 
     /**
@@ -233,7 +236,8 @@ public class QueryComponent<E> extends JPanel {
             List<HistoryEntry> initialHistory,
             HistoryEntry initialSelectedHistoryEntry,
             int initialQueryLimit,
-            FieldRetriever fieldRetriever) throws IllegalArgumentException {
+            FieldRetriever fieldRetriever,
+            boolean async) throws IllegalArgumentException {
         if(entityClass == null) {
             throw new IllegalArgumentException("entityClass mustn't be null");
         }
@@ -280,11 +284,9 @@ public class QueryComponent<E> extends JPanel {
         String queryText = createQueryText(entityClass,
                 false //forbidSubtypes
         );
-        SwingUtilities.invokeLater(() -> {
-            this.executeQuery(initialQueryLimit, queryText);
-            LOGGER.debug("Query finished executing");
-        }); //avoid delay on Query.getResultList
-        LOGGER.debug("Executing query asynchronously");
+        executeQuery(lastQueryLimit,
+                queryText,
+                async);
     }
 
     public List<HistoryEntry> getQueryHistory() {
@@ -412,17 +414,10 @@ public class QueryComponent<E> extends JPanel {
             return;
         }
         int queryLimit = (int) queryLimitSpinner.getValue();
-        if(!async) {
-            LOGGER.debug("running query synchronously");
-            this.executeQuery( queryLimit, queryText);
-        }else {
-            LOGGER.debug("running query asynchronously");
-            this.setEnabled(false);
-            SwingUtilities.invokeLater(() -> {
-                QueryComponent.this.executeQuery( queryLimit, queryText);
-                QueryComponent.this.setEnabled(true);
-            });
-        }
+        this.executeQuery(queryLimit,
+                queryText,
+                async //async
+        );
     }
 
     private void queryButtonActionPerformed(java.awt.event.ActionEvent evt) {
@@ -451,70 +446,118 @@ public class QueryComponent<E> extends JPanel {
     objects
     */
     private void executeQuery(int queryLimit,
-            String queryText) {
-        LOGGER.debug("executing query '{}'", queryText);
-        try {
-            List<E> queryResults = storage.runQuery(queryText, entityClass, queryLimit);
-            ListIterator<E> queryResultsItr = queryResults.listIterator();
-            while(queryResultsItr.hasNext()) {
-                E queryResult = queryResultsItr.next();
-                //first check whether query requests are assignable from entity
-                //class in order to avoid nonsense - or in the case of
-                //SUBTYPES_FORBID for equality...
-                assert subtypeComboBox.getSelectedItem() != null;
-                if(subtypeComboBox.getSelectedItem().equals(SUBTYPES_FORBID)) {
-                    if(!queryResult.getClass().equals(entityClass)) {
-                        this.messageHandler.handle(new Message("The query result "
-                                + "contained entities which are not of the extact "
-                                + "type of this query panel (super and subclasses "
-                                + "aren't allow, consider adding a "
-                                + "`WHERE TYPE([identifier]) = [entity class]` "
-                                + "clause to the query)",
-                                JOptionPane.ERROR_MESSAGE,
-                                "Query error"));
-                        return;
-                    }
-                } else {
-                    if(!entityClass.isAssignableFrom(queryResult.getClass())) {
-                        this.messageHandler.handle(new Message(String.format("The query result "
-                                + "contained entities which are not a subtype of "
-                                + "the entity class %s.", entityClass.getSimpleName()),
-                                JOptionPane.ERROR_MESSAGE,
-                                "Query error"));
-                        return;
-                    }
+            String queryText,
+            boolean async) {
+        if(!async) {
+            try {
+                LOGGER.debug("running query synchronously");
+                List<E> queryResult = executeQueryNonGUI(queryLimit, queryText);
+                executeQueryGUI(queryResult, queryText);
+            }catch(StorageException ex) {
+                LOGGER.info("an exception occured while executing the query", ex);
+                this.queryStatusLabel.setText(generateStatusMessage(ex.getMessage()));
+            }
+        }else {
+            LOGGER.debug("running query asynchronously");
+            this.setEnabled(false);
+            Thread thread = new Thread(() -> {
+                List<E> queryResult;
+                try {
+                    queryResult = executeQueryNonGUI(queryLimit, queryText);
+                } catch (StorageException ex) {
+                    LOGGER.info("an exception occured while executing the query", ex);
+                    this.queryStatusLabel.setText(generateStatusMessage(ex.getMessage()));
+                    return;
                 }
-                //...then eventually filter
-                if(subtypeComboBox.getSelectedItem().equals(SUBTYPES_FILTER)) {
-                    if(!queryResult.getClass().equals(entityClass)) {
-                        queryResultsItr.remove();
-                    }
-                }
-            }
-            for(QueryComponentListener<E> listener : listeners) {
-                listener.onQueryExecuted(new QueryComponentEvent<>(queryResults));
-            }
-            this.queryStatusLabel.setText("Query executed successfully.");
-            HistoryEntry entry = queryComboBoxEditor.getItem();
-            if(entry == null) {
-                //if the query came from a HistoryEntry from the combo box model
-                entry = new HistoryEntry(queryText, 1, new Date());
-            }
-            if(!this.queryComboBoxModel.contains(entry)) {
-                this.getQueryComboBoxModel().addElement(entry);
-            }
-            this.queryComboBoxEditor.setItem(null); //reset to indicate the need
-                //to create a new item
-        }catch(Exception ex) {
-            LOGGER.info("an exception occured while executing the query", ex);
-            this.queryStatusLabel.setText(generateStatusMessage(ex.getMessage()));
+                SwingUtilities.invokeLater(() -> {
+                    executeQueryGUI(queryResult, queryText);
+                    QueryComponent.this.setEnabled(true);
+                });
+            });
+            thread.start();
         }
+    }
+
+    /**
+     * The non-GUI part of {@link #executeQuery(int, java.lang.String, boolean) }.
+     * @param queryLimit
+     * @param queryText
+     * @return
+     * @throws StorageException
+     */
+    private List<E> executeQueryNonGUI(int queryLimit,
+            String queryText) throws StorageException {
+        LOGGER.debug("executing query '{}'", queryText);
+        List<E> queryResults = storage.runQuery(queryText, entityClass, queryLimit);
         this.lastQueryLimit = queryLimit;
         this.lastQueryText = queryText;
+        return queryResults;
+    }
+
+    /**
+     * The GUI-part of {@link #executeQuery(int, java.lang.String, boolean) }.
+     * @param queryResults
+     * @param queryText
+     */
+    private void executeQueryGUI(List<E> queryResults,
+            String queryText) {
+        ListIterator<E> queryResultsItr = queryResults.listIterator();
+        while(queryResultsItr.hasNext()) {
+            E queryResult = queryResultsItr.next();
+            //first check whether query requests are assignable from entity
+            //class in order to avoid nonsense - or in the case of
+            //SUBTYPES_FORBID for equality...
+            assert subtypeComboBox.getSelectedItem() != null;
+            if(subtypeComboBox.getSelectedItem().equals(SUBTYPES_FORBID)) {
+                if(!queryResult.getClass().equals(entityClass)) {
+                    this.messageHandler.handle(new Message("The query result "
+                            + "contained entities which are not of the extact "
+                            + "type of this query panel (super and subclasses "
+                            + "aren't allow, consider adding a "
+                            + "`WHERE TYPE([identifier]) = [entity class]` "
+                            + "clause to the query)",
+                            JOptionPane.ERROR_MESSAGE,
+                            "Query error"));
+                    return;
+                }
+            } else {
+                if(!entityClass.isAssignableFrom(queryResult.getClass())) {
+                    this.messageHandler.handle(new Message(String.format("The query result "
+                            + "contained entities which are not a subtype of "
+                            + "the entity class %s.", entityClass.getSimpleName()),
+                            JOptionPane.ERROR_MESSAGE,
+                            "Query error"));
+                    return;
+                }
+            }
+            //...then eventually filter
+            if(subtypeComboBox.getSelectedItem().equals(SUBTYPES_FILTER)) {
+                if(!queryResult.getClass().equals(entityClass)) {
+                    queryResultsItr.remove();
+                }
+            }
+        }
+        for(QueryComponentListener<E> listener : listeners) {
+            listener.onQueryExecuted(new QueryComponentEvent<>(queryResults));
+        }
+        this.queryStatusLabel.setText("Query executed successfully.");
+        HistoryEntry entry = queryComboBoxEditor.getItem();
+        if(entry == null) {
+            //if the query came from a HistoryEntry from the combo box model
+            entry = new HistoryEntry(queryText, 1, new Date());
+        }
+        if(!this.queryComboBoxModel.contains(entry)) {
+            this.getQueryComboBoxModel().addElement(entry);
+        }
+        this.queryComboBoxEditor.setItem(null); //reset to indicate the need
+            //to create a new item
     }
 
     public void repeatLastQuery() {
-        executeQuery(lastQueryLimit, lastQueryText);
+        executeQuery(lastQueryLimit,
+                lastQueryText,
+                false //async
+        );
     }
 
     public JTextArea getQueryStatusLabel() {
