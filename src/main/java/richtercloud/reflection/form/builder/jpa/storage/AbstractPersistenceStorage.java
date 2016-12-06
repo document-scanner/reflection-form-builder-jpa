@@ -19,6 +19,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.persistence.EntityExistsException;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -47,6 +49,8 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     private EntityManagerFactory entityManagerFactory;
     private EntityManager entityManager;
     private final AbstractPersistenceStorageConf storageConf;
+    private final Lock queryLock = new ReentrantLock(true //fair
+    );
 
     public AbstractPersistenceStorage(C storageConf) {
         this.storageConf = storageConf;
@@ -146,9 +150,15 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     @Override
     public <T> List<T> runQuery(String queryString, Class<T> clazz,
             int queryLimit) throws StorageException {
-        TypedQuery<T> query = createQuery(queryString,
-                clazz);
-        List<T> retValue = query.setMaxResults(queryLimit).getResultList();
+        queryLock.lock();
+        List<T> retValue;
+        try {
+            TypedQuery<T> query = createQuery(queryString,
+                    clazz);
+            retValue = query.setMaxResults(queryLimit).getResultList();
+        }finally {
+            queryLock.unlock();
+        }
         return retValue;
     }
 
