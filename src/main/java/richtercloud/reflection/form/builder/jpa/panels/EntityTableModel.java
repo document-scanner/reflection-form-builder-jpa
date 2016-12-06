@@ -40,15 +40,15 @@ public class EntityTableModel<E> extends DefaultTableModel {
     private final FieldRetriever fieldRetriever;
     private final Map<Integer, String> tooltipTextMap = new HashMap<>();
     /**
-     * The list of fields of entities managed in this model mapping to the index
-     * of the table column. This mapping allows to skip fields of superclasses
-     * which don't have the fields of subclasses.
+     * Maps {@link Field}s to column indices. This allows to retrieve column
+     * header tooltips from {@code tooltipTextMap} easily and figure out
+     * relevant fields in superclasses in {@link #updateColumns(java.util.List) }.
+     * This mapping allows to skip fields of superclasses which don't have the
+     * fields of subclasses.
+     *
+     * This can be used by callers to configure table column classes.
      */
-    /*
-    internal implementation notes:
-    - needs to be a list in order to provide the same iteration order
-    */
-    private final Map<Field, Integer> fields = new HashMap<>();
+    private final Map<Integer, Field> fields = new HashMap<>();
     /**
      * Keep class information in class and update in {@link #updateColumns(java.util.List) }
      * in order to avoid unnecessary iterations.
@@ -122,7 +122,7 @@ public class EntityTableModel<E> extends DefaultTableModel {
         }
         for(Class<?> entityClass : entityClasses) {
             for(Field field : fieldRetriever.retrieveRelevantFields(entityClass)) {
-                if(fields.containsKey(field)) {
+                if(fields.containsValue(field)) {
                     continue;
                 }
                 FieldInfo fieldInfo = field.getAnnotation(FieldInfo.class);
@@ -133,7 +133,7 @@ public class EntityTableModel<E> extends DefaultTableModel {
                     this.addColumn(field.getName());
                     tooltipTextMap.put(i, "");
                 }
-                fields.put(field, i);
+                fields.put(i, field);
                 i++;
             }
         }
@@ -158,21 +158,26 @@ public class EntityTableModel<E> extends DefaultTableModel {
             }
         }); //It's fine to just sort entityClasses because their order doesn't
             //matter
-        String[] fieldValues;
+        Object[] fieldValues;
+            //work with Objects rather than String representation and handle
+            //rendering in owning JTable
         if(entityClasses.size() == 1) {
             //save some comparisons
-            fieldValues = new String[fields.size()];
-            for(Field field : fields.keySet()) {
+            fieldValues = new Object[fields.size()];
+            for(Integer index : fields.keySet()) {
+                Field field = fields.get(index);
                 Object fieldValue = field.get(entity);
-                fieldValues[fields.get(field)] = fieldValue != null ? fieldValue.toString() : "";
+                fieldValues[index] = fieldValue;
             }
         }else {
-            fieldValues = new String[fields.size()+1];
+            fieldValues = new Object[fields.size()+1];
             fieldValues[0] = entity.getClass().getSimpleName(); //type column
-            for(Field field : fields.keySet()) {
-                if(this.fieldRetriever.retrieveRelevantFields(entity.getClass()).contains(field)) {
+            List<Field> relevantFields = this.fieldRetriever.retrieveRelevantFields(entity.getClass());
+            for(Integer index : fields.keySet()) {
+                Field field = fields.get(index);
+                if(relevantFields.contains(field)) {
                     Object fieldValue = field.get(entity);
-                    fieldValues[fields.get(field)] = fieldValue != null ? fieldValue.toString() : "";
+                    fieldValues[index] = fieldValue;
                 }
             }
         }
@@ -209,5 +214,10 @@ public class EntityTableModel<E> extends DefaultTableModel {
             this.removeRow(0);
         }
         this.entities.clear();
+    }
+
+    @Override
+    public Class<?> getColumnClass(int columnIndex) {
+        return fields.get(columnIndex).getType();
     }
 }

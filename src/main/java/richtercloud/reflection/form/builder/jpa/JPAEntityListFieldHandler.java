@@ -24,6 +24,7 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.typehandler.JPAEntityListTypeHandler;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 
 /**
@@ -33,11 +34,11 @@ import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 public class JPAEntityListFieldHandler extends AbstractListFieldHandler<List<Object>, FieldUpdateEvent<List<Object>>, JPAReflectionFormBuilder> implements FieldHandler<List<Object>,FieldUpdateEvent<List<Object>>, JPAReflectionFormBuilder, AbstractListPanel> {
     private final static Logger LOGGER = LoggerFactory.getLogger(JPAEntityListFieldHandler.class);
 
-    public JPAEntityListFieldHandler(EntityManager entityManager,
+    public JPAEntityListFieldHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle) {
         super(messageHandler,
-                new JPAEntityListTypeHandler(entityManager,
+                new JPAEntityListTypeHandler(storage,
                         messageHandler,
                         bidirectionalHelpDialogTitle));
     }

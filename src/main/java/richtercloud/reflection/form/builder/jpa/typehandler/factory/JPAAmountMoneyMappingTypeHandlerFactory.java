@@ -17,9 +17,9 @@ package richtercloud.reflection.form.builder.jpa.typehandler.factory;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
-import javax.persistence.EntityManager;
 import richtercloud.message.handler.MessageHandler;
 import static richtercloud.reflection.form.builder.fieldhandler.factory.MappingFieldHandlerFactory.createStringTypeToken;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.typehandler.JPAStringTypeHandler;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 import richtercloud.reflection.form.builder.typehandler.factory.MappingTypeHandlerFactory;
@@ -29,16 +29,16 @@ import richtercloud.reflection.form.builder.typehandler.factory.MappingTypeHandl
  * @author richter
  */
 public class JPAAmountMoneyMappingTypeHandlerFactory extends MappingTypeHandlerFactory {
-    private final EntityManager entityManager;
+    private final PersistenceStorage storage;
     private final int initialQueryLimit;
     private final String bidirectionalHelpDialogTitle;
 
-    public JPAAmountMoneyMappingTypeHandlerFactory(EntityManager entityManager,
+    public JPAAmountMoneyMappingTypeHandlerFactory(PersistenceStorage storage,
             int initialQueryLimit,
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle) {
         super(messageHandler);
-        this.entityManager = entityManager;
+        this.storage = storage;
         this.initialQueryLimit = initialQueryLimit;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
     }
@@ -48,7 +48,7 @@ public class JPAAmountMoneyMappingTypeHandlerFactory extends MappingTypeHandlerF
         Map<Type, TypeHandler<?, ?,?, ?>> classMapping0 = new HashMap<>(super.generateTypeHandlerMapping());
         //overwrite specification for String fields
         classMapping0.put(createStringTypeToken(),
-                new JPAStringTypeHandler(entityManager,
+                new JPAStringTypeHandler(storage,
                         initialQueryLimit,
                         getMessageHandler(),
                         bidirectionalHelpDialogTitle));

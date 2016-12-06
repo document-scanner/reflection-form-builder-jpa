@@ -29,11 +29,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
-import javax.persistence.EntityManager;
 import javax.swing.JComboBox;
 import javax.swing.SwingUtilities;
 import javax.swing.text.JTextComponent;
 import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.reflection.form.builder.storage.StorageException;
 
 /**
  * Displays existing values in the database in a popup menu in order to inform
@@ -81,13 +82,13 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
      * @param initialQueryLimit
      * @param fieldRetriever
      */
-    public StringAutoCompletePanel(EntityManager entityManager,
+    public StringAutoCompletePanel(PersistenceStorage storage,
             String initialValue,
             Class<?> entityClass,
             String fieldName,
             int initialQueryLimit,
             FieldRetriever fieldRetriever) {
-        super(entityManager,
+        super(storage,
                 entityClass,
                 fieldName,
                 initialQueryLimit);
@@ -141,7 +142,7 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                         }
                         lastCheckResults = checkResults;
                     }
-                } catch (SecurityException | IllegalArgumentException | IllegalAccessException ex) {
+                } catch (SecurityException | IllegalArgumentException | IllegalAccessException | StorageException ex) {
                     throw new RuntimeException(ex);
                 }
             }

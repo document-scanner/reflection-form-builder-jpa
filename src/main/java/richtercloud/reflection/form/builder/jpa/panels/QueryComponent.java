@@ -23,9 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import javax.persistence.metamodel.Metamodel;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.GroupLayout;
@@ -45,7 +42,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
  * A component which provides a text field to enter JPQL queries for a
@@ -154,16 +153,14 @@ public class QueryComponent<E> extends JPanel {
         return retValue;
     }
 
-    public static void validateEntityClass(Class<?> entityClass, EntityManager entityManager) {
-        Metamodel meta = entityManager.getMetamodel();
-        try {
-            meta.entity(entityClass);
-        }catch(IllegalArgumentException ex) {
-            throw new IllegalArgumentException(String.format("entityClass %s is not a mapped entity", entityClass), ex);
+    public static void validateEntityClass(Class<?> entityClass,
+            PersistenceStorage storage) {
+        if(!storage.isClassSupported(entityClass)) {
+            throw new IllegalArgumentException(String.format("entityClass %s is not a mapped entity", entityClass));
         }
     }
 
-    private EntityManager entityManager;
+    private PersistenceStorage storage;
     private Class<E> entityClass;
     private final SpinnerModel queryLimitSpinnerModel = new SpinnerNumberModel(INITIAL_QUERY_LIMIT_DEFAULT, //value
             1, //min
@@ -172,10 +169,6 @@ public class QueryComponent<E> extends JPanel {
     );
     private final SortedComboBoxModel<HistoryEntry> queryComboBoxModel;
     private final QueryComboBoxEditor queryComboBoxEditor;
-    /**
-     * the {@code query} argument of the last execution of {@link #executeQuery(javax.persistence.TypedQuery, int, java.lang.String) }
-     */
-    private TypedQuery<E> lastQuery;
     /**
      * the {@code queryLimit} arugment of the last execution of {@link #executeQuery(javax.persistence.TypedQuery, int, java.lang.String) }
      */
@@ -203,16 +196,19 @@ public class QueryComponent<E> extends JPanel {
     private final JScrollPane queryStatusLabelScrollPane;
     private final Set<QueryComponentListener<E>> listeners = new HashSet<>();
     private final MessageHandler messageHandler;
+    private final FieldRetriever fieldRetriever;
 
-    public QueryComponent(EntityManager entityManager,
+    public QueryComponent(PersistenceStorage storage,
             Class<E> entityClass,
-            MessageHandler messageHandler) throws IllegalArgumentException, IllegalAccessException {
-        this(entityManager,
+            MessageHandler messageHandler,
+            FieldRetriever fieldRetriever) throws IllegalArgumentException, IllegalAccessException {
+        this(storage,
                 entityClass,
                 messageHandler,
                 generateInitialHistoryDefault(entityClass),
                 null, //initialSelectedHistoryEntry (null means point to the first item of initialHistory
-                INITIAL_QUERY_LIMIT_DEFAULT);
+                INITIAL_QUERY_LIMIT_DEFAULT,
+                fieldRetriever);
     }
 
     /**
@@ -231,15 +227,20 @@ public class QueryComponent<E> extends JPanel {
     their method implementations most likely require usage of variables which
     aren't available until the call of the superclass constructor has returned
     */
-    protected QueryComponent(EntityManager entityManager,
+    protected QueryComponent(PersistenceStorage storage,
             Class<E> entityClass,
             MessageHandler messageHandler,
             List<HistoryEntry> initialHistory,
             HistoryEntry initialSelectedHistoryEntry,
-            int initialQueryLimit) throws IllegalArgumentException {
+            int initialQueryLimit,
+            FieldRetriever fieldRetriever) throws IllegalArgumentException {
         if(entityClass == null) {
             throw new IllegalArgumentException("entityClass mustn't be null");
         }
+        if(fieldRetriever == null) {
+            throw new IllegalArgumentException("fieldRetriever mustn't be null");
+        }
+        this.fieldRetriever = fieldRetriever;
         queryLabel = new JLabel();
         queryButton = new JButton();
         queryComboBox = new JComboBox<>();
@@ -247,7 +248,7 @@ public class QueryComponent<E> extends JPanel {
         queryLimitLabel = new JLabel();
         queryStatusLabelScrollPane = new JScrollPane();
         queryStatusLabel = new JTextArea();
-        validateEntityClass(entityClass, entityManager);
+        storage.isClassSupported(entityClass);
         this.entityClass = entityClass;
         //initialize with initial item in order to minimize trouble with null
         //being set as editor item in JComboBox.setEditor
@@ -269,7 +270,7 @@ public class QueryComponent<E> extends JPanel {
                 this.queryComboBox.setSelectedItem(null);
             }
         }
-        this.entityManager = entityManager;
+        this.storage = storage;
         if(messageHandler == null) {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
@@ -279,9 +280,8 @@ public class QueryComponent<E> extends JPanel {
         String queryText = createQueryText(entityClass,
                 false //forbidSubtypes
         );
-        TypedQuery<E> query = createQuery(queryText);
         SwingUtilities.invokeLater(() -> {
-            this.executeQuery(query, initialQueryLimit, queryText);
+            this.executeQuery(initialQueryLimit, queryText);
             LOGGER.debug("Query finished executing");
         }); //avoid delay on Query.getResultList
         LOGGER.debug("Executing query asynchronously");
@@ -412,21 +412,16 @@ public class QueryComponent<E> extends JPanel {
             return;
         }
         int queryLimit = (int) queryLimitSpinner.getValue();
-        TypedQuery<E> query = this.createQuery(queryText); //handles displaying
-            //exceptions which occured during query execution (explaining
-            //syntax errors)
-        if(query != null) {
-            if(!async) {
-                LOGGER.debug("running query synchronously");
-                this.executeQuery(query, queryLimit, queryText);
-            }else {
-                LOGGER.debug("running query asynchronously");
-                this.setEnabled(false);
-                SwingUtilities.invokeLater(() -> {
-                    QueryComponent.this.executeQuery(query, queryLimit, queryText);
-                    QueryComponent.this.setEnabled(true);
-                });
-            }
+        if(!async) {
+            LOGGER.debug("running query synchronously");
+            this.executeQuery( queryLimit, queryText);
+        }else {
+            LOGGER.debug("running query asynchronously");
+            this.setEnabled(false);
+            SwingUtilities.invokeLater(() -> {
+                QueryComponent.this.executeQuery( queryLimit, queryText);
+                QueryComponent.this.setEnabled(true);
+            });
         }
     }
 
@@ -455,12 +450,11 @@ public class QueryComponent<E> extends JPanel {
     the text of the query because there's no way to retrieve text from Criteria
     objects
     */
-    private void executeQuery(TypedQuery<E> query,
-            int queryLimit,
+    private void executeQuery(int queryLimit,
             String queryText) {
         LOGGER.debug("executing query '{}'", queryText);
         try {
-            List<E> queryResults = query.setMaxResults(queryLimit).getResultList();
+            List<E> queryResults = storage.runQuery(queryText, entityClass, queryLimit);
             ListIterator<E> queryResultsItr = queryResults.listIterator();
             while(queryResultsItr.hasNext()) {
                 E queryResult = queryResultsItr.next();
@@ -515,24 +509,12 @@ public class QueryComponent<E> extends JPanel {
             LOGGER.info("an exception occured while executing the query", ex);
             this.queryStatusLabel.setText(generateStatusMessage(ex.getMessage()));
         }
-        this.lastQuery = query;
         this.lastQueryLimit = queryLimit;
         this.lastQueryText = queryText;
     }
 
     public void repeatLastQuery() {
-        executeQuery(lastQuery, lastQueryLimit, lastQueryText);
-    }
-
-    private TypedQuery<E> createQuery(String queryText) {
-        try {
-            TypedQuery<E> query = this.entityManager.createQuery(queryText, this.entityClass);
-            return query;
-        }catch(Exception ex) {
-            LOGGER.info("an exception occured while executing the query", ex);
-            this.queryStatusLabel.setText(generateStatusMessage(ex.getMessage()));
-        }
-        return null;
+        executeQuery(lastQueryLimit, lastQueryText);
     }
 
     public JTextArea getQueryStatusLabel() {

@@ -17,7 +17,6 @@ package richtercloud.reflection.form.builder.jpa.fieldhandler.factory;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
-import javax.persistence.EntityManager;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyCurrencyStorage;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyExchangeRateRetriever;
@@ -25,20 +24,21 @@ import richtercloud.reflection.form.builder.components.money.AmountMoneyUsageSta
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.factory.AmountMoneyMappingFieldHandlerFactory;
 import richtercloud.reflection.form.builder.jpa.JPAStringFieldHandler;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
  *
  * @author richter
  */
 public class JPAAmountMoneyMappingFieldHandlerFactory extends AmountMoneyMappingFieldHandlerFactory {
-    public static JPAAmountMoneyMappingFieldHandlerFactory create(EntityManager entityManager,
+    public static JPAAmountMoneyMappingFieldHandlerFactory create(PersistenceStorage storage,
             int initialQueryLimit,
             MessageHandler messageHandler,
             AmountMoneyUsageStatisticsStorage amountMoneyUsageStatisticsStorage,
             AmountMoneyCurrencyStorage amountMoneyCurrencyStorage,
             AmountMoneyExchangeRateRetriever amountMoneyConversionRateRetriever,
             String bidirectionalHelpDialogTitle) {
-        return new JPAAmountMoneyMappingFieldHandlerFactory(entityManager,
+        return new JPAAmountMoneyMappingFieldHandlerFactory(storage,
                 initialQueryLimit,
                 messageHandler,
                 amountMoneyUsageStatisticsStorage,
@@ -46,12 +46,12 @@ public class JPAAmountMoneyMappingFieldHandlerFactory extends AmountMoneyMapping
                 amountMoneyConversionRateRetriever,
                 bidirectionalHelpDialogTitle);
     }
-    private final EntityManager entityManager;
+    private final PersistenceStorage storage;
     private final int initialQueryLimit;
     private final String bidirectionalHelpDialogTitle;
 
 
-    public JPAAmountMoneyMappingFieldHandlerFactory(EntityManager entityManager,
+    public JPAAmountMoneyMappingFieldHandlerFactory(PersistenceStorage storage,
             int initialQueryLimit,
             MessageHandler messageHandler,
             AmountMoneyUsageStatisticsStorage amountMoneyUsageStatisticsStorage,
@@ -62,7 +62,7 @@ public class JPAAmountMoneyMappingFieldHandlerFactory extends AmountMoneyMapping
                 amountMoneyCurrencyStorage,
                 amountMoneyConversionRateRetriever,
                 messageHandler);
-        this.entityManager = entityManager;
+        this.storage = storage;
         this.initialQueryLimit = initialQueryLimit;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
     }
@@ -82,7 +82,7 @@ public class JPAAmountMoneyMappingFieldHandlerFactory extends AmountMoneyMapping
         classMapping0.putAll(super.generateClassMapping());
         //overwrite specification for String fields
         classMapping0.put(createStringTypeToken(),
-                new JPAStringFieldHandler(entityManager,
+                new JPAStringFieldHandler(storage,
                         initialQueryLimit,
                         getMessageHandler(),
                         bidirectionalHelpDialogTitle));

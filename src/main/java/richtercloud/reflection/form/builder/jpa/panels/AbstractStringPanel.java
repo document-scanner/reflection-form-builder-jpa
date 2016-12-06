@@ -18,9 +18,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
 import javax.swing.JPanel;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.reflection.form.builder.storage.StorageException;
 
 /**
  *
@@ -28,17 +28,17 @@ import javax.swing.JPanel;
  */
 public abstract class AbstractStringPanel extends JPanel {
     private static final long serialVersionUID = 1L;
-    private final EntityManager entityManager;
+    private final PersistenceStorage storage;
     private final int initialQueryLimit;
     private final Class<?> entityClass;
     private final String fieldName;
     private final Set<StringPanelUpdateListener> updateListeners = new HashSet<>();
 
-    public AbstractStringPanel(EntityManager entityManager,
+    public AbstractStringPanel(PersistenceStorage storage,
             Class<?> entityClass,
             String fieldName,
             int initialQueryLimit) {
-        this.entityManager = entityManager;
+        this.storage = storage;
         this.entityClass = entityClass;
         this.fieldName = fieldName;
         this.initialQueryLimit = initialQueryLimit;
@@ -67,11 +67,11 @@ public abstract class AbstractStringPanel extends JPanel {
     - retrieving Query.getResultList is the shortest, maybe only way of getting
     the size of the result set
     */
-    protected List<?> check(String textFieldText) {
-        TypedQuery<?> query = entityManager.createQuery(generateQueryText(textFieldText),
-                entityClass);
-        query.setMaxResults(this.initialQueryLimit);
-        return query.getResultList();
+    protected List<?> check(String textFieldText) throws StorageException {
+        List<?> retValue = storage.runQuery(generateQueryText(textFieldText),
+                entityClass,
+                this.initialQueryLimit);
+        return retValue;
     }
 
     /**

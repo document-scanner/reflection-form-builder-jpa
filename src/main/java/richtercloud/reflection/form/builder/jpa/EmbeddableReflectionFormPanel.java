@@ -16,10 +16,10 @@ package richtercloud.reflection.form.builder.jpa;
 
 import java.lang.reflect.Field;
 import java.util.Map;
-import javax.persistence.EntityManager;
 import javax.swing.JComponent;
 import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
  * A panel to manage components to set fields of an {@link Embeddable} class.
@@ -38,12 +38,12 @@ release
 public class EmbeddableReflectionFormPanel<T> extends JPAReflectionFormPanel<T, ReflectionFormPanelUpdateListener> {
     private static final long serialVersionUID = 1L;
 
-    public EmbeddableReflectionFormPanel(EntityManager entityManager,
+    public EmbeddableReflectionFormPanel(PersistenceStorage storage,
             T instance,
             Class<? extends T> entityClass,
             Map<Field, JComponent> fieldMapping,
             FieldHandler fieldHandler) throws IllegalArgumentException, IllegalAccessException {
-        super(entityManager,
+        super(storage,
                 instance,
                 entityClass,
                 fieldMapping,

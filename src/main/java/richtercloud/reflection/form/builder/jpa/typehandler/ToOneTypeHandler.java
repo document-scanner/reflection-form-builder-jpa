@@ -19,7 +19,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
-import javax.persistence.EntityManager;
 import javax.swing.JComponent;
 import javax.swing.ListSelectionModel;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -35,6 +34,7 @@ import richtercloud.reflection.form.builder.jpa.panels.BidirectionalControlPanel
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanel;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 
 /**
@@ -42,17 +42,17 @@ import richtercloud.reflection.form.builder.typehandler.TypeHandler;
  * @author richter
  */
 public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Object>, JPAReflectionFormBuilder, QueryPanel>{
-    private final EntityManager entityManager;
+    private final PersistenceStorage storage;
     private final String bidirectionalHelpDialogTitle;
     private final MessageHandler messageHandler;
 
-    public ToOneTypeHandler(EntityManager entityManager,
+    public ToOneTypeHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle) {
-        if(entityManager == null) {
-            throw new IllegalArgumentException("entityManager mustn't be null");
+        if(storage == null) {
+            throw new IllegalArgumentException("storage mustn't be null");
         }
-        this.entityManager = entityManager;
+        this.storage = storage;
         if(messageHandler == null) {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
@@ -82,7 +82,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
                 bidirectionalHelpDialogTitle,
                 QueryPanel.retrieveMappedByFieldPanel(entityClassFields),
                 mappedFieldCandidates);
-        final QueryPanel retValue = new QueryPanel(entityManager,
+        final QueryPanel retValue = new QueryPanel(storage,
                 entityClass,
                 messageHandler,
                 reflectionFormBuilder,

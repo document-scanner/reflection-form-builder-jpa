@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import javax.persistence.EntityManager;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.swing.GroupLayout;
@@ -31,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
  * Allows to run a JPQL query for a specific class while getting feedback about
@@ -105,14 +105,14 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
 
     private final E initialValue;
 
-    public QueryPanel(EntityManager entityManager,
+    public QueryPanel(PersistenceStorage storage,
             Class<E> entityClass,
             MessageHandler messageHandler,
             ReflectionFormBuilder reflectionFormBuilder,
             E initialValue,
             BidirectionalControlPanel bidirectionalControlPanel,
             int queryResultTableSelectionMode) throws IllegalArgumentException, IllegalAccessException {
-        this(entityManager,
+        this(storage,
                 entityClass,
                 messageHandler,
                 reflectionFormBuilder,
@@ -122,7 +122,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                 queryResultTableSelectionMode);
     }
 
-    public QueryPanel(EntityManager entityManager,
+    public QueryPanel(PersistenceStorage storage,
             Class<E> entityClass,
             MessageHandler messageHandler,
             ReflectionFormBuilder reflectionFormBuilder,
@@ -131,7 +131,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             int queryResultTableHeight,
             String bidirectionalHelpDialogTitle,
             int queryResultTableSelectionMode) throws IllegalArgumentException, IllegalAccessException {
-        this(entityManager,
+        this(storage,
                 entityClass,
                 messageHandler,
                 reflectionFormBuilder,
@@ -166,7 +166,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
     reusability (and because it's perfectly legitimate due to
     composition-over-inheritance)
     */
-    public QueryPanel(EntityManager entityManager,
+    public QueryPanel(PersistenceStorage storage,
             Class<E> entityClass,
             MessageHandler messageHandler,
             ReflectionFormBuilder reflectionFormBuilder,
@@ -175,12 +175,13 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             int queryResultTableHeight,
             int queryResultTableSelectionMode) throws IllegalArgumentException, IllegalAccessException {
         super(bidirectionalControlPanel,
-                new QueryComponent<>(entityManager,
+                new QueryComponent<>(storage,
                         entityClass,
-                        messageHandler),
+                        messageHandler,
+                        reflectionFormBuilder.getFieldRetriever()),
                 reflectionFormBuilder,
                 entityClass,
-                entityManager,
+                storage,
                 messageHandler,
                 queryResultTableSelectionMode,
                 new LinkedList<>(Arrays.asList(initialValue)));
@@ -244,7 +245,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             throw new RuntimeException(ex);
         }
         if(initialValue != null) {
-            if(!this.getEntityManager().contains(initialValue)) {
+            if(!this.getStorage().isManaged(initialValue)) {
                 this.getQueryResultLabel().setText(String.format("previously managed entity %s has been removed from persistent storage, ignoring", initialValue));
             }
             if(!this.getQueryResultTable().getModel().getEntities().contains(initialValue)) {

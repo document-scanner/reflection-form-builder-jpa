@@ -18,7 +18,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.LinkedList;
 import java.util.List;
-import javax.persistence.EntityManager;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -33,6 +32,7 @@ import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.panels.QueryListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.AbstractListTypeHandler;
 
 /**
@@ -41,15 +41,15 @@ import richtercloud.reflection.form.builder.typehandler.AbstractListTypeHandler;
  */
 public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Object>, FieldUpdateEvent<List<Object>>,JPAReflectionFormBuilder> {
     private final static Logger LOGGER = LoggerFactory.getLogger(JPAEntityListTypeHandler.class);
-    private final EntityManager entityManager;
     private final String bidirectionalHelpDialogTitle;
+    private final PersistenceStorage storage;
 
-    public JPAEntityListTypeHandler(EntityManager entityManager,
+    public JPAEntityListTypeHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle) {
         super(messageHandler);
-        this.entityManager = entityManager;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
+        this.storage = storage;
     }
 
     @Override
@@ -77,7 +77,7 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
         }else {
             entityClass = Object.class;
         }
-        final QueryListPanel retValue = new QueryListPanel(entityManager,
+        final QueryListPanel retValue = new QueryListPanel(storage,
                 reflectionFormBuilder,
                 entityClass,
                 getMessageHandler(),

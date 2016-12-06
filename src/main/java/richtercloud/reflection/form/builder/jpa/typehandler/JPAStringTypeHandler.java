@@ -15,7 +15,6 @@
 package richtercloud.reflection.form.builder.jpa.typehandler;
 
 import java.lang.reflect.Type;
-import javax.persistence.EntityManager;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -28,6 +27,7 @@ import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.panels.StringAutoCompletePanel;
 import richtercloud.reflection.form.builder.jpa.panels.StringPanelUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.StringPanelUpdateListener;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 
 /**
@@ -35,16 +35,16 @@ import richtercloud.reflection.form.builder.typehandler.TypeHandler;
  * @author richter
  */
 public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEvent<String>,JPAReflectionFormBuilder, StringAutoCompletePanel> {
-    private final EntityManager entityManager;
+    private final PersistenceStorage storage;
     private final int initialQueryLimit;
     private final MessageHandler messageHandler;
     private final String bidirectionalHelpDialogTitle;
 
-    public JPAStringTypeHandler(EntityManager entityManager,
+    public JPAStringTypeHandler(PersistenceStorage storage,
             int initialQueryLimit,
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle) {
-        this.entityManager = entityManager;
+        this.storage = storage;
         this.initialQueryLimit = initialQueryLimit;
         this.messageHandler = messageHandler;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
@@ -59,7 +59,7 @@ public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEven
             JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException,
             IllegalAccessException,
             FieldHandlingException {
-        StringAutoCompletePanel retValue = new StringAutoCompletePanel(entityManager,
+        StringAutoCompletePanel retValue = new StringAutoCompletePanel(storage,
                 fieldValue, //initialValue
                 declaringClass,
                 fieldName,

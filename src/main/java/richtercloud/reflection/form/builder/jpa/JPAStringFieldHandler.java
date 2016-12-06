@@ -16,7 +16,6 @@ package richtercloud.reflection.form.builder.jpa;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import javax.persistence.EntityManager;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.message.handler.MessageHandler;
@@ -26,6 +25,7 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.ResettableFieldHandler;
 import richtercloud.reflection.form.builder.jpa.panels.StringAutoCompletePanel;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.typehandler.JPAStringTypeHandler;
 
 /**
@@ -35,11 +35,11 @@ import richtercloud.reflection.form.builder.jpa.typehandler.JPAStringTypeHandler
 public class JPAStringFieldHandler extends ResettableFieldHandler<String, FieldUpdateEvent<String>, JPAReflectionFormBuilder, StringAutoCompletePanel> {
     private final JPAStringTypeHandler jPAStringTypeHandler;
 
-    public JPAStringFieldHandler(EntityManager entityManager,
+    public JPAStringFieldHandler(PersistenceStorage storage,
             int initialQueryLimit,
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle) {
-        this.jPAStringTypeHandler = new JPAStringTypeHandler(entityManager,
+        this.jPAStringTypeHandler = new JPAStringTypeHandler(storage,
                 initialQueryLimit,
                 messageHandler,
                 bidirectionalHelpDialogTitle);

@@ -19,7 +19,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import javax.persistence.EntityManager;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
@@ -33,6 +32,7 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
  * Handles generation of {@link JPAReflectionFormPanel} from root entity class
@@ -49,12 +49,12 @@ internal implementation notes:
 FieldHandler for how to provide a portable interface
 */
 public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFieldRetriever> {
-    private EntityManager entityManager;
+    private PersistenceStorage storage;
     private final IdApplier idApplier;
     private final ConfirmMessageHandler confirmMessageHandler;
     private final Map<Class<?>, WarningHandler<?>> warningHandlers;
 
-    public JPAReflectionFormBuilder(EntityManager entityManager,
+    public JPAReflectionFormBuilder(PersistenceStorage storage,
             String fieldDescriptionDialogTitle,
             MessageHandler messageHandler,
             ConfirmMessageHandler confirmMessageHandler,
@@ -64,10 +64,10 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFie
         super(fieldDescriptionDialogTitle,
                 messageHandler,
                 fieldRetriever);
-        if(entityManager == null) {
+        if(storage == null) {
             throw new IllegalArgumentException("entityManager mustn't be null");
         }
-        this.entityManager = entityManager;
+        this.storage = storage;
         if(idApplier == null) {
             throw new IllegalArgumentException("idApplier mustn't be null");
         }
@@ -82,7 +82,7 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFie
             FieldHandler fieldHandler) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, FieldHandlingException {
         final Map<Field, JComponent> fieldMapping = new HashMap<>();
         Object instance = prepareInstance(entityClass, entityToUpdate);
-        ReflectionFormPanel retValue = new EntityReflectionFormPanel(entityManager,
+        ReflectionFormPanel retValue = new EntityReflectionFormPanel(storage,
                 instance,
                 entityClass,
                 fieldMapping,
@@ -125,7 +125,7 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFie
             InstantiationException {
         final Map<Field, JComponent> fieldMapping = new HashMap<>();
         Object instance0 = prepareInstance(embeddableClass, instance);
-        EmbeddableReflectionFormPanel<Object> retValue = new EmbeddableReflectionFormPanel<>(entityManager,
+        EmbeddableReflectionFormPanel<Object> retValue = new EmbeddableReflectionFormPanel<>(storage,
                 instance0,
                 embeddableClass,
                 fieldMapping,

@@ -18,7 +18,6 @@ import java.lang.reflect.Type;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import javax.persistence.EntityManager;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -29,6 +28,7 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.panels.QueryListPanel;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.typehandler.GenericListTypeHandler;
@@ -39,21 +39,21 @@ import richtercloud.reflection.form.builder.typehandler.TypeHandler;
  * @author richter
  */
 public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormBuilder, QueryListPanel> {
-    private final EntityManager entityManager;
+    private final PersistenceStorage storage;
     private final String bidirectionalHelpDialogTitle;
     private final MessageHandler messageHandler;
 
-    public ToManyTypeHandler(EntityManager entityManager,
+    public ToManyTypeHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
             Map<Type, TypeHandler<?, ?, ?, ?>> genericsTypeHandlerMapping,
             Map<Type, TypeHandler<?, ?, ?, ?>> fieldTypeHandlerMapping,
             String bidirectionalHelpDialogTitle) {
         super(genericsTypeHandlerMapping,
                 fieldTypeHandlerMapping);
-        if(entityManager == null) {
-            throw new IllegalArgumentException("entityManager mustn't be null");
+        if(storage == null) {
+            throw new IllegalArgumentException("storage mustn't be null");
         }
-        this.entityManager = entityManager;
+        this.storage = storage;
         if(messageHandler == null) {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
@@ -72,7 +72,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
         if(!(genericType instanceof Class)) {
             throw new IllegalArgumentException("the generic type of type has to be instanceof Class");
         }
-        final QueryListPanel retValue = new QueryListPanel(entityManager,
+        final QueryListPanel retValue = new QueryListPanel(storage,
                 reflectionFormBuilder,
                 (Class<?>) type,
                 messageHandler,

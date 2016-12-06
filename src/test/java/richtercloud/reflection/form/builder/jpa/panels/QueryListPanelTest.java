@@ -16,9 +16,7 @@ package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.util.List;
 import javax.persistence.Entity;
-import javax.persistence.EntityManager;
 import javax.persistence.ManyToMany;
-import javax.persistence.metamodel.Metamodel;
 import javax.swing.JFrame;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
@@ -29,6 +27,7 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.JPACachedFieldRetriever;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
  *
@@ -40,9 +39,8 @@ public class QueryListPanelTest {
 
     @Test
     public void testInit() throws IllegalArgumentException, IllegalAccessException {
-        EntityManager entityManager = mock(EntityManager.class);
-        Metamodel metamodel = mock(Metamodel.class);
-        when(entityManager.getMetamodel()).thenReturn(metamodel);
+        PersistenceStorage storage = mock(PersistenceStorage.class);
+        when(storage.isManaged(any())).thenReturn(true);
         ReflectionFormBuilder reflectionFormBuilder = mock(ReflectionFormBuilder.class);
         FieldRetriever fieldRetriever = new JPACachedFieldRetriever();
         when(reflectionFormBuilder.getFieldRetriever()).thenReturn(fieldRetriever);
@@ -50,7 +48,7 @@ public class QueryListPanelTest {
         List<Object> initialValues = null;
         String bidirectionalHelpDialogTitle = "test";
         MessageHandler messageHandler = new LoggerMessageHandler(LOGGER);
-        QueryListPanel instance = new QueryListPanel(entityManager,
+        QueryListPanel instance = new QueryListPanel(storage,
                 reflectionFormBuilder,
                 entityClass,
                 messageHandler,

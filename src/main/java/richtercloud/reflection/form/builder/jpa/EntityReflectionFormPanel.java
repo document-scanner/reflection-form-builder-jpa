@@ -22,11 +22,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import javax.persistence.EntityExistsException;
-import javax.persistence.EntityManager;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
-import javax.persistence.RollbackException;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -41,6 +38,8 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.reflection.form.builder.storage.StorageException;
 
 /**
  * A {@link JPAReflectionFormPanel} with an implementation to save and delete
@@ -109,7 +108,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
     - no need to pass refences to @Id annotated fields because they can be
     retrieved from JPACachedFieldRetriever
     */
-    public EntityReflectionFormPanel(EntityManager entityManager,
+    public EntityReflectionFormPanel(PersistenceStorage storage,
             Object instance,
             Class<?> entityClass,
             Map<Field, JComponent> fieldMapping,
@@ -120,7 +119,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
             FieldHandler fieldHandler,
             IdApplier idApplier,
             Map<Class<?>, WarningHandler<?>> warningHandlers) throws IllegalArgumentException, IllegalAccessException {
-        super(entityManager,
+        super(storage,
                 instance,
                 entityClass,
                 fieldMapping,
@@ -204,18 +203,11 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         Object instance = this.retrieveInstance();
         //check getEntityManager.contains is unnecessary because a instances should be managed
         try {
-            getEntityManager().getTransaction().begin();
-            getEntityManager().remove(instance);
-            getEntityManager().getTransaction().commit();
+            getStorage().store(instance);
             this.messageHandler.handle(new Message(String.format("<html>removed entity of type '%s' successfully</html>", this.getEntityClass()),
                     JOptionPane.INFORMATION_MESSAGE,
-                    "Removal failed"));
-        }catch(EntityExistsException ex) {
-            getEntityManager().getTransaction().rollback();
-            handlePersistenceException(ex);
-
-        }catch(RollbackException ex) {
-             //cannot call entityManager.getTransaction().rollback() here because transaction isn' active
+                    "Removal succeeded"));
+        }catch(StorageException ex) {
             handlePersistenceException(ex);
         }
         for(EntityReflectionFormPanelUpdateListener updateListener : this.getUpdateListeners()) {
@@ -235,6 +227,12 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         return retValue;
     }
 
+    /*
+    internal implementation notes:
+    - It's fine to keep the JPA validation routines here because this is the
+    JPA module and validation is legitimate no matter which Storage backend is
+    used.
+    */
     protected void saveButtonActionPerformed(ActionEvent evt) {
         Object instance = this.retrieveInstance();
             //might be in all sorts of JPA states (attached, detached, etc.)
@@ -243,7 +241,8 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
             //only (try to) change id if not in editing mode
             Set<Field> idFields = this.fieldRetriever.getIdFields(getEntityClass());
             Set<JComponent> idFieldComponents = retrieveIdFieldComponents(idFields);
-            idApplier.applyId(instance, idFieldComponents);
+            idApplier.applyId(instance,
+                    idFieldComponents);
         }
 
         if(!this.entityValidator.validate(instance, Default.class)) {
@@ -312,7 +311,8 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                 if(keySet) {
                     //otherwise either the one ID field value is null or all
                     //ID field values are null
-                    Object existingInstance = getEntityManager().find(getEntityClass(), primaryKey);
+                    Object existingInstance = getStorage().retrieve(primaryKey,
+                            getEntityClass());
                     if(existingInstance != null) {
                         this.messageHandler.handle(new Message(String.format("An instance of type '%s' with ID '%s' has already been persisted. Change the ID or edit the existing instance in editing mode.",
                                         getEntityClass(),
@@ -324,40 +324,21 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                 }
 
                 //persist
-                getEntityManager().getTransaction().begin();
-                getEntityManager().persist(instance);
-                getEntityManager().getTransaction().commit();
+                getStorage().store(instance);
                 this.messageHandler.handle(new Message(String.format("<html>persisted entity of type '%s' successfully</html>", this.getEntityClass()),
                         JOptionPane.INFORMATION_MESSAGE,
                         "Instance persisted successfully"));
-                getEntityManager().detach(instance); //detaching necessary in
-                    //order to be able to change one single value and save again
-            }catch(EntityExistsException ex) {
-                getEntityManager().getTransaction().rollback();
-                handlePersistenceException(ex);
-            }catch(RollbackException ex) {
-                 //cannot call entityManager.getTransaction().rollback() here because transaction isn' active
+            }catch(StorageException ex) {
                 handlePersistenceException(ex);
             }
         } else {
             try {
-                getEntityManager().getTransaction().begin();
-                getEntityManager().merge(instance);
-                getEntityManager().getTransaction().commit();
-                getEntityManager().detach(instance);
+                getStorage().update(instance);
                 this.messageHandler.handle(new Message(String.format("<html>Updated entity of type '%s' successfully.</html>", this.getEntityClass()),
                         JOptionPane.INFORMATION_MESSAGE,
                         "Instance updated successfully"));
-            }catch(EntityExistsException ex) {
-                getEntityManager().getTransaction().rollback();
+            }catch(StorageException ex) {
                 handlePersistenceException(ex);
-
-            }catch(RollbackException ex) {
-                 //cannot call entityManager.getTransaction().rollback() here because transaction isn' active
-                handlePersistenceException(ex);
-            }catch(IllegalStateException ex) {
-                //if transaction is already active
-                getEntityManager().getTransaction().rollback();
             }
         }
     }

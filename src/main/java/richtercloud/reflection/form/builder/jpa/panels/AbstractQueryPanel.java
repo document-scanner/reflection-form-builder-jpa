@@ -20,7 +20,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javax.persistence.EntityManager;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.GroupLayout;
 import javax.swing.JComponent;
@@ -31,11 +30,13 @@ import javax.swing.JSeparator;
 import javax.swing.JTable;
 import javax.swing.LayoutStyle;
 import javax.swing.ListSelectionModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
  * The base class for {@link QueryPanel} and {@link QueryListPanel}.
@@ -56,7 +57,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
     private final QueryComponent<E> queryComponent;
     private final ReflectionFormBuilder reflectionFormBuilder;
     private final Class<?> entityClass;
-    private final EntityManager entityManager;
+    private final PersistenceStorage storage;
     private final JSeparator separator;
     private final GroupLayout.SequentialGroup verticalSequentialGroup;
     private final GroupLayout.ParallelGroup horizontalParallelGroup;
@@ -81,12 +82,12 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
             QueryComponent<E> queryComponent,
             final ReflectionFormBuilder reflectionFormBuilder,
             final Class<?> entityClass,
-            EntityManager entityManager,
+            PersistenceStorage storage,
             MessageHandler messageHandler,
             int queryResultTableSelectionMode,
             List<E> initialValues) {
         super();
-        if(entityManager == null) {
+        if(storage == null) {
             throw new IllegalArgumentException("entityManager mustn't be null");
         }
         if(reflectionFormBuilder == null) {
@@ -98,7 +99,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         this.queryComponent = queryComponent;
         this.reflectionFormBuilder = reflectionFormBuilder;
         this.entityClass = entityClass;
-        this.entityManager = entityManager;
+        this.storage = storage;
         if(messageHandler == null) {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
@@ -120,7 +121,8 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
             throw new RuntimeException(ex);
         }
 
-        QueryComponent.validateEntityClass(entityClass, entityManager);
+        QueryComponent.validateEntityClass(entityClass,
+                storage);
 
         queryResultLabel.setText("Query result:");
         queryResultTable.setSelectionModel(this.queryResultTableSelectionModel);
@@ -134,6 +136,12 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
                 try {
                     queryResultModel = new EntityTableModel<>(queryResults,
                             reflectionFormBuilder.getFieldRetriever());
+                    for(E queryResult : queryResults) {
+                        storage.initialize(queryResult,
+                                reflectionFormBuilder.getFieldRetriever());
+                            //every result retrieved for the query should be
+                            //initialized
+                    }
                 } catch (IllegalArgumentException | IllegalAccessException ex) {
                     throw new RuntimeException(ex);
                 }
@@ -201,6 +209,30 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
                 return retValue;
             }
         });
+        queryResultTable.setDefaultRenderer(byte[].class,
+                new DefaultTableCellRenderer() {
+                    private static final long serialVersionUID = 1L;
+                    @Override
+                    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                        assert value instanceof byte[];
+                        byte[] valueCast = (byte[]) value;
+                        return super.getTableCellRendererComponent(table,
+                                String.format("%d bytes binary data", valueCast.length),
+                                isSelected,
+                                hasFocus,
+                                row,
+                                column);
+                    }
+                });
+        //handle initialization of lazily fetched fields in
+        //PersistenceStorage.initialize because the table cell renderer has no
+        //knowledge of the field the value belongs to (and there's no sense in
+        //making the effort to get it this knowledge)
+        //In case this is reverted at any point in time note:
+        //Some JPA implementations like EclipseLink use IndirectList which
+        //implements Collection, but doesn't trigger the default renderer for
+        //Collection.class -> register for Object and check type in conditional
+        //statements
         this.bidirectionalControlPanel = bidirectionalControlPanel;
     }
 
@@ -261,8 +293,8 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         return queryResultTableScrollPane;
     }
 
-    public EntityManager getEntityManager() {
-        return entityManager;
+    public PersistenceStorage getStorage() {
+        return storage;
     }
 
     public JLabel getQueryResultLabel() {

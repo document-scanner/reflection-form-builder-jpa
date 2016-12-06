@@ -16,7 +16,6 @@ package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.util.Date;
 import java.util.List;
-import javax.persistence.EntityManager;
 import javax.swing.GroupLayout;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
@@ -25,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.reflection.form.builder.storage.StorageException;
 
 /**
  * A panel to include an automatic check for existing entites with the value
@@ -50,7 +51,7 @@ public class StringCheckPanel extends AbstractStringPanel {
     private QueryPanel<?> queryPanel;
     private final String initialValue;
 
-    public StringCheckPanel(EntityManager entityManager,
+    public StringCheckPanel(PersistenceStorage storage,
             Class<?> entityClass,
             MessageHandler messageHandler,
             ReflectionFormBuilder reflectionFormBuilder,
@@ -58,9 +59,12 @@ public class StringCheckPanel extends AbstractStringPanel {
             String fieldName,
             int initialQueryLimit,
             String bidirectionalHelpDialogTitle) throws IllegalArgumentException, IllegalAccessException {
-        super(entityManager, entityClass, fieldName, initialQueryLimit);
+        super(storage,
+                entityClass,
+                fieldName,
+                initialQueryLimit);
         initComponents();
-        this.queryPanel = new QueryPanel<>(entityManager,
+        this.queryPanel = new QueryPanel<>(storage,
                 entityClass,
                 messageHandler,
                 reflectionFormBuilder,
@@ -186,7 +190,11 @@ public class StringCheckPanel extends AbstractStringPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void checkButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkButtonActionPerformed
-        updateStatusLabel();
+        try {
+            updateStatusLabel();
+        } catch (StorageException ex) {
+            throw new RuntimeException(ex);
+        }
     }//GEN-LAST:event_checkButtonActionPerformed
 
     private void showButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showButtonActionPerformed
@@ -200,13 +208,17 @@ public class StringCheckPanel extends AbstractStringPanel {
     private void textFieldKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_textFieldKeyReleased
         //has to be key released because otherwise the text of the text field isn't up-to-date
         this.checkButton.setEnabled(!this.textField.getText().isEmpty());
-        updateStatusLabel();
+        try {
+            updateStatusLabel();
+        } catch (StorageException ex) {
+            throw new RuntimeException(ex);
+        }
         for(StringPanelUpdateListener updateListener : this.getUpdateListeners()) {
             updateListener.onUpdate(new StringPanelUpdateEvent(this.textField.getText()));
         }
     }//GEN-LAST:event_textFieldKeyReleased
 
-    private void updateStatusLabel() {
+    private void updateStatusLabel() throws StorageException {
         if(this.textField.getText().isEmpty()) {
             this.statusLabel.setText(" ");
             this.showButton.setEnabled(false);
@@ -234,7 +246,11 @@ public class StringCheckPanel extends AbstractStringPanel {
             this.textField.setText("");
             this.checkButton.setEnabled(false);
         }
-        updateStatusLabel();
+        try {
+            updateStatusLabel();
+        } catch (StorageException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

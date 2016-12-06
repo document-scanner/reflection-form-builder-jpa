@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import javax.persistence.EntityManager;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -37,6 +36,7 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.ReflectionFormBuilderHelperJPA;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEventVetoException;
@@ -84,13 +84,13 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
     private final JSplitPane resultSplitPane;
     private final JPanel resultPanel;
 
-    public QueryListPanel(EntityManager entityManager,
+    public QueryListPanel(PersistenceStorage storage,
             ReflectionFormBuilder reflectionFormBuilder,
             Class<E> entityClass,
             MessageHandler messageHandler,
             List<E> initialValues,
             String bidirectionalHelpDialogTitle) throws IllegalArgumentException, IllegalAccessException {
-        this(entityManager,
+        this(storage,
                 reflectionFormBuilder,
                 entityClass,
                 messageHandler,
@@ -111,7 +111,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
      * @throws IllegalArgumentException
      * @throws IllegalAccessException
      */
-    public QueryListPanel(EntityManager entityManager,
+    public QueryListPanel(PersistenceStorage storage,
             final ReflectionFormBuilder reflectionFormBuilder,
             Class<E> entityClass,
             MessageHandler messageHandler,
@@ -121,12 +121,13 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         super(generateBidirectionalControlPanel(entityClass,
                 reflectionFormBuilder.getFieldRetriever(),
                 bidirectionalHelpDialogTitle),
-                new QueryComponent<>(entityManager,
+                new QueryComponent<>(storage,
                         entityClass,
-                        messageHandler),
+                        messageHandler,
+                        reflectionFormBuilder.getFieldRetriever()),
                 reflectionFormBuilder,
                 entityClass,
-                entityManager,
+                storage,
                 messageHandler,
                 ListSelectionModel.MULTIPLE_INTERVAL_SELECTION,
                 initialValues);
@@ -327,7 +328,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                 throw new RuntimeException(ex);
             }
             for(E initialValue : initialValues) {
-                if(!this.getEntityManager().contains(initialValue)) {
+                if(!this.getStorage().isManaged(initialValue)) {
                     this.getQueryResultLabel().setText(String.format("previously managed entity %s has been removed from persistent storage, ignoring", initialValue));
                 }
                 int initialValueIndex = this.resultTable.getModel().getEntities().indexOf(initialValue);

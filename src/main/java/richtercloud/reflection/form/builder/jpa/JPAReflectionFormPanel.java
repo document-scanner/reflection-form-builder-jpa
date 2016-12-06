@@ -16,13 +16,13 @@ package richtercloud.reflection.form.builder.jpa;
 
 import java.lang.reflect.Field;
 import java.util.Map;
-import javax.persistence.EntityManager;
 import javax.swing.JComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
 import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
+import richtercloud.reflection.form.builder.storage.Storage;
 
 /**
  *
@@ -31,7 +31,7 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 public abstract class JPAReflectionFormPanel<T, U extends ReflectionFormPanelUpdateListener> extends ReflectionFormPanel<U> {
     private static final long serialVersionUID = 1L;
     private final static Logger LOGGER = LoggerFactory.getLogger(JPAReflectionFormPanel.class);
-    private EntityManager entityManager;
+    private Storage storage;
 
     /**
      * Creates a {@code JPAReflectionFormPanel}.
@@ -41,7 +41,7 @@ public abstract class JPAReflectionFormPanel<T, U extends ReflectionFormPanelUpd
      * @param fieldMapping
      * @param fieldHandler the {@link FieldHandler} to perform reset actions
      */
-    public JPAReflectionFormPanel(EntityManager entityManager,
+    public JPAReflectionFormPanel(Storage storage,
             T instance,
             Class<? extends T> entityClass,
             Map<Field, JComponent> fieldMapping,
@@ -50,10 +50,10 @@ public abstract class JPAReflectionFormPanel<T, U extends ReflectionFormPanelUpd
                 instance,
                 entityClass,
                 fieldHandler);
-        this.entityManager = entityManager;
+        this.storage = storage;
     }
 
-    public EntityManager getEntityManager() {
-        return entityManager;
+    public Storage getStorage() {
+        return storage;
     }
 }

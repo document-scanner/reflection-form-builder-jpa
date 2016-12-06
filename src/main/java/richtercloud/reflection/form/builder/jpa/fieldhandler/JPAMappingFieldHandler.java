@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
-import javax.persistence.EntityManager;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
@@ -48,6 +47,7 @@ import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.fieldhandler.factory.JPAAmountMoneyMappingFieldHandlerFactory;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.jpa.panels.LongIdPanel;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.typehandler.ElementCollectionTypeHandler;
 import richtercloud.reflection.form.builder.jpa.typehandler.ToManyTypeHandler;
 import richtercloud.reflection.form.builder.jpa.typehandler.ToOneTypeHandler;
@@ -76,7 +76,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
     private final FieldRetriever fieldRetriever;
     private final IdApplier idApplier;
 
-    public static JPAMappingFieldHandler create(EntityManager entityManager,
+    public static JPAMappingFieldHandler create(PersistenceStorage storage,
             int initialQueryLimit,
             MessageHandler messageHandler,
             FieldRetriever fieldRetriever,
@@ -85,7 +85,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             AmountMoneyExchangeRateRetriever amountMoneyExchangeRateRetriever,
             String bidirectionalHelpDialogTitle,
             IdApplier idApplier) {
-        JPAAmountMoneyMappingFieldHandlerFactory jPAAmountMoneyClassMappingFactory = new JPAAmountMoneyMappingFieldHandlerFactory(entityManager,
+        JPAAmountMoneyMappingFieldHandlerFactory jPAAmountMoneyClassMappingFactory = new JPAAmountMoneyMappingFieldHandlerFactory(storage,
                 initialQueryLimit,
                 messageHandler,
                 amountMoneyUsageStatisticsStorage,
@@ -96,7 +96,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                 amountMoneyCurrencyStorage,
                 amountMoneyExchangeRateRetriever,
                 messageHandler);
-        JPAAmountMoneyMappingTypeHandlerFactory jPAAmountMoneyTypeHandlerMappingFactory = new JPAAmountMoneyMappingTypeHandlerFactory(entityManager,
+        JPAAmountMoneyMappingTypeHandlerFactory jPAAmountMoneyTypeHandlerMappingFactory = new JPAAmountMoneyMappingTypeHandlerFactory(storage,
                 initialQueryLimit,
                 messageHandler,
                 bidirectionalHelpDialogTitle);
@@ -108,12 +108,12 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 messageHandler,
                 amountMoneyFieldHandler);
-        ToManyTypeHandler toManyTypeHandler = new ToManyTypeHandler(entityManager,
+        ToManyTypeHandler toManyTypeHandler = new ToManyTypeHandler(storage,
                 messageHandler,
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 bidirectionalHelpDialogTitle);
-        ToOneTypeHandler toOneTypeHandler = new ToOneTypeHandler(entityManager,
+        ToOneTypeHandler toOneTypeHandler = new ToOneTypeHandler(storage,
                 messageHandler,
                 bidirectionalHelpDialogTitle);
         return new JPAMappingFieldHandler(jPAAmountMoneyClassMappingFactory.generateClassMapping(),
