@@ -30,6 +30,7 @@ import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.Metamodel;
+import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.FieldRetriever;
@@ -150,6 +151,8 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     @Override
     public <T> List<T> runQuery(String queryString, Class<T> clazz,
             int queryLimit) throws StorageException {
+        LOGGER.trace(String.format("invoking thread is '%s'", Thread.currentThread().getName()));
+        assert !SwingUtilities.isEventDispatchThread();
         queryLock.lock();
         List<T> retValue;
         try {
