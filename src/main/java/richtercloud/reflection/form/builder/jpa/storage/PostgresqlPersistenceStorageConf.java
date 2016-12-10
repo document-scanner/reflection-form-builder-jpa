@@ -15,52 +15,58 @@
 package richtercloud.reflection.form.builder.jpa.storage;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Set;
-import org.apache.derby.jdbc.EmbeddedDriver;
+import org.postgresql.Driver;
 
 /**
  *
  * @author richter
  */
-public class DerbyEmbeddedPersistenceStorageConf extends AbstractPersistenceStorageConf {
+public class PostgresqlPersistenceStorageConf extends AbstractNetworkPersistenceStorageConf {
     private static final long serialVersionUID = 1L;
-    private final static String DRIVER_NAME = EmbeddedDriver.class.getName();
-    public final static String USERNAME_DEFAULT = "";
+    private final static String DRIVER_NAME = Driver.class.getName();
+    public final static String USERNAME_DEFAULT = "sa";
+    public final static String HOSTNAME_DEFAULT = "localhost";
+    public final static int PORT_DEFAULT = 5432;
     static {
         try {
             Class.forName(DRIVER_NAME);
-        } catch (ClassNotFoundException ex) {
+        }catch(ClassNotFoundException ex) {
             //dependencies not provided properly
             throw new ExceptionInInitializerError(ex);
         }
     }
 
-    public DerbyEmbeddedPersistenceStorageConf(Set<Class<?>> entityClasses,
-            String databaseName,
-            File schemeChecksumFile) throws IOException {
-        super(DRIVER_NAME, //databaseDriver
+    public PostgresqlPersistenceStorageConf(Set<Class<?>> entityClasses,
+            String username,
+            File schemeChecksumFile) throws FileNotFoundException, IOException {
+        super(DRIVER_NAME,
+                PORT_DEFAULT,
                 entityClasses,
                 USERNAME_DEFAULT,
-                databaseName,
+                null,
                 schemeChecksumFile);
     }
 
     @Override
     public String getConnectionURL() {
-        String retValue = String.format("jdbc:derby:%s",
+        String retValue = String.format("jdbc:postgresql://%s:%d/%s",
+                getHostname(),
+                getPort(),
                 getDatabaseName());
         return retValue;
     }
 
     @Override
     public String getShortDescription() {
-        return "Derby embedded database connection";
+        return "Postgresql network connection";
     }
 
     @Override
     public String getLongDescription() {
-        return "Can consume quite a lot of memory, but doesn't require other "
-                + "resources to be set up.";
+        return "Postgresql is a powerful performant database which is "
+                + "might be a slightly bit difficult to configure";
     }
 }

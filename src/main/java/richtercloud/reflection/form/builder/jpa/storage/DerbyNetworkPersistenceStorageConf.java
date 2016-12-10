@@ -18,7 +18,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Set;
-import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import org.apache.derby.jdbc.ClientDriver;
 
 /**
  * A {@link StorageConf} for a Derby network connection (as opposed to other
@@ -30,11 +30,10 @@ import richtercloud.reflection.form.builder.storage.StorageConfInitializationExc
  *
  * @author richter
  */
-public class DerbyNetworkPersistenceStorageConf extends AbstractPersistenceStorageConf {
+public class DerbyNetworkPersistenceStorageConf extends AbstractNetworkPersistenceStorageConf {
     private static final long serialVersionUID = 1L;
-    private final static String DRIVER_NAME = "org.apache.derby.jdbc.ClientDriver";
+    private final static String DRIVER_NAME = ClientDriver.class.getName();
     public final static String USERNAME_DEFAULT = "sa";
-    public final static String HOSTNAME_DEFAULT = "localhost";
     public final static int PORT_DEFAULT = 1527;
     static {
         try {
@@ -44,42 +43,16 @@ public class DerbyNetworkPersistenceStorageConf extends AbstractPersistenceStora
             throw new ExceptionInInitializerError(ex);
         }
     }
-    private String hostname = HOSTNAME_DEFAULT;
-    private int port = PORT_DEFAULT;
 
     public DerbyNetworkPersistenceStorageConf(Set<Class<?>> entityClasses,
             String hostname,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
         super("org.apache.derby.jdbc.ClientDriver", //databaseDriver
+                PORT_DEFAULT,
                 entityClasses,
                 USERNAME_DEFAULT,
                 null, //databaseDir (see class comment)
                 schemeChecksumFile);
-    }
-
-    public String getHostname() {
-        return hostname;
-    }
-
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    @Override
-    public String getConnectionURL() {
-        String retValue = String.format("jdbc:derby://%s:%d/%s",
-                hostname,
-                port,
-                getDatabaseDir().getAbsolutePath());
-        return retValue;
     }
 
     @Override
@@ -91,16 +64,5 @@ public class DerbyNetworkPersistenceStorageConf extends AbstractPersistenceStora
     public String getLongDescription() {
         return "Requires a Derby network server to be running outside the "
                 + "application.";
-    }
-
-    @Override
-    public void validate() throws StorageConfInitializationException {
-        super.validate();
-        if(getPassword().isEmpty()) {
-            throw new StorageConfInitializationException("Password mustn't be empty");
-        }
-        if(getUsername().isEmpty()) {
-            throw new StorageConfInitializationException("Password mustn't be empty");
-        }
     }
 }

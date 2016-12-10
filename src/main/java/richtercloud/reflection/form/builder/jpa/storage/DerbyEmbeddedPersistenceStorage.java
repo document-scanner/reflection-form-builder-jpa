@@ -26,8 +26,10 @@ import org.slf4j.LoggerFactory;
 public class DerbyEmbeddedPersistenceStorage extends AbstractPersistenceStorage<DerbyEmbeddedPersistenceStorageConf> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DerbyEmbeddedPersistenceStorage.class);
 
-    public DerbyEmbeddedPersistenceStorage(DerbyEmbeddedPersistenceStorageConf storageConf) {
-        super(storageConf);
+    public DerbyEmbeddedPersistenceStorage(DerbyEmbeddedPersistenceStorageConf storageConf,
+            String persistenceUnitName) {
+        super(storageConf,
+                persistenceUnitName);
     }
 
     @Override

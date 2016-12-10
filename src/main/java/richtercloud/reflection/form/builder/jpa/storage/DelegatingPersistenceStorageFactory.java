@@ -17,7 +17,6 @@ package richtercloud.reflection.form.builder.jpa.storage;
 import richtercloud.reflection.form.builder.storage.StorageConf;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageFactory;
-import richtercloud.reflection.form.builder.storage.XMLStorageFactory;
 
 /**
  *
@@ -26,15 +25,24 @@ import richtercloud.reflection.form.builder.storage.XMLStorageFactory;
 public class DelegatingPersistenceStorageFactory implements StorageFactory<PersistenceStorage, StorageConf> {
     private final DerbyEmbeddedPersistenceStorageFactory derbyEmbeddedPersistenceStorageFactory;
     private final DerbyNetworkPersistenceStorageFactory derbyNetworkPersistenceStorageFactory;
+    private final PostgresqlPersistenceStorageFactory postgresqlPersistenceStorageFactory;
+    private final PostgresqlAutoPersistenceStorageFactory postgresqlAutoPersistenceStorageFactory;
 
-    public DelegatingPersistenceStorageFactory() {
-        this.derbyEmbeddedPersistenceStorageFactory = new DerbyEmbeddedPersistenceStorageFactory();
-        this.derbyNetworkPersistenceStorageFactory = new DerbyNetworkPersistenceStorageFactory();
+    public DelegatingPersistenceStorageFactory(String persistenceUnitName) {
+        this.derbyEmbeddedPersistenceStorageFactory = new DerbyEmbeddedPersistenceStorageFactory(persistenceUnitName);
+        this.derbyNetworkPersistenceStorageFactory = new DerbyNetworkPersistenceStorageFactory(persistenceUnitName);
+        this.postgresqlPersistenceStorageFactory = new PostgresqlPersistenceStorageFactory(persistenceUnitName);
+        this.postgresqlAutoPersistenceStorageFactory = new PostgresqlAutoPersistenceStorageFactory(persistenceUnitName);
     }
 
-    public DelegatingPersistenceStorageFactory(DerbyEmbeddedPersistenceStorageFactory derbyEmbeddedPersistenceStorageFactory, DerbyNetworkPersistenceStorageFactory derbyNetworkPersistenceStorageFactory, XMLStorageFactory xMLStorageFactory) {
+    public DelegatingPersistenceStorageFactory(DerbyEmbeddedPersistenceStorageFactory derbyEmbeddedPersistenceStorageFactory,
+            DerbyNetworkPersistenceStorageFactory derbyNetworkPersistenceStorageFactory,
+            PostgresqlPersistenceStorageFactory postgresqlNetworkPersistenceStorageFactory,
+            PostgresqlAutoPersistenceStorageFactory postgresqlAutoPersistenceStorageFactory) {
         this.derbyEmbeddedPersistenceStorageFactory = derbyEmbeddedPersistenceStorageFactory;
         this.derbyNetworkPersistenceStorageFactory = derbyNetworkPersistenceStorageFactory;
+        this.postgresqlPersistenceStorageFactory = postgresqlNetworkPersistenceStorageFactory;
+        this.postgresqlAutoPersistenceStorageFactory = postgresqlAutoPersistenceStorageFactory;
     }
 
     @Override
@@ -44,6 +52,10 @@ public class DelegatingPersistenceStorageFactory implements StorageFactory<Persi
             retValue = derbyEmbeddedPersistenceStorageFactory.create((DerbyEmbeddedPersistenceStorageConf) storageConf);
         }else if(storageConf instanceof DerbyNetworkPersistenceStorageConf) {
             retValue = derbyNetworkPersistenceStorageFactory.create((DerbyNetworkPersistenceStorageConf) storageConf);
+        }else if(storageConf instanceof PostgresqlAutoPersistenceStorageConf) {
+            retValue = postgresqlAutoPersistenceStorageFactory.create((PostgresqlAutoPersistenceStorageConf) storageConf);
+        }else if(storageConf instanceof PostgresqlPersistenceStorageConf) {
+            retValue = postgresqlPersistenceStorageFactory.create((PostgresqlPersistenceStorageConf) storageConf);
         }else {
             throw new IllegalArgumentException(String.format("Storage configurations of type '%s' aren't supported by this storage factory",
                     storageConf.getClass()));

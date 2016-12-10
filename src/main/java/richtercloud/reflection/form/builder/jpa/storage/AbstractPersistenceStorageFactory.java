@@ -14,21 +14,22 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import richtercloud.reflection.form.builder.storage.Storage;
+import richtercloud.reflection.form.builder.storage.StorageConf;
+import richtercloud.reflection.form.builder.storage.StorageFactory;
 
 /**
- * The {@link #shutdown() } routine doesn't shutdown the database server since
- * it's expected to be managed outside the application JVM.
  *
  * @author richter
  */
-public class DerbyNetworkPersistenceStorage extends AbstractPersistenceStorage<DerbyNetworkPersistenceStorageConf> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DerbyNetworkPersistenceStorage.class);
+public abstract class AbstractPersistenceStorageFactory<S extends Storage, C extends StorageConf> implements StorageFactory<S, C> {
+    private final String persistenceUnitName;
 
-    public DerbyNetworkPersistenceStorage(DerbyNetworkPersistenceStorageConf storageConf,
-            String persistenceUnitName) {
-        super(storageConf,
-                persistenceUnitName);
+    public AbstractPersistenceStorageFactory(String persistenceUnitName) {
+        this.persistenceUnitName = persistenceUnitName;
+    }
+
+    public String getPersistenceUnitName() {
+        return persistenceUnitName;
     }
 }

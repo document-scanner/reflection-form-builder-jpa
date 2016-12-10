@@ -37,7 +37,8 @@ import richtercloud.reflection.form.builder.storage.StorageConfInitializationExc
  * Since database names in derby refer to base directories (and simple names
  * without path separator to the working directory of the database server (in
  * network mode) or the JVM (in embedded mode)), there's only a database
- * directory option to configure.
+ * name option to configure (name is chosen instead of directory in order to
+ * make the property reusable for other databases, like PostgreSQL).
  *
  * @author richter
  */
@@ -78,7 +79,11 @@ public abstract class AbstractPersistenceStorageConf implements StorageConf, Ser
      */
     private String username = null;
     private String password = PASSWORD_DEFAULT;
-    private File databaseDir = null;
+    /**
+     * Can refer to name or directory depending on the implementation (see class
+     * comment for more info).
+     */
+    private String databaseName = null;
     private File schemeChecksumFile = null;
     private Set<Class<?>> entityClasses = null;
     /**
@@ -90,21 +95,21 @@ public abstract class AbstractPersistenceStorageConf implements StorageConf, Ser
     public AbstractPersistenceStorageConf(String databaseDriver,
             Set<Class<?>> entityClasses,
             String username,
-            File databaseDir,
+            String databaseDir,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
         this.databaseDriver = databaseDriver;
         this.entityClasses = entityClasses;
         this.username = username;
-        this.databaseDir = databaseDir;
+        this.databaseName = databaseDir;
         this.schemeChecksumFile = schemeChecksumFile;
     }
 
-    public File getDatabaseDir() {
-        return databaseDir;
+    public String getDatabaseName() {
+        return databaseName;
     }
 
-    public void setDatabaseDir(File databaseDir) {
-        this.databaseDir = databaseDir;
+    public void setDatabaseName(String databaseName) {
+        this.databaseName = databaseName;
     }
 
     public String getUsername() {
@@ -149,8 +154,8 @@ public abstract class AbstractPersistenceStorageConf implements StorageConf, Ser
     */
     @Override
     public void validate() throws StorageConfInitializationException {
-        if(this.databaseDir == null) {
-            throw new StorageConfInitializationException("Database directory isn't specified");
+        if(this.databaseName == null) {
+            throw new StorageConfInitializationException("Database name isn't specified");
         }
         if(!schemeChecksumFile.exists()) {
             try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(schemeChecksumFile))) {

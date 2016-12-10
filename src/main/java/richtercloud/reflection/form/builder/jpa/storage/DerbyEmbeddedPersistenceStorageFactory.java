@@ -14,17 +14,20 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
-import richtercloud.reflection.form.builder.storage.StorageFactory;
-
 /**
  *
  * @author richter
  */
-public class DerbyEmbeddedPersistenceStorageFactory implements StorageFactory<DerbyEmbeddedPersistenceStorage, DerbyEmbeddedPersistenceStorageConf>{
+public class DerbyEmbeddedPersistenceStorageFactory extends AbstractPersistenceStorageFactory<DerbyEmbeddedPersistenceStorage, DerbyEmbeddedPersistenceStorageConf> {
+
+    public DerbyEmbeddedPersistenceStorageFactory(String persistenceUnitName) {
+        super(persistenceUnitName);
+    }
 
     @Override
     public DerbyEmbeddedPersistenceStorage create(DerbyEmbeddedPersistenceStorageConf storageConf) {
-        DerbyEmbeddedPersistenceStorage retValue = new DerbyEmbeddedPersistenceStorage(storageConf);
+        DerbyEmbeddedPersistenceStorage retValue = new DerbyEmbeddedPersistenceStorage(storageConf,
+                getPersistenceUnitName());
         return retValue;
     }
 }

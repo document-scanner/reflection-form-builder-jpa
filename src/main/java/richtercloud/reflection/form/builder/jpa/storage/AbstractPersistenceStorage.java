@@ -49,24 +49,28 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     private final static Logger LOGGER = LoggerFactory.getLogger(AbstractPersistenceStorage.class);
     private EntityManagerFactory entityManagerFactory;
     private EntityManager entityManager;
-    private final AbstractPersistenceStorageConf storageConf;
+    private final C storageConf;
     private final Lock queryLock = new ReentrantLock(true //fair
     );
+    private final String persistenceUnitName;
 
-    public AbstractPersistenceStorage(C storageConf) {
+    public AbstractPersistenceStorage(C storageConf,
+            String persistenceUnitName) {
         this.storageConf = storageConf;
+        this.persistenceUnitName = persistenceUnitName;
         recreateEntityManager(); //after this.storageConf has been assigned
     }
 
     @Override
     public void delete(Object object) throws StorageException {
+        EntityManager entityManager = this.retrieveEntityManager();
         try {
-            this.retrieveEntityManager().getTransaction().begin();
-            this.retrieveEntityManager().remove(object);
-            this.retrieveEntityManager().getTransaction().commit();
+            entityManager.getTransaction().begin();
+            entityManager.remove(object);
+            entityManager.getTransaction().commit();
 
         }catch(EntityExistsException ex) {
-            this.retrieveEntityManager().getTransaction().rollback();
+            entityManager.getTransaction().rollback();
             throw new StorageException(ex);
         }catch(RollbackException ex) {
              //cannot call entityManager.getTransaction().rollback() here because transaction isn' active
@@ -80,14 +84,15 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
      */
     @Override
     public void store(Object object) throws StorageException {
+        EntityManager entityManager = this.retrieveEntityManager();
         try {
-            this.retrieveEntityManager().getTransaction().begin();
-            this.retrieveEntityManager().persist(object);
-            this.retrieveEntityManager().getTransaction().commit();
-            this.retrieveEntityManager().detach(object); //detaching necessary in
+            entityManager.getTransaction().begin();
+            entityManager.persist(object);
+            entityManager.getTransaction().commit();
+            entityManager.detach(object); //detaching necessary in
                 //order to be able to change one single value and save again
         }catch(EntityExistsException ex) {
-            this.retrieveEntityManager().getTransaction().rollback();
+            entityManager.getTransaction().rollback();
             throw new StorageException(ex);
         }catch(RollbackException ex) {
              //cannot call entityManager.getTransaction().rollback() here because transaction isn' active
@@ -101,14 +106,15 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
      */
     @Override
     public void update(Object object) throws StorageException {
+        EntityManager entityManager = this.retrieveEntityManager();
         try {
-            this.retrieveEntityManager().getTransaction().begin();
-            this.retrieveEntityManager().merge(object);
-            this.retrieveEntityManager().getTransaction().commit();
-            this.retrieveEntityManager().detach(object); //detaching necessary in
+            entityManager.getTransaction().begin();
+            entityManager.merge(object);
+            entityManager.getTransaction().commit();
+            entityManager.detach(object); //detaching necessary in
                 //order to be able to change one single value and save again
         }catch(EntityExistsException ex) {
-            this.retrieveEntityManager().getTransaction().rollback();
+            entityManager.getTransaction().rollback();
             throw new StorageException(ex);
         }catch(RollbackException ex) {
              //cannot call entityManager.getTransaction().rollback() here because transaction isn' active
@@ -124,13 +130,15 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
      */
     @Override
     public Object retrieve(Object id, Class clazz) {
-        Object retValue = this.retrieveEntityManager().find(clazz, id);
+        EntityManager entityManager = this.retrieveEntityManager();
+        Object retValue = entityManager.find(clazz, id);
         return retValue;
     }
 
     @Override
     public boolean isClassSupported(Class<?> clazz) {
-        Metamodel meta = this.retrieveEntityManager().getMetamodel();
+        EntityManager entityManager = this.retrieveEntityManager();
+        Metamodel meta = entityManager.getMetamodel();
         try {
             meta.entity(clazz);
             return true;
@@ -140,8 +148,9 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     }
 
     private <E> TypedQuery<E> createQuery(String queryText, Class<E> entityClass) throws StorageException {
+        EntityManager entityManager = this.retrieveEntityManager();
         try {
-            TypedQuery<E> query = this.retrieveEntityManager().createQuery(queryText, entityClass);
+            TypedQuery<E> query = entityManager.createQuery(queryText, entityClass);
             return query;
         }catch(Exception ex) {
             throw new StorageException(ex);
@@ -169,6 +178,7 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     public <T> List<T> runQuery(String attribueName,
             String attributeValue,
             Class<T> clazz) {
+        EntityManager entityManager = this.retrieveEntityManager();
         CriteriaQuery<T> criteria = entityManager.getCriteriaBuilder().createQuery(clazz);
         Root<T> personRoot = criteria.from(clazz);
         criteria.select( personRoot );
@@ -182,10 +192,11 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
 
     @Override
     public <T> List<T> runQueryAll(Class<T> clazz) {
-        CriteriaQuery<T> criteriaQuery = this.entityManager.getCriteriaBuilder().createQuery(clazz);
+        EntityManager entityManager = this.retrieveEntityManager();
+        CriteriaQuery<T> criteriaQuery = entityManager.getCriteriaBuilder().createQuery(clazz);
         Root<T> queryRoot = criteriaQuery.from(clazz);
         criteriaQuery.select(queryRoot);
-        List<T> retValue = this.entityManager.createQuery(criteriaQuery).getResultList();
+        List<T> retValue = entityManager.createQuery(criteriaQuery).getResultList();
         return retValue;
     }
 
@@ -195,15 +206,30 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
         return retValue;
     }
 
+    /**
+     * Fetches all fields of {@code entity} in order to have lazily fetched
+     * field data available.
+     * @param entity
+     * @param fieldRetriever
+     * @throws IllegalArgumentException if {@code entity} is {@code null}
+     * @throws IllegalAccessException if {@link Field#get(java.lang.Object) }
+     * for fields of {@code entity} fails
+     */
     @Override
     public void initialize(Object entity,
             FieldRetriever fieldRetriever) throws IllegalArgumentException, IllegalAccessException {
+        if(entity == null) {
+            throw new IllegalArgumentException("entity mustn't be null");
+        }
         for(Field field : fieldRetriever.retrieveRelevantFields(entity.getClass())) {
             field.get(entity);
             if(Collection.class.isAssignableFrom(field.getType())) {
-                ((Collection)field.get(entity)).size();
-                    //need to explicitly call Collection.size on the field value
-                    //in order to get it initialized
+                Collection fieldValue = ((Collection)field.get(entity));
+                if(fieldValue != null) {
+                    fieldValue.size();
+                        //need to explicitly call Collection.size on the field value
+                        //in order to get it initialized
+                }
             }
         }
     }
@@ -221,9 +247,10 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
 
     @Override
     public void shutdown() {
-        if(this.entityManager != null && this.entityManager.isOpen()) {
+        EntityManager entityManager = this.retrieveEntityManager();
+        if(entityManager != null && entityManager.isOpen()) {
             //might be null if an exception occured in Derby
-            this.entityManager.close();
+            entityManager.close();
         }
         if(this.entityManagerFactory != null && this.entityManagerFactory.isOpen()) {
             //might be null if an exception occured in Derby
@@ -242,14 +269,14 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
         }
         //seems like properties need to be specified on EntityManagerFactory
         //difference between setting on EMF and EntityManager unclear
-        this.entityManagerFactory = Persistence.createEntityManagerFactory("richtercloud_document-scanner_jar_1.0-SNAPSHOTPU",
+        this.entityManagerFactory = Persistence.createEntityManagerFactory(persistenceUnitName,
                 properties
         );
         this.entityManager = entityManagerFactory.createEntityManager();
     }
 
     @Override
-    public AbstractPersistenceStorageConf getStorageConf() {
+    public C getStorageConf() {
         return storageConf;
     }
 }
