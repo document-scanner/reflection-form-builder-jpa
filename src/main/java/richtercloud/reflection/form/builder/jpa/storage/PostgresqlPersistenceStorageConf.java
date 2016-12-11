@@ -67,6 +67,8 @@ public class PostgresqlPersistenceStorageConf extends AbstractNetworkPersistence
     @Override
     public String getLongDescription() {
         return "Postgresql is a powerful performant database which is "
-                + "might be a slightly bit difficult to configure";
+                + "might be a slightly bit difficult to configure."
+                + "Unfortunately the Java Database Connector (JDBC) "
+                + "implementation is very memory consuming. Use with care.";
     }
 }

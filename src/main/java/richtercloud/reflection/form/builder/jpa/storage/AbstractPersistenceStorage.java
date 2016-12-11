@@ -19,8 +19,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import javax.persistence.EntityExistsException;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -30,10 +28,11 @@ import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.Metamodel;
-import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageException;
 
 /**
@@ -42,22 +41,27 @@ import richtercloud.reflection.form.builder.storage.StorageException;
  */
 /*
 internal implementation notes:
-- store username and password in abstract subclass DatabasePersistenceStorage
-because there might be database connections which don't need it
+- JPA implementations should be able to create a lot of EntityManagers and let
+the user run queries on each of them. That works, but consumes insane amount of
+memory in conjuction with Apache Derby and PostgreSQL 9.5, but MySQL works ->
+Since this is a severe issue, the locking mechanism for queries is removed from
+AbstractPersistenceStorage and can be re-implemented using dbf6110 as a template
+(using PrioritizableReentrantLock in order to allow EDT queries for
+auto-completion and else to not freeze the GUI is the main idea)
+- caching works fine with MySQL (might not with other databases as soon as
+memory issues are fixed or worked around)
 */
 public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceStorageConf> implements PersistenceStorage {
     private final static Logger LOGGER = LoggerFactory.getLogger(AbstractPersistenceStorage.class);
     private EntityManagerFactory entityManagerFactory;
-    private EntityManager entityManager;
     private final C storageConf;
-    private final Lock queryLock = new ReentrantLock(true //fair
-    );
     private final String persistenceUnitName;
 
     public AbstractPersistenceStorage(C storageConf,
-            String persistenceUnitName) {
+            String persistenceUnitName) throws StorageConfInitializationException, StorageCreationException {
         this.storageConf = storageConf;
         this.persistenceUnitName = persistenceUnitName;
+        storageConf.validate();
         recreateEntityManager(); //after this.storageConf has been assigned
     }
 
@@ -65,8 +69,16 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     public void delete(Object object) throws StorageException {
         EntityManager entityManager = this.retrieveEntityManager();
         try {
+            Object toRemove = entityManager.merge(object);
+                //avoids `Exception in thread "AWT-EventQueue-0" java.lang.IllegalArgumentException: Entity must be managed to call remove: Test 1, try merging the detached and try the remove again`
+                //(was not an issue when using the same EntityManager for all
+                //actions)
+                //EntityManager.refresh fails due to `java.lang.IllegalArgumentException: Cannot refresh unmanaged object`
+                //need to pass the return value to EntityManager.remove because
+                //the argument isn't attached to the persistence context
+                //<ref>http://stackoverflow.com/questions/9338999/entity-must-be-managed-to-call-remove</ref>
             entityManager.getTransaction().begin();
-            entityManager.remove(object);
+            entityManager.remove(toRemove);
             entityManager.getTransaction().commit();
 
         }catch(EntityExistsException ex) {
@@ -158,19 +170,13 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     }
 
     @Override
-    public <T> List<T> runQuery(String queryString, Class<T> clazz,
+    public <T> List<T> runQuery(String queryString,
+            Class<T> clazz,
             int queryLimit) throws StorageException {
-        LOGGER.trace(String.format("invoking thread is '%s'", Thread.currentThread().getName()));
-        assert !SwingUtilities.isEventDispatchThread();
-        queryLock.lock();
         List<T> retValue;
-        try {
-            TypedQuery<T> query = createQuery(queryString,
-                    clazz);
-            retValue = query.setMaxResults(queryLimit).getResultList();
-        }finally {
-            queryLock.unlock();
-        }
+        TypedQuery<T> query = createQuery(queryString,
+                clazz);
+        retValue = query.setMaxResults(queryLimit).getResultList();
         return retValue;
     }
 
@@ -239,31 +245,28 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
      * @return
      */
     protected EntityManager retrieveEntityManager() {
-        if(this.entityManager == null) {
-            recreateEntityManager();
-        }
-        return this.entityManager;
+        return this.entityManagerFactory.createEntityManager();
     }
 
     @Override
     public void shutdown() {
-        EntityManager entityManager = this.retrieveEntityManager();
-        if(entityManager != null && entityManager.isOpen()) {
-            //might be null if an exception occured in Derby
-            entityManager.close();
-        }
         if(this.entityManagerFactory != null && this.entityManagerFactory.isOpen()) {
             //might be null if an exception occured in Derby
             this.entityManagerFactory.close();
         }
     }
 
-    public void recreateEntityManager() {
+    protected Map<String, String> getEntityManagerProperties() {
         Map<String, String> properties = new HashMap<>(4);
         properties.put("javax.persistence.jdbc.url", storageConf.getConnectionURL());
         properties.put("javax.persistence.jdbc.user", storageConf.getUsername());
         properties.put("javax.persistence.jdbc.password", storageConf.getPassword());
         properties.put("javax.persistence.jdbc.driver", storageConf.getDatabaseDriver());
+        return properties;
+    }
+
+    public void recreateEntityManager() throws StorageCreationException {
+        Map<String, String> properties = getEntityManagerProperties();
         if(this.entityManagerFactory != null && this.entityManagerFactory.isOpen()) {
             this.entityManagerFactory.close();
         }
@@ -272,7 +275,6 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
         this.entityManagerFactory = Persistence.createEntityManagerFactory(persistenceUnitName,
                 properties
         );
-        this.entityManager = entityManagerFactory.createEntityManager();
     }
 
     @Override

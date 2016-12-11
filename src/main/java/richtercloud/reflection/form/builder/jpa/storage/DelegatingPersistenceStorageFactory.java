@@ -27,22 +27,26 @@ public class DelegatingPersistenceStorageFactory implements StorageFactory<Persi
     private final DerbyNetworkPersistenceStorageFactory derbyNetworkPersistenceStorageFactory;
     private final PostgresqlPersistenceStorageFactory postgresqlPersistenceStorageFactory;
     private final PostgresqlAutoPersistenceStorageFactory postgresqlAutoPersistenceStorageFactory;
+    private final MySQLAutoPersistenceStorageFactory mySQLAutoPersistenceStorageFactory;
 
     public DelegatingPersistenceStorageFactory(String persistenceUnitName) {
         this.derbyEmbeddedPersistenceStorageFactory = new DerbyEmbeddedPersistenceStorageFactory(persistenceUnitName);
         this.derbyNetworkPersistenceStorageFactory = new DerbyNetworkPersistenceStorageFactory(persistenceUnitName);
         this.postgresqlPersistenceStorageFactory = new PostgresqlPersistenceStorageFactory(persistenceUnitName);
         this.postgresqlAutoPersistenceStorageFactory = new PostgresqlAutoPersistenceStorageFactory(persistenceUnitName);
+        this.mySQLAutoPersistenceStorageFactory = new MySQLAutoPersistenceStorageFactory(persistenceUnitName);
     }
 
     public DelegatingPersistenceStorageFactory(DerbyEmbeddedPersistenceStorageFactory derbyEmbeddedPersistenceStorageFactory,
             DerbyNetworkPersistenceStorageFactory derbyNetworkPersistenceStorageFactory,
             PostgresqlPersistenceStorageFactory postgresqlNetworkPersistenceStorageFactory,
-            PostgresqlAutoPersistenceStorageFactory postgresqlAutoPersistenceStorageFactory) {
+            PostgresqlAutoPersistenceStorageFactory postgresqlAutoPersistenceStorageFactory,
+            MySQLAutoPersistenceStorageFactory mySQLAutoPersistenceStorageFactory) {
         this.derbyEmbeddedPersistenceStorageFactory = derbyEmbeddedPersistenceStorageFactory;
         this.derbyNetworkPersistenceStorageFactory = derbyNetworkPersistenceStorageFactory;
         this.postgresqlPersistenceStorageFactory = postgresqlNetworkPersistenceStorageFactory;
         this.postgresqlAutoPersistenceStorageFactory = postgresqlAutoPersistenceStorageFactory;
+        this.mySQLAutoPersistenceStorageFactory = mySQLAutoPersistenceStorageFactory;
     }
 
     @Override
@@ -56,6 +60,8 @@ public class DelegatingPersistenceStorageFactory implements StorageFactory<Persi
             retValue = postgresqlAutoPersistenceStorageFactory.create((PostgresqlAutoPersistenceStorageConf) storageConf);
         }else if(storageConf instanceof PostgresqlPersistenceStorageConf) {
             retValue = postgresqlPersistenceStorageFactory.create((PostgresqlPersistenceStorageConf) storageConf);
+        }else if(storageConf instanceof MySQLAutoPersistenceStorageConf) {
+            retValue = mySQLAutoPersistenceStorageFactory.create((MySQLAutoPersistenceStorageConf) storageConf);
         }else {
             throw new IllegalArgumentException(String.format("Storage configurations of type '%s' aren't supported by this storage factory",
                     storageConf.getClass()));

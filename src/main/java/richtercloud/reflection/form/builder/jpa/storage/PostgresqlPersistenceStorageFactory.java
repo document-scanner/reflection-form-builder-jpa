@@ -14,6 +14,9 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
+import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import richtercloud.reflection.form.builder.storage.StorageCreationException;
+
 /**
  *
  * @author richter
@@ -25,9 +28,14 @@ public class PostgresqlPersistenceStorageFactory extends AbstractPersistenceStor
     }
 
     @Override
-    public PostgresqlPersistenceStorage create(PostgresqlPersistenceStorageConf storageConf) {
-        PostgresqlPersistenceStorage retValue = new PostgresqlPersistenceStorage(storageConf,
-                getPersistenceUnitName());
+    public PostgresqlPersistenceStorage create(PostgresqlPersistenceStorageConf storageConf) throws StorageCreationException {
+        PostgresqlPersistenceStorage retValue;
+        try {
+            retValue = new PostgresqlPersistenceStorage(storageConf,
+                    getPersistenceUnitName());
+        } catch (StorageConfInitializationException ex) {
+            throw new StorageCreationException(ex);
+        }
         return retValue;
     }
 }

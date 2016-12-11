@@ -16,8 +16,8 @@ package richtercloud.reflection.form.builder.jpa.storage;
 
 import java.util.List;
 import richtercloud.reflection.form.builder.FieldRetriever;
-import richtercloud.reflection.form.builder.storage.StorageException;
 import richtercloud.reflection.form.builder.storage.Storage;
+import richtercloud.reflection.form.builder.storage.StorageException;
 
 /**
  *
@@ -35,11 +35,13 @@ owning field of a value
 */
 public interface PersistenceStorage extends Storage<Object, AbstractPersistenceStorageConf> {
 
-    <T> List<T> runQuery(String queryString, Class<T> clazz, int queryLimit) throws StorageException;
+    <T> List<T> runQuery(String queryString,
+            Class<T> clazz,
+            int queryLimit) throws StorageException;
 
     <T> List<T> runQuery(String attribueName,
             String attributeValue,
-            Class<T> clazz);
+            Class<T> clazz) throws StorageException;
 
     <T> List<T> runQueryAll(Class<T> clazz);
 

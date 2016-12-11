@@ -16,6 +16,8 @@ package richtercloud.reflection.form.builder.jpa.storage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
 /**
  * The {@link #shutdown() } routine doesn't shutdown the database server since
@@ -27,7 +29,7 @@ public class DerbyNetworkPersistenceStorage extends AbstractPersistenceStorage<D
     private static final Logger LOGGER = LoggerFactory.getLogger(DerbyNetworkPersistenceStorage.class);
 
     public DerbyNetworkPersistenceStorage(DerbyNetworkPersistenceStorageConf storageConf,
-            String persistenceUnitName) {
+            String persistenceUnitName) throws StorageConfInitializationException, StorageCreationException {
         super(storageConf,
                 persistenceUnitName);
     }

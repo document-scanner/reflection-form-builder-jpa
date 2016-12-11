@@ -14,7 +14,6 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
-import java.io.IOException;
 import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
@@ -22,19 +21,19 @@ import richtercloud.reflection.form.builder.storage.StorageCreationException;
  *
  * @author richter
  */
-public class PostgresqlAutoPersistenceStorageFactory extends AbstractPersistenceStorageFactory<PostgresqlAutoPersistenceStorage, PostgresqlAutoPersistenceStorageConf> {
+public class MySQLAutoPersistenceStorageFactory extends AbstractPersistenceStorageFactory<MySQLAutoPersistenceStorage, MySQLAutoPersistenceStorageConf> {
 
-    public PostgresqlAutoPersistenceStorageFactory(String persistenceUnitName) {
+    public MySQLAutoPersistenceStorageFactory(String persistenceUnitName) {
         super(persistenceUnitName);
     }
 
     @Override
-    public PostgresqlAutoPersistenceStorage create(PostgresqlAutoPersistenceStorageConf storageConf) throws StorageCreationException {
-        PostgresqlAutoPersistenceStorage retValue;
+    public MySQLAutoPersistenceStorage create(MySQLAutoPersistenceStorageConf storageConf) throws StorageCreationException {
+        MySQLAutoPersistenceStorage retValue;
         try {
-            retValue = new PostgresqlAutoPersistenceStorage(storageConf,
+            retValue = new MySQLAutoPersistenceStorage(storageConf,
                     getPersistenceUnitName());
-        } catch (IOException | InterruptedException | StorageConfInitializationException ex) {
+        } catch (StorageConfInitializationException ex) {
             throw new StorageCreationException(ex);
         }
         return retValue;

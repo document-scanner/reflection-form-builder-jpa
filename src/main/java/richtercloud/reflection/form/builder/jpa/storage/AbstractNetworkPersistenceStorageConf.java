@@ -72,10 +72,10 @@ public abstract class AbstractNetworkPersistenceStorageConf extends AbstractPers
     @Override
     public void validate() throws StorageConfInitializationException {
         super.validate();
-        if(getPassword().isEmpty()) {
+        if(getPassword() == null || getPassword().isEmpty()) {
             throw new StorageConfInitializationException("Password mustn't be empty");
         }
-        if(getUsername().isEmpty()) {
+        if(getUsername() == null || getUsername().isEmpty()) {
             throw new StorageConfInitializationException("Password mustn't be empty");
         }
     }

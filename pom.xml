@@ -69,9 +69,15 @@
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>postgresql</groupId>
+            <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>9.2-1004.jdbc4</version>
+            <version>9.4.1212</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>6.0.3</version>
             <type>jar</type>
         </dependency>
         <dependency>

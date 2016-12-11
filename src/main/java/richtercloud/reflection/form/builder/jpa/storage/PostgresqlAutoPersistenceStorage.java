@@ -22,6 +22,8 @@ import java.nio.file.StandardOpenOption;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
 /**
  * Manages start of a PostgreSQL instance with system processes.
@@ -33,12 +35,12 @@ public class PostgresqlAutoPersistenceStorage extends AbstractPersistenceStorage
     private final static Logger LOGGER = LoggerFactory.getLogger(PostgresqlAutoPersistenceStorage.class);
     private boolean serverRunning = false;
 
-    public PostgresqlAutoPersistenceStorage(PostgresqlAutoPersistenceStorageConf storageConf, String persistenceUnitName) throws IOException, InterruptedException {
+    public PostgresqlAutoPersistenceStorage(PostgresqlAutoPersistenceStorageConf storageConf, String persistenceUnitName) throws IOException, InterruptedException, StorageConfInitializationException, StorageCreationException {
         super(storageConf, persistenceUnitName);
     }
 
     @Override
-    public void recreateEntityManager() {
+    public void recreateEntityManager() throws StorageCreationException {
         if(!serverRunning) {
             try {
                 String initdb = "/usr/lib/postgresql/9.5/bin/initdb";
@@ -128,7 +130,7 @@ public class PostgresqlAutoPersistenceStorage extends AbstractPersistenceStorage
                 }));
                 serverRunning = true;
             }catch (IOException | InterruptedException ex) {
-                throw new RuntimeException(ex);
+                throw new StorageCreationException(ex);
             }
         }
         super.recreateEntityManager();

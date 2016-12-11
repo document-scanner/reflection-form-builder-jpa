@@ -32,6 +32,8 @@ import java.util.List;
 import javax.swing.JComboBox;
 import javax.swing.SwingUtilities;
 import javax.swing.text.JTextComponent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
@@ -39,6 +41,11 @@ import richtercloud.reflection.form.builder.storage.StorageException;
 /**
  * Displays existing values in the database in a popup menu in order to inform
  * about similar or equal values which have already been used and persisted.
+ *
+ * Performance depends on {@link PersistenceStorage#runQuery(java.lang.String, java.lang.Class, int, int) }
+ * and the right priority since {@code comboBox} queries for every key-pressed
+ * event.
+ *
  * @author richter
  */
 /*
@@ -54,6 +61,7 @@ adding again
 */
 public class StringAutoCompletePanel extends AbstractStringPanel {
     private static final long serialVersionUID = 1L;
+    private final static Logger LOGGER = LoggerFactory.getLogger(StringAutoCompletePanel.class);
     private final EventList<String> comboBoxEventList = new BasicEventList<>();
     private final DefaultEventComboBoxModel<String> comboBoxModel = new DefaultEventComboBoxModel<>(comboBoxEventList);
     private final FieldRetriever fieldRetriever;
@@ -129,10 +137,13 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
         this.comboBox.setSelectedItem(initialValue);
         this.comboBox.getEditor().getEditorComponent().addKeyListener(new KeyAdapter() {
             @Override
-            public void keyPressed(KeyEvent e) {
+            public void keyReleased(KeyEvent e) {
+                //listen to keyReleased rather than keyPressed in order to avoid
+                //listening to Ctrl being pressed when using Ctrl+V or else
                 try {
                     String textFieldText = ((JTextComponent)comboBox.getEditor().getEditorComponent()).getText();
                     assert textFieldText != null;
+                    LOGGER.trace(String.format("checking auto-completion for text field text '%s'", textFieldText));
                     List<?> checkResults = check(textFieldText);
                     if(!lastCheckResults.equals(checkResults)) {
                         comboBoxEventList.clear();
