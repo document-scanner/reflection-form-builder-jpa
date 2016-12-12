@@ -107,10 +107,11 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
                                     + "socket=%s\n"
                                     + "bind-address=%s\n"
                                     + "port=%d\n"
-                                    + "max_allowed_packet=134217728\n",
+                                    + "max_allowed_packet=1073741824\n",
                                         //allows upload of binary image data
-                                        //up to ca. 130 MB (default of 4 MB
-                                        //is too small)
+                                        //up to ca. 1 GB (default of 4 MB
+                                        //is too small) since a 10 page scan can
+                                        //easily have 200 MB of image data
                                         //avoid `Caused by: com.mysql.cj.jdbc.exceptions.PacketTooBigException: Packet for query is too large (24.088.697 > 4.194.304). You can change this value on the server by setting the 'max_allowed_packet' variable.`
                                     getStorageConf().getUsername(),
                                     getStorageConf().getBaseDir(),
