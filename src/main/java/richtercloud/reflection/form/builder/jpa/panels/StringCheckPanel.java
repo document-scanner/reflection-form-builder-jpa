@@ -227,7 +227,7 @@ public class StringCheckPanel extends AbstractStringPanel {
             List<?> checkResult = check(this.textField.getText());
             updateStatusLabelPostQuery(checkResult);
         }else {
-            Thread thread = new Thread(() -> {
+            Thread checkThread = new Thread(() -> {
                 this.setEnabled(false);
                 List<?> checkResult;
                 try {
@@ -239,8 +239,9 @@ public class StringCheckPanel extends AbstractStringPanel {
                     updateStatusLabelPostQuery(checkResult);
                     StringCheckPanel.this.setEnabled(true);
                 });
-            });
-            thread.start();
+            },
+                    "check-thread");
+            checkThread.start();
         }
     }
 

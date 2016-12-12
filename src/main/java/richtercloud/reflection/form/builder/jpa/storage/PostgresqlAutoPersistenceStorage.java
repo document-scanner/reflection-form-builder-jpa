@@ -86,7 +86,8 @@ public class PostgresqlAutoPersistenceStorage extends AbstractPersistenceStorage
                     } catch (InterruptedException | IOException ex) {
                         LOGGER.error("unexpected exception, see nested exception for details", ex);
                     }
-                });
+                },
+                        "postgres-thread");
                 postgresThread.start();
                 if(needToCreate) {
                     //createdb @TODO: check whether database exists rather than

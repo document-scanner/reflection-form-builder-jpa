@@ -460,7 +460,7 @@ public class QueryComponent<E> extends JPanel {
         }else {
             LOGGER.debug("running query asynchronously");
             this.setEnabled(false);
-            Thread thread = new Thread(() -> {
+            Thread queryThread = new Thread(() -> {
                 List<E> queryResult;
                 try {
                     queryResult = executeQueryNonGUI(queryLimit, queryText);
@@ -473,8 +473,9 @@ public class QueryComponent<E> extends JPanel {
                     executeQueryGUI(queryResult, queryText);
                     QueryComponent.this.setEnabled(true);
                 });
-            });
-            thread.start();
+            },
+                    "query-thread");
+            queryThread.start();
         }
     }
 

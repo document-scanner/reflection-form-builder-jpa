@@ -164,7 +164,8 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
                 } catch (InterruptedException | IOException ex) {
                     LOGGER.error("unexpected exception, see nested exception for details", ex);
                 }
-            });
+            },
+                    "mysqld-thread");
             mysqldThread.start();
             if(needToCreate) {
                 //set password for root user
@@ -260,6 +261,7 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
     private void shutdown0() {
         shutdownLock.lock();
         if(!serverRunning) {
+            shutdownLock.unlock();
             return;
         }
         try {
