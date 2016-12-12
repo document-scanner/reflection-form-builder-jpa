@@ -14,6 +14,7 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
+import com.mysql.cj.jdbc.AbandonedConnectionCleanupThread;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,9 +23,12 @@ import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import javax.swing.JOptionPane;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.message.handler.Message;
+import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
@@ -32,6 +36,11 @@ import richtercloud.reflection.form.builder.storage.StorageCreationException;
  * Using {@link MySQLAutoPersistenceStorageConf#getPassword() } for MySQL
  * {@code root} password since {@code document-scanner} is the only user using
  * the database.
+ *
+ * Since the Java Process API is quite painful, doesn't implement a mechanism to
+ * kill an eventually remaining {@code mysqld} process from previous run (using
+ * a PID file (Java seriously doesn't tell you the PID without a hack)), improve
+ * shutdown mechanism and leave shutting down the server to the user.
  *
  * @author richter
  */
@@ -46,12 +55,20 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
     private boolean serverRunning = false;
     private Thread mysqldThread;
     private Process mysqldProcess;
+    /**
+     * Used to prevent messing up {@link #shutdown0() } routine when run by more
+     * than one thread and to check whether shutdown has been requested after
+     * {@code mysqld} process returned.
+     */
     private final Lock shutdownLock = new ReentrantLock();
+    private final MessageHandler messageHandler;
 
     public MySQLAutoPersistenceStorage(MySQLAutoPersistenceStorageConf storageConf,
-            String persistenceUnitName) throws StorageConfInitializationException, StorageCreationException {
+            String persistenceUnitName,
+            MessageHandler messageHandler) throws StorageConfInitializationException, StorageCreationException {
         super(storageConf,
                 persistenceUnitName);
+        this.messageHandler = messageHandler;
         init();
     }
 
@@ -121,6 +138,10 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
                     throw new StorageCreationException(String.format("command '%s' failed with returncode %d", mysqldInitProcessBuilder.command(), mysqldInitProcess.exitValue()));
                 }
             }
+            //if mysqld is already running (because shutdown in the last run of
+            //document-scanner failed/couldn't be performed) or a system process
+            //is using the same host and port combination, mysqld will simply
+            //fail in mysqldThread without the failure being noticed -> @TODO
             ProcessBuilder mysqldProcessBuilder = new ProcessBuilder(getStorageConf().getMysqld(),
                     String.format("--defaults-file=%s", myCnfFile.getAbsolutePath()));
             LOGGER.debug(String.format("running command '%s'", mysqldProcessBuilder.command().toString()));
@@ -128,9 +149,18 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
             mysqldThread = new Thread(() -> {
                 try {
                     mysqldProcess.waitFor();
-                    LOGGER.warn("Process 'mysqld' returned. This shouldn't happen unless the JVM is shutting down.");
                     IOUtils.copy(mysqldProcess.getInputStream(), System.out);
                     IOUtils.copy(mysqldProcess.getErrorStream(), System.err);
+                    if(shutdownLock.tryLock()) {
+                        try {
+                            messageHandler.handle(new Message("MySQL server process process '%s' crashed or was shutdown from outside the application. Restart the application in order to avoid data loss.", JOptionPane.ERROR_MESSAGE, "MySQL server crashed"));
+                            serverRunning = false;
+                        }finally{
+                            shutdownLock.unlock();
+                        }
+                    }else {
+                        LOGGER.warn("process 'mysqld' returned expectedly during shutdown process");
+                    }
                 } catch (InterruptedException | IOException ex) {
                     LOGGER.error("unexpected exception, see nested exception for details", ex);
                 }
@@ -220,6 +250,10 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
             serverRunning = true;
         }catch(IOException | InterruptedException ex) {
             throw new StorageCreationException(ex);
+                //@TODO: this StorageCreationException is ignored by the JVM
+                //and is not caught in DocumentScanner.main where it should end
+                //up -> investigate through reproduction and eventually file
+                //a bug against OpenJDK
         }
     }
 
@@ -272,6 +306,11 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
                 //should handle writing to stdout and stderr
             } catch (InterruptedException ex) {
                 LOGGER.error("unexpected exception, see nested exception for details", ex);
+            }
+            try {
+                AbandonedConnectionCleanupThread.shutdown();
+            } catch (InterruptedException ex) {
+                LOGGER.error("unexpected exception during shutdown of MySQL abandoned connection clean thread, see nested exception for details", ex);
             }
             LOGGER.info(String.format("shutdown hooks in %s finished", MySQLAutoPersistenceStorage.class));
             serverRunning = false;
