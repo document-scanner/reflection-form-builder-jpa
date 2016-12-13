@@ -50,6 +50,8 @@ AbstractPersistenceStorage and can be re-implemented using dbf6110 as a template
 auto-completion and else to not freeze the GUI is the main idea)
 - caching works fine with MySQL (might not with other databases as soon as
 memory issues are fixed or worked around)
+- memory leaks in PostgreSQL, MySQL and Apache Derby aren't fixed by excluding
+byte[].class in initialize
 */
 public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceStorageConf> implements PersistenceStorage {
     private final static Logger LOGGER = LoggerFactory.getLogger(AbstractPersistenceStorage.class);
