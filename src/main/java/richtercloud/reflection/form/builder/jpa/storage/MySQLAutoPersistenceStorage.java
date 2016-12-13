@@ -154,7 +154,9 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
                     IOUtils.copy(mysqldProcess.getErrorStream(), System.err);
                     if(shutdownLock.tryLock()) {
                         try {
-                            messageHandler.handle(new Message("MySQL server process process '%s' crashed or was shutdown from outside the application. Restart the application in order to avoid data loss.", JOptionPane.ERROR_MESSAGE, "MySQL server crashed"));
+                            messageHandler.handle(new Message(String.format("MySQL server process process '%s' crashed or was shutdown from outside the application. Restart the application in order to avoid data loss.", getStorageConf().getMysqld()),
+                                    JOptionPane.ERROR_MESSAGE,
+                                    "MySQL server crashed"));
                             serverRunning = false;
                         }finally{
                             shutdownLock.unlock();
