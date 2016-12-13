@@ -52,6 +52,7 @@ auto-completion and else to not freeze the GUI is the main idea)
 memory issues are fixed or worked around)
 - memory leaks in PostgreSQL, MySQL and Apache Derby aren't fixed by excluding
 byte[].class in initialize
+- flushing, clearing and closing EntityManager doesn't help against memory leak
 */
 public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceStorageConf> implements PersistenceStorage {
     private final static Logger LOGGER = LoggerFactory.getLogger(AbstractPersistenceStorage.class);
