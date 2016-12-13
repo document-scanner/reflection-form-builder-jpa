@@ -265,6 +265,7 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
         properties.put("javax.persistence.jdbc.user", storageConf.getUsername());
         properties.put("javax.persistence.jdbc.password", storageConf.getPassword());
         properties.put("javax.persistence.jdbc.driver", storageConf.getDatabaseDriver());
+        //see comments in persistence.xml as well
         return properties;
     }
 
