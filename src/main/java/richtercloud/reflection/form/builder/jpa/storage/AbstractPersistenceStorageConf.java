@@ -184,6 +184,7 @@ public abstract class AbstractPersistenceStorageConf implements StorageConf, Ser
                                     + "consider removing the old scheme "
                                     + "checksum file '%s' and restart the "
                                     + "application.",
+                            this.schemeChecksumFile.getAbsolutePath(),
                             this.schemeChecksumFile.getAbsolutePath()));
                 }
             } catch (IOException | ClassNotFoundException ex) {
