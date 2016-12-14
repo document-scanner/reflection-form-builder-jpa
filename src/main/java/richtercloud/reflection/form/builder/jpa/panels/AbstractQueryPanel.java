@@ -136,13 +136,13 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
                 List<E> queryResults = event.getQueryResults();
                 EntityTableModel<E> queryResultModel;
                 try {
-                    queryResultModel = new EntityTableModel<>(queryResults,
-                            reflectionFormBuilder.getFieldRetriever());
                     for(E queryResult : queryResults) {
                         fieldInitializer.initialize(queryResult);
                             //every result retrieved for the query should be
                             //initialized
                     }
+                    queryResultModel = new EntityTableModel<>(queryResults,
+                            reflectionFormBuilder.getFieldRetriever());
                 } catch (IllegalArgumentException | IllegalAccessException ex) {
                     throw new RuntimeException(ex);
                 }
