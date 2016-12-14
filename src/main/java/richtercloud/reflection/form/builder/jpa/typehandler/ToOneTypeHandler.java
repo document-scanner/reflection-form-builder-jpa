@@ -34,6 +34,7 @@ import richtercloud.reflection.form.builder.jpa.panels.BidirectionalControlPanel
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanel;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 
@@ -45,10 +46,12 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
     private final PersistenceStorage storage;
     private final String bidirectionalHelpDialogTitle;
     private final MessageHandler messageHandler;
+    private final FieldInitializer fieldInitializer;
 
     public ToOneTypeHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
-            String bidirectionalHelpDialogTitle) {
+            String bidirectionalHelpDialogTitle,
+            FieldInitializer fieldInitializer) {
         if(storage == null) {
             throw new IllegalArgumentException("storage mustn't be null");
         }
@@ -58,6 +61,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
         }
         this.messageHandler = messageHandler;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
+        this.fieldInitializer = fieldInitializer;
     }
 
     @Override
@@ -88,7 +92,8 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
                 reflectionFormBuilder,
                 fieldValue,
                 bidirectionalControlPanel,
-                ListSelectionModel.SINGLE_SELECTION);
+                ListSelectionModel.SINGLE_SELECTION,
+                fieldInitializer);
         retValue.addUpdateListener(new QueryPanelUpdateListener() {
             @Override
             public void onUpdate(QueryPanelUpdateEvent event) {

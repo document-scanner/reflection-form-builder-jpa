@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
@@ -111,7 +112,8 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             ReflectionFormBuilder reflectionFormBuilder,
             E initialValue,
             BidirectionalControlPanel bidirectionalControlPanel,
-            int queryResultTableSelectionMode) throws IllegalArgumentException, IllegalAccessException {
+            int queryResultTableSelectionMode,
+            FieldInitializer fieldInitializer) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
                 messageHandler,
@@ -119,7 +121,8 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                 initialValue,
                 bidirectionalControlPanel,
                 QUERY_RESULT_TABLE_HEIGHT_DEFAULT,
-                queryResultTableSelectionMode);
+                queryResultTableSelectionMode,
+                fieldInitializer);
     }
 
     public QueryPanel(PersistenceStorage storage,
@@ -130,7 +133,8 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             Set<Class<?>> entityClasses,
             int queryResultTableHeight,
             String bidirectionalHelpDialogTitle,
-            int queryResultTableSelectionMode) throws IllegalArgumentException, IllegalAccessException {
+            int queryResultTableSelectionMode,
+            FieldInitializer fieldInitializer) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
                 messageHandler,
@@ -142,7 +146,8 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                         retrieveMappedFieldCandidates(entityClass,
                                 reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass))),
                 queryResultTableHeight,
-                queryResultTableSelectionMode);
+                queryResultTableSelectionMode,
+                fieldInitializer);
     }
 
     /**
@@ -173,17 +178,18 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             E initialValue,
             BidirectionalControlPanel bidirectionalControlPanel,
             int queryResultTableHeight,
-            int queryResultTableSelectionMode) throws IllegalArgumentException, IllegalAccessException {
+            int queryResultTableSelectionMode,
+            FieldInitializer fieldInitializer) throws IllegalArgumentException, IllegalAccessException {
         super(bidirectionalControlPanel,
                 new QueryComponent<>(storage,
                         entityClass,
                         messageHandler,
-                        reflectionFormBuilder.getFieldRetriever(),
                         true //async
                 ),
                 reflectionFormBuilder,
                 entityClass,
                 storage,
+                fieldInitializer,
                 messageHandler,
                 queryResultTableSelectionMode,
                 new LinkedList<>(Arrays.asList(initialValue)));

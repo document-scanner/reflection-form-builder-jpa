@@ -27,6 +27,7 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.JPACachedFieldRetriever;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
@@ -48,12 +49,14 @@ public class QueryListPanelTest {
         List<Object> initialValues = null;
         String bidirectionalHelpDialogTitle = "test";
         MessageHandler messageHandler = new LoggerMessageHandler(LOGGER);
+        FieldInitializer fieldInitializer = mock(FieldInitializer.class);
         QueryListPanel instance = new QueryListPanel(storage,
                 reflectionFormBuilder,
                 entityClass,
                 messageHandler,
                 initialValues,
-                bidirectionalHelpDialogTitle);
+                bidirectionalHelpDialogTitle,
+                fieldInitializer);
         JFrame x = new JFrame();
         x.getContentPane().add(instance);
         x.setBounds(0, 0, 200, 200);

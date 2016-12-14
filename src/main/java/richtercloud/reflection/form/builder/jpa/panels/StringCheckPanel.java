@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
 
@@ -59,6 +60,7 @@ public class StringCheckPanel extends AbstractStringPanel {
             String fieldName,
             int initialQueryLimit,
             String bidirectionalHelpDialogTitle,
+            FieldInitializer fieldInitializer,
             boolean async) throws IllegalArgumentException, IllegalAccessException {
         super(storage,
                 entityClass,
@@ -71,7 +73,8 @@ public class StringCheckPanel extends AbstractStringPanel {
                 reflectionFormBuilder,
                 null, //initialValue
                 null, //bidirectionalControlPanel (needs to be read-only)
-                ListSelectionModel.SINGLE_SELECTION
+                ListSelectionModel.SINGLE_SELECTION,
+                fieldInitializer
         ); //will be reused by manipulating the queryComboBoxModel
         GroupLayout queryPanelDialogLayout = new GroupLayout(queryPanelDialog.getContentPane());
         queryPanelDialog.getContentPane().setLayout(queryPanelDialogLayout);

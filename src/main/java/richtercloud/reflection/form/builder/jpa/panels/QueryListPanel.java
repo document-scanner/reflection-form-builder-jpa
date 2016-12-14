@@ -36,6 +36,7 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.ReflectionFormBuilderHelperJPA;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
@@ -89,14 +90,16 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             Class<E> entityClass,
             MessageHandler messageHandler,
             List<E> initialValues,
-            String bidirectionalHelpDialogTitle) throws IllegalArgumentException, IllegalAccessException {
+            String bidirectionalHelpDialogTitle,
+            FieldInitializer fieldInitializer) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 reflectionFormBuilder,
                 entityClass,
                 messageHandler,
                 initialValues,
                 bidirectionalHelpDialogTitle,
-                QUERY_RESULT_TABLE_HEIGHT_DEFAULT);
+                QUERY_RESULT_TABLE_HEIGHT_DEFAULT,
+                fieldInitializer);
     }
 
     /**
@@ -117,19 +120,20 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             MessageHandler messageHandler,
             List<E> initialValues,
             String bidirectionalHelpDialogTitle,
-            int queryResultTableHeight) throws IllegalArgumentException, IllegalAccessException {
+            int queryResultTableHeight,
+            FieldInitializer fieldInitializer) throws IllegalArgumentException, IllegalAccessException {
         super(generateBidirectionalControlPanel(entityClass,
                 reflectionFormBuilder.getFieldRetriever(),
                 bidirectionalHelpDialogTitle),
                 new QueryComponent<>(storage,
                         entityClass,
                         messageHandler,
-                        reflectionFormBuilder.getFieldRetriever(),
                         true //async
                 ),
                 reflectionFormBuilder,
                 entityClass,
                 storage,
+                fieldInitializer,
                 messageHandler,
                 ListSelectionModel.MULTIPLE_INTERVAL_SELECTION,
                 initialValues);

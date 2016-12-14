@@ -14,8 +14,6 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
-import java.lang.reflect.Field;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +28,6 @@ import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.Metamodel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageException;
@@ -53,6 +50,9 @@ memory issues are fixed or worked around)
 - memory leaks in PostgreSQL, MySQL and Apache Derby aren't fixed by excluding
 byte[].class in initialize
 - flushing, clearing and closing EntityManager doesn't help against memory leak
+- memory leaks in PostgreSQL with Hibernate (and probably all other combinations
+of DB and JPA provider) even occur when running only one query at the same time
+when having one 7-page document (with ca. 100 MB binary data) in the database
 */
 public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceStorageConf> implements PersistenceStorage {
     private final static Logger LOGGER = LoggerFactory.getLogger(AbstractPersistenceStorage.class);
@@ -217,34 +217,6 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     public boolean isManaged(Object object) {
         boolean retValue = this.retrieveEntityManager().contains(object);
         return retValue;
-    }
-
-    /**
-     * Fetches all fields of {@code entity} in order to have lazily fetched
-     * field data available.
-     * @param entity
-     * @param fieldRetriever
-     * @throws IllegalArgumentException if {@code entity} is {@code null}
-     * @throws IllegalAccessException if {@link Field#get(java.lang.Object) }
-     * for fields of {@code entity} fails
-     */
-    @Override
-    public void initialize(Object entity,
-            FieldRetriever fieldRetriever) throws IllegalArgumentException, IllegalAccessException {
-        if(entity == null) {
-            throw new IllegalArgumentException("entity mustn't be null");
-        }
-        for(Field field : fieldRetriever.retrieveRelevantFields(entity.getClass())) {
-            field.get(entity);
-            if(Collection.class.isAssignableFrom(field.getType())) {
-                Collection fieldValue = ((Collection)field.get(entity));
-                if(fieldValue != null) {
-                    fieldValue.size();
-                        //need to explicitly call Collection.size on the field value
-                        //in order to get it initialized
-                }
-            }
-        }
     }
 
     /**

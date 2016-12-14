@@ -15,7 +15,6 @@
 package richtercloud.reflection.form.builder.jpa.storage;
 
 import java.util.List;
-import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.storage.Storage;
 import richtercloud.reflection.form.builder.storage.StorageException;
 
@@ -48,12 +47,4 @@ public interface PersistenceStorage extends Storage<Object, AbstractPersistenceS
     boolean isClassSupported(Class<?> clazz);
 
     boolean isManaged(Object object);
-
-    /**
-     * Fetches all field values which are marked {@link FetchType#LAZY}.
-     *
-     * @param entity the entity to initialize
-     */
-    void initialize(Object entity,
-            FieldRetriever fieldRetriever) throws IllegalArgumentException, IllegalAccessException;
 }

@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
@@ -83,6 +84,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
             final ReflectionFormBuilder reflectionFormBuilder,
             final Class<?> entityClass,
             PersistenceStorage storage,
+            FieldInitializer fieldInitializer,
             MessageHandler messageHandler,
             int queryResultTableSelectionMode,
             List<E> initialValues) {
@@ -137,8 +139,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
                     queryResultModel = new EntityTableModel<>(queryResults,
                             reflectionFormBuilder.getFieldRetriever());
                     for(E queryResult : queryResults) {
-                        storage.initialize(queryResult,
-                                reflectionFormBuilder.getFieldRetriever());
+                        fieldInitializer.initialize(queryResult);
                             //every result retrieved for the query should be
                             //initialized
                     }

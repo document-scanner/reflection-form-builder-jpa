@@ -30,6 +30,7 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.panels.QueryListPanel;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
@@ -43,13 +44,16 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
     private final static Logger LOGGER = LoggerFactory.getLogger(JPAEntityListTypeHandler.class);
     private final String bidirectionalHelpDialogTitle;
     private final PersistenceStorage storage;
+    private final FieldInitializer fieldInitializer;
 
     public JPAEntityListTypeHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
-            String bidirectionalHelpDialogTitle) {
+            String bidirectionalHelpDialogTitle,
+            FieldInitializer fieldInitializer) {
         super(messageHandler);
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.storage = storage;
+        this.fieldInitializer = fieldInitializer;
     }
 
     @Override
@@ -82,7 +86,8 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
                 entityClass,
                 getMessageHandler(),
                 fieldValue,
-                bidirectionalHelpDialogTitle);
+                bidirectionalHelpDialogTitle,
+                fieldInitializer);
         retValue.addItemListener(new ListPanelItemListener<Object>() {
 
             @Override

@@ -42,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
-import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
@@ -197,12 +196,10 @@ public class QueryComponent<E> extends JPanel {
     private final JScrollPane queryStatusLabelScrollPane;
     private final Set<QueryComponentListener<E>> listeners = new HashSet<>();
     private final MessageHandler messageHandler;
-    private final FieldRetriever fieldRetriever;
 
     public QueryComponent(PersistenceStorage storage,
             Class<E> entityClass,
             MessageHandler messageHandler,
-            FieldRetriever fieldRetriever,
             boolean async) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
@@ -210,7 +207,6 @@ public class QueryComponent<E> extends JPanel {
                 generateInitialHistoryDefault(entityClass),
                 null, //initialSelectedHistoryEntry (null means point to the first item of initialHistory
                 INITIAL_QUERY_LIMIT_DEFAULT,
-                fieldRetriever,
                 async);
     }
 
@@ -236,15 +232,10 @@ public class QueryComponent<E> extends JPanel {
             List<HistoryEntry> initialHistory,
             HistoryEntry initialSelectedHistoryEntry,
             int initialQueryLimit,
-            FieldRetriever fieldRetriever,
             boolean async) throws IllegalArgumentException {
         if(entityClass == null) {
             throw new IllegalArgumentException("entityClass mustn't be null");
         }
-        if(fieldRetriever == null) {
-            throw new IllegalArgumentException("fieldRetriever mustn't be null");
-        }
-        this.fieldRetriever = fieldRetriever;
         queryLabel = new JLabel();
         queryButton = new JButton();
         queryComboBox = new JComboBox<>();
