@@ -69,7 +69,6 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
         super(storageConf,
                 persistenceUnitName);
         this.messageHandler = messageHandler;
-        init();
     }
 
     /**
@@ -84,7 +83,8 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
     methods in constructor (of AbstractPersistenceStorage) is discouraged for a
     reason).
     */
-    private void init() throws StorageCreationException {
+    @Override
+    protected void init() throws StorageCreationException {
         try {
             assert new File(getStorageConf().getMysqld()).exists();
             assert new File(getStorageConf().getMysqladmin()).exists();

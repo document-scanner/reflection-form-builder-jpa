@@ -33,4 +33,9 @@ public class DerbyNetworkPersistenceStorage extends AbstractPersistenceStorage<D
         super(storageConf,
                 persistenceUnitName);
     }
+
+    @Override
+    protected void init() {
+        //do nothing
+    }
 }

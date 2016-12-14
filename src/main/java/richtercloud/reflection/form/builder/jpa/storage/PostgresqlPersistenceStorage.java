@@ -26,4 +26,9 @@ public class PostgresqlPersistenceStorage extends AbstractPersistenceStorage<Pos
     public PostgresqlPersistenceStorage(PostgresqlPersistenceStorageConf storageConf, String persistenceUnitName) throws StorageConfInitializationException, StorageCreationException {
         super(storageConf, persistenceUnitName);
     }
+
+    @Override
+    protected void init() {
+        //do nothing
+    }
 }

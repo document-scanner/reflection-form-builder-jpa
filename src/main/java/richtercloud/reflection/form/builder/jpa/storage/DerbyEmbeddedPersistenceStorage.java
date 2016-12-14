@@ -35,6 +35,11 @@ public class DerbyEmbeddedPersistenceStorage extends AbstractPersistenceStorage<
     }
 
     @Override
+    protected void init() {
+        //do nothing
+    }
+
+    @Override
     public void shutdown() {
         super.shutdown();
 

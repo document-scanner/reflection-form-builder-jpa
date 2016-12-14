@@ -48,8 +48,9 @@ public class DerbyEmbeddedPersistenceStorageConf extends AbstractPersistenceStor
 
     @Override
     public String getConnectionURL() {
-        String retValue = String.format("jdbc:derby:%s",
-                getDatabaseName());
+        String retValue = String.format("jdbc:derby:%s;create=%s",
+                getDatabaseName(),
+                String.valueOf(!new File(getDatabaseName()).exists()));
         return retValue;
     }
 

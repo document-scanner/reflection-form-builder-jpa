@@ -65,8 +65,11 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
         this.storageConf = storageConf;
         this.persistenceUnitName = persistenceUnitName;
         storageConf.validate();
-        recreateEntityManager(); //after this.storageConf has been assigned
+        init();
+        recreateEntityManager();
     }
+
+    protected abstract void init() throws StorageCreationException;
 
     @Override
     public void delete(Object object) throws StorageException {
@@ -101,10 +104,11 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     public void store(Object object) throws StorageException {
         EntityManager entityManager = this.retrieveEntityManager();
         try {
+            Object toPersist = entityManager.merge(object);
             entityManager.getTransaction().begin();
-            entityManager.persist(object);
+            entityManager.persist(toPersist);
             entityManager.getTransaction().commit();
-            entityManager.detach(object); //detaching necessary in
+            entityManager.detach(toPersist); //detaching necessary in
                 //order to be able to change one single value and save again
         }catch(EntityExistsException ex) {
             entityManager.getTransaction().rollback();
