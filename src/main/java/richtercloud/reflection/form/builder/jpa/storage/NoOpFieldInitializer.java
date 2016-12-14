@@ -14,21 +14,18 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
+
 /**
- * Initializes fields in a runtime-configurable way which is interesting for
- * lazily fetched fields of JPA-managed entities.
- *
- * Note that initializing fields through reflection doesn't work in Hibernate
- * 5.0.11.Final, maybe in Hibernate or JPA in general.
  *
  * @author richter
  */
-public interface FieldInitializer {
+public class NoOpFieldInitializer implements FieldInitializer {
 
-    /**
-     * Fetches all field values which are marked {@link FetchType#LAZY}.
-     *
-     * @param entity the entity to initialize
-     */
-    void initialize(Object entity) throws IllegalArgumentException, IllegalAccessException;
+    @Override
+    public void initialize(Object entity) throws IllegalArgumentException, IllegalAccessException {
+        //skip since initialization of lazy fields through reflection doesn't
+        //work -> switched to eager fetching and initialize Document.scanData
+        //in ScanResultPanelFetcher with Hibernate
+    }
 }
