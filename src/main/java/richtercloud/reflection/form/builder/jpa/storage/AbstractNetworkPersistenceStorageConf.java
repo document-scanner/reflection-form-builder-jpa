@@ -17,6 +17,7 @@ package richtercloud.reflection.form.builder.jpa.storage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
 
@@ -78,5 +79,41 @@ public abstract class AbstractNetworkPersistenceStorageConf extends AbstractPers
         if(getUsername() == null || getUsername().isEmpty()) {
             throw new StorageConfInitializationException("Password mustn't be empty");
         }
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 61 * hash + Objects.hashCode(this.hostname);
+        hash = 61 * hash + this.port;
+        return hash;
+    }
+
+    protected boolean equalsTransitive(AbstractNetworkPersistenceStorageConf other) {
+        if(!super.equalsTransitive(other)) {
+            return false;
+        }
+        if (this.port != other.port) {
+            return false;
+        }
+        if (!Objects.equals(this.hostname, other.hostname)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final AbstractNetworkPersistenceStorageConf other = (AbstractNetworkPersistenceStorageConf) obj;
+        return equalsTransitive(other);
     }
 }

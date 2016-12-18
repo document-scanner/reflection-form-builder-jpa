@@ -26,6 +26,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import richtercloud.reflection.form.builder.storage.StorageConf;
 import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
@@ -191,5 +192,54 @@ public abstract class AbstractPersistenceStorageConf implements StorageConf, Ser
                 throw new StorageConfInitializationException(ex);
             }
         }
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 67 * hash + Objects.hashCode(this.username);
+        hash = 67 * hash + Objects.hashCode(this.password);
+        hash = 67 * hash + Objects.hashCode(this.databaseName);
+        hash = 67 * hash + Objects.hashCode(this.schemeChecksumFile);
+        hash = 67 * hash + Objects.hashCode(this.entityClasses);
+        hash = 67 * hash + Objects.hashCode(this.databaseDriver);
+        return hash;
+    }
+
+    protected boolean equalsTransitive(AbstractPersistenceStorageConf other) {
+        if (!Objects.equals(this.username, other.username)) {
+            return false;
+        }
+        if (!Objects.equals(this.password, other.password)) {
+            return false;
+        }
+        if (!Objects.equals(this.databaseName, other.databaseName)) {
+            return false;
+        }
+        if (!Objects.equals(this.databaseDriver, other.databaseDriver)) {
+            return false;
+        }
+        if (!Objects.equals(this.schemeChecksumFile, other.schemeChecksumFile)) {
+            return false;
+        }
+        if (!Objects.equals(this.entityClasses, other.entityClasses)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final AbstractPersistenceStorageConf other = (AbstractPersistenceStorageConf) obj;
+        return equalsTransitive(other);
     }
 }

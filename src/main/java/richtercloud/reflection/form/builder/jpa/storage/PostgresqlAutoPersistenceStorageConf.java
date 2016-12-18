@@ -17,6 +17,7 @@ package richtercloud.reflection.form.builder.jpa.storage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -47,5 +48,37 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
 
     public void setDatabaseDir(String databaseDir) {
         this.databaseDir = databaseDir;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 67 * hash + Objects.hashCode(this.databaseDir);
+        return hash;
+    }
+
+    protected boolean equalsTransitive(PostgresqlAutoPersistenceStorageConf other) {
+        if(!super.equalsTransitive(other)) {
+            return false;
+        }
+        if (!Objects.equals(this.databaseDir, other.databaseDir)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final PostgresqlAutoPersistenceStorageConf other = (PostgresqlAutoPersistenceStorageConf) obj;
+        return equalsTransitive(other);
     }
 }

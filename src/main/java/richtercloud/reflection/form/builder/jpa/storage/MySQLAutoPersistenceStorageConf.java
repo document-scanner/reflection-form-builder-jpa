@@ -17,6 +17,7 @@ package richtercloud.reflection.form.builder.jpa.storage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Set;
 import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
 
@@ -151,5 +152,53 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
      */
     public void setMysql(String mysql) {
         this.mysql = mysql;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 59 * hash + Objects.hashCode(this.databaseDir);
+        hash = 59 * hash + Objects.hashCode(this.baseDir);
+        hash = 59 * hash + Objects.hashCode(this.mysqld);
+        hash = 59 * hash + Objects.hashCode(this.mysqladmin);
+        hash = 59 * hash + Objects.hashCode(this.mysql);
+        return hash;
+    }
+
+    protected boolean equalsTransitive(MySQLAutoPersistenceStorageConf other) {
+        if(!super.equalsTransitive(other)) {
+            return false;
+        }
+        if (!Objects.equals(this.databaseDir, other.databaseDir)) {
+            return false;
+        }
+        if (!Objects.equals(this.baseDir, other.baseDir)) {
+            return false;
+        }
+        if (!Objects.equals(this.mysqld, other.mysqld)) {
+            return false;
+        }
+        if (!Objects.equals(this.mysqladmin, other.mysqladmin)) {
+            return false;
+        }
+        if (!Objects.equals(this.mysql, other.mysql)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final MySQLAutoPersistenceStorageConf other = (MySQLAutoPersistenceStorageConf) obj;
+        return equalsTransitive(other);
     }
 }
