@@ -105,10 +105,10 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
     public void validate() throws StorageConfInitializationException {
         super.validate();
         if(getDatabaseDir() == null || getDatabaseDir().isEmpty()) {
-            throw new StorageConfInitializationException("database directory mustn't be empty");
+            throw new StorageConfInitializationException("database directory path mustn't be null or empty");
         }
         if(getBaseDir() == null || getBaseDir().isEmpty()) {
-            throw new StorageConfInitializationException("base directory mustn't be empty");
+            throw new StorageConfInitializationException("base directory path mustn't be null or empty");
         }
     }
 
