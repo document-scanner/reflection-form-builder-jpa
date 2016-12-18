@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  * A panel to include an automatic check for existing entites with the value

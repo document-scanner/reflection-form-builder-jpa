@@ -30,8 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  * Allows to run a JPQL query for a specific class while getting feedback about

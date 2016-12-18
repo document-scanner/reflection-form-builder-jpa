@@ -24,12 +24,19 @@ import richtercloud.reflection.form.builder.storage.StorageFactory;
  */
 public abstract class AbstractPersistenceStorageFactory<S extends Storage, C extends StorageConf> implements StorageFactory<S, C> {
     private final String persistenceUnitName;
+    private final int parallelQueryCount;
 
-    public AbstractPersistenceStorageFactory(String persistenceUnitName) {
+    public AbstractPersistenceStorageFactory(String persistenceUnitName,
+            int parallelQueryCount) {
         this.persistenceUnitName = persistenceUnitName;
+        this.parallelQueryCount = parallelQueryCount;
     }
 
     public String getPersistenceUnitName() {
         return persistenceUnitName;
+    }
+
+    public int getParallelQueryCount() {
+        return parallelQueryCount;
     }
 }

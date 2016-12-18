@@ -28,12 +28,12 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.panels.QueryListPanel;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.typehandler.GenericListTypeHandler;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  *

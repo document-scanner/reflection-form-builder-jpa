@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,10 +35,30 @@ import richtercloud.reflection.form.builder.storage.StorageCreationException;
 public class PostgresqlAutoPersistenceStorage extends AbstractPersistenceStorage<PostgresqlAutoPersistenceStorageConf> {
     private static final long serialVersionUID = 1L;
     private final static Logger LOGGER = LoggerFactory.getLogger(PostgresqlAutoPersistenceStorage.class);
-    private boolean serverRunning = false;
+    /**
+     * Whether or not the server is running.
+     */
+    /*
+    internal implementation notes:
+    - Don't initialize with false because it overwrites the state set in init
+    when called in super constructor.
+    */
+    private boolean serverRunning;
+    private Process postgresProcess;
+    private Thread postgresThread;
+    /**
+     * Used to prevent messing up {@link #shutdown0() } routine when run by more
+     * than one thread and to check whether shutdown has been requested after
+     * {@code mysqld} process returned.
+     */
+    private final Lock shutdownLock = new ReentrantLock();
 
-    public PostgresqlAutoPersistenceStorage(PostgresqlAutoPersistenceStorageConf storageConf, String persistenceUnitName) throws IOException, InterruptedException, StorageConfInitializationException, StorageCreationException {
-        super(storageConf, persistenceUnitName);
+    public PostgresqlAutoPersistenceStorage(PostgresqlAutoPersistenceStorageConf storageConf,
+            String persistenceUnitName,
+            int parallelQueryCount) throws IOException, InterruptedException, StorageConfInitializationException, StorageCreationException {
+        super(storageConf,
+                persistenceUnitName,
+                parallelQueryCount);
     }
 
     @Override
@@ -75,8 +97,8 @@ public class PostgresqlAutoPersistenceStorage extends AbstractPersistenceStorage
                     "-h", getStorageConf().getHostname(),
                     "-p", String.valueOf(getStorageConf().getPort()));
             LOGGER.debug(String.format("running command '%s'", postgresProcessBuilder.command().toString()));
-            Process postgresProcess = postgresProcessBuilder.start();
-            Thread postgresThread = new Thread(() -> {
+            postgresProcess = postgresProcessBuilder.start();
+            postgresThread = new Thread(() -> {
                 try {
                     postgresProcess.waitFor();
                     LOGGER.warn("Process 'postgres' returned. This shouldn't happen unless the JVM is shutting down.");
@@ -113,24 +135,43 @@ public class PostgresqlAutoPersistenceStorage extends AbstractPersistenceStorage
                 }
             }
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                postgresProcess.destroy();
-                try {
-                    LOGGER.info("waiting for postgres process to terminate");
-                    postgresProcess.waitFor();
-                } catch (InterruptedException ex) {
-                    LOGGER.error("waiting for termination of postgres process failed, see nested exception for details", ex);
-                }
-                try {
-                    LOGGER.info("waiting for postgres process watch thread to terminate");
-                    postgresThread.join();
-                    //should handle writing to stdout and stderr
-                } catch (InterruptedException ex) {
-                    LOGGER.error("unexpected exception, see nested exception for details", ex);
-                }
+                shutdown0();
             }));
             serverRunning = true;
         }catch (IOException | InterruptedException ex) {
             throw new StorageCreationException(ex);
         }
+    }
+
+    private void shutdown0() {
+        shutdownLock.lock();
+        if(!serverRunning) {
+            shutdownLock.unlock();
+            return;
+        }
+        try {
+            postgresProcess.destroy();
+            try {
+                LOGGER.info("waiting for postgres process to terminate");
+                postgresProcess.waitFor();
+            } catch (InterruptedException ex) {
+                LOGGER.error("waiting for termination of postgres process failed, see nested exception for details", ex);
+            }
+            try {
+                LOGGER.info("waiting for postgres process watch thread to terminate");
+                postgresThread.join();
+                //should handle writing to stdout and stderr
+            } catch (InterruptedException ex) {
+                LOGGER.error("unexpected exception, see nested exception for details", ex);
+            }
+        }finally{
+            shutdownLock.unlock();
+        }
+    }
+
+    @Override
+    public void shutdown() {
+        super.shutdown();
+        shutdown0();
     }
 }

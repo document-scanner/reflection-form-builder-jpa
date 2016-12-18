@@ -17,6 +17,7 @@ package richtercloud.reflection.form.builder.jpa.storage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 import javax.persistence.EntityExistsException;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -53,17 +54,29 @@ byte[].class in initialize
 - memory leaks in PostgreSQL with Hibernate (and probably all other combinations
 of DB and JPA provider) even occur when running only one query at the same time
 when having one 7-page document (with ca. 100 MB binary data) in the database
+- need to limit parallel querying in order to avoid memory leak no matter
+whether large binary data is fetched lazily or not
 */
 public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceStorageConf> implements PersistenceStorage {
     private final static Logger LOGGER = LoggerFactory.getLogger(AbstractPersistenceStorage.class);
     private EntityManagerFactory entityManagerFactory;
     private final C storageConf;
     private final String persistenceUnitName;
+    /**
+     * A value for {@code parallelQueryCount} which can be considered save.
+     */
+    public final static int PARALLEL_QUERY_COUNT_DEFAULT = 2;
+    private final Semaphore querySemaphore;
 
     public AbstractPersistenceStorage(C storageConf,
-            String persistenceUnitName) throws StorageConfInitializationException, StorageCreationException {
+            String persistenceUnitName,
+            int parallelQueryCount) throws StorageConfInitializationException, StorageCreationException {
         this.storageConf = storageConf;
         this.persistenceUnitName = persistenceUnitName;
+        if(parallelQueryCount <= 0) {
+            throw new IllegalArgumentException("parallelQueryCount has to be > 0");
+        }
+        this.querySemaphore = new Semaphore(parallelQueryCount);
         storageConf.validate();
         init();
         recreateEntityManager();
@@ -180,37 +193,73 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     public <T> List<T> runQuery(String queryString,
             Class<T> clazz,
             int queryLimit) throws StorageException {
-        List<T> retValue;
-        TypedQuery<T> query = createQuery(queryString,
-                clazz);
-        retValue = query.setMaxResults(queryLimit).getResultList();
-        return retValue;
+        try {
+            LOGGER.trace("waiting for semaphore");
+            querySemaphore.acquire();
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+        try {
+            LOGGER.trace(String.format("semaphore aquired (%d remaining permits)", querySemaphore.availablePermits()));
+            List<T> retValue;
+            TypedQuery<T> query = createQuery(queryString,
+                    clazz);
+            retValue = query.setMaxResults(queryLimit).getResultList();
+            return retValue;
+        }finally {
+            querySemaphore.release();
+            LOGGER.trace(String.format("semaphore released (%d remaining permits)", querySemaphore.availablePermits()));
+        }
     }
 
     @Override
     public <T> List<T> runQuery(String attribueName,
             String attributeValue,
             Class<T> clazz) {
-        EntityManager entityManager = this.retrieveEntityManager();
-        CriteriaQuery<T> criteria = entityManager.getCriteriaBuilder().createQuery(clazz);
-        Root<T> personRoot = criteria.from(clazz);
-        criteria.select( personRoot );
-        criteria.where( entityManager.getCriteriaBuilder().equal( personRoot.get(attribueName),
-                attributeValue));
-            //attributeName Company.name was used before, unclear why (causes
-            //` java.lang.IllegalArgumentException: The attribute [Company.name] is not present in the managed type [EntityTypeImpl@553585467:Company [ javaType: class richtercloud.document.scanner.model.Company descriptor: RelationalDescriptor(richtercloud.document.scanner.model.Company --> [DatabaseTable(COMPANY)]), mappings: 8]].`)
-        List<T> results = entityManager.createQuery( criteria ).getResultList();
-        return results;
+        try {
+            LOGGER.trace("waiting for semaphore");
+            querySemaphore.acquire();
+        }catch(InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+        try {
+            LOGGER.trace(String.format("semaphore aquired (%d remaining permits)", querySemaphore.availablePermits()));
+            EntityManager entityManager = this.retrieveEntityManager();
+            CriteriaQuery<T> criteria = entityManager.getCriteriaBuilder().createQuery(clazz);
+            Root<T> personRoot = criteria.from(clazz);
+            criteria.select( personRoot );
+            criteria.where( entityManager.getCriteriaBuilder().equal( personRoot.get(attribueName),
+                    attributeValue));
+                //attributeName Company.name was used before, unclear why (causes
+                //` java.lang.IllegalArgumentException: The attribute [Company.name] is not present in the managed type [EntityTypeImpl@553585467:Company [ javaType: class richtercloud.document.scanner.model.Company descriptor: RelationalDescriptor(richtercloud.document.scanner.model.Company --> [DatabaseTable(COMPANY)]), mappings: 8]].`)
+            List<T> results = entityManager.createQuery( criteria ).getResultList();
+            return results;
+        }finally {
+            querySemaphore.release();
+            LOGGER.trace(String.format("semaphore released (%d remaining permits)", querySemaphore.availablePermits()));
+        }
     }
 
     @Override
     public <T> List<T> runQueryAll(Class<T> clazz) {
-        EntityManager entityManager = this.retrieveEntityManager();
-        CriteriaQuery<T> criteriaQuery = entityManager.getCriteriaBuilder().createQuery(clazz);
-        Root<T> queryRoot = criteriaQuery.from(clazz);
-        criteriaQuery.select(queryRoot);
-        List<T> retValue = entityManager.createQuery(criteriaQuery).getResultList();
-        return retValue;
+        try {
+            LOGGER.trace("waiting for semaphore");
+            querySemaphore.acquire();
+        }catch(InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+        try {
+            LOGGER.trace(String.format("semaphore aquired (%d remaining permits)", querySemaphore.availablePermits()));
+            EntityManager entityManager = this.retrieveEntityManager();
+            CriteriaQuery<T> criteriaQuery = entityManager.getCriteriaBuilder().createQuery(clazz);
+            Root<T> queryRoot = criteriaQuery.from(clazz);
+            criteriaQuery.select(queryRoot);
+            List<T> retValue = entityManager.createQuery(criteriaQuery).getResultList();
+            return retValue;
+        }finally{
+            querySemaphore.release();
+            LOGGER.trace(String.format("semaphore released (%d remaining permits)", querySemaphore.availablePermits()));
+        }
     }
 
     @Override
@@ -223,7 +272,8 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
      * Get the {@link EntityManager} used for persistent storage.
      * @return
      */
-    protected EntityManager retrieveEntityManager() {
+    @Override
+    public EntityManager retrieveEntityManager() {
         return this.entityManagerFactory.createEntityManager();
     }
 

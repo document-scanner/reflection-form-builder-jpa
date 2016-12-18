@@ -27,8 +27,8 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.JPACachedFieldRetriever;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  *

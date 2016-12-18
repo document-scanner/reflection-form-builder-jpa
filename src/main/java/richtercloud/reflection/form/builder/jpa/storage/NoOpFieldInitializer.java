@@ -14,18 +14,13 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
-
 /**
- *
+ * Does nothing in order to avoid memory leaks when running queries in parallel.
  * @author richter
  */
 public class NoOpFieldInitializer implements FieldInitializer {
 
     @Override
     public void initialize(Object entity) throws IllegalArgumentException, IllegalAccessException {
-        //skip since initialization of lazy fields through reflection doesn't
-        //work -> switched to eager fetching and initialize Document.scanData
-        //in ScanResultPanelFetcher with Hibernate
     }
 }

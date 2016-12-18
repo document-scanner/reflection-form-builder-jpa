@@ -23,6 +23,10 @@ package richtercloud.reflection.form.builder.jpa.storage;
  *
  * @author richter
  */
+/*
+internal implementation notes:
+- see internal implementation notes of PersistenceStorage for important details
+*/
 public interface FieldInitializer {
 
     /**
@@ -30,5 +34,10 @@ public interface FieldInitializer {
      *
      * @param entity the entity to initialize
      */
+    /*
+    internal implementation notes:
+    - not a good idea to put this in a separate interface (see class comment for
+    details)
+    */
     void initialize(Object entity) throws IllegalArgumentException, IllegalAccessException;
 }

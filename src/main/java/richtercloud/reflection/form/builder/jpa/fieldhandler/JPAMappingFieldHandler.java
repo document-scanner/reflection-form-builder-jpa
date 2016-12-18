@@ -47,7 +47,6 @@ import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.fieldhandler.factory.JPAAmountMoneyMappingFieldHandlerFactory;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.jpa.panels.LongIdPanel;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.typehandler.ElementCollectionTypeHandler;
 import richtercloud.reflection.form.builder.jpa.typehandler.ToManyTypeHandler;
@@ -56,6 +55,7 @@ import richtercloud.reflection.form.builder.jpa.typehandler.factory.JPAAmountMon
 import richtercloud.reflection.form.builder.panels.NumberPanel;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateEvent;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateListener;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  * Handles entities and embeddables differently based on two type component-{@link FieldHandler} mappings.

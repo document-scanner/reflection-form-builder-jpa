@@ -23,8 +23,10 @@ import richtercloud.reflection.form.builder.storage.StorageCreationException;
  */
 public class DerbyNetworkPersistenceStorageFactory extends AbstractPersistenceStorageFactory<DerbyNetworkPersistenceStorage, DerbyNetworkPersistenceStorageConf>{
 
-    public DerbyNetworkPersistenceStorageFactory(String persistenceUnitName) {
-        super(persistenceUnitName);
+    public DerbyNetworkPersistenceStorageFactory(String persistenceUnitName,
+            int parallelQueryCount) {
+        super(persistenceUnitName,
+                parallelQueryCount);
     }
 
     @Override
@@ -32,7 +34,8 @@ public class DerbyNetworkPersistenceStorageFactory extends AbstractPersistenceSt
         DerbyNetworkPersistenceStorage retValue;
         try {
             retValue = new DerbyNetworkPersistenceStorage(storageConf,
-                    getPersistenceUnitName());
+                    getPersistenceUnitName(),
+                    getParallelQueryCount());
         } catch (StorageConfInitializationException ex) {
             throw new StorageCreationException(ex);
         }

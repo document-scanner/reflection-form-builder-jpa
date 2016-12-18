@@ -34,9 +34,9 @@ import richtercloud.reflection.form.builder.jpa.panels.BidirectionalControlPanel
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanel;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  *

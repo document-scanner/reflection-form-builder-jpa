@@ -29,9 +29,11 @@ public class DerbyEmbeddedPersistenceStorage extends AbstractPersistenceStorage<
     private static final Logger LOGGER = LoggerFactory.getLogger(DerbyEmbeddedPersistenceStorage.class);
 
     public DerbyEmbeddedPersistenceStorage(DerbyEmbeddedPersistenceStorageConf storageConf,
-            String persistenceUnitName) throws StorageConfInitializationException, StorageCreationException {
+            String persistenceUnitName,
+            int parallelQueryCount) throws StorageConfInitializationException, StorageCreationException {
         super(storageConf,
-                persistenceUnitName);
+                persistenceUnitName,
+                parallelQueryCount);
     }
 
     @Override

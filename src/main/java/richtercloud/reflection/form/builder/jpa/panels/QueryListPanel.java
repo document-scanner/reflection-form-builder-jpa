@@ -36,12 +36,12 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.ReflectionFormBuilderHelperJPA;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEventVetoException;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  * Provides a {@link QueryPanel} and controls to add and remove stored

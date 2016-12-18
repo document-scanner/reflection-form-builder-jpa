@@ -15,6 +15,7 @@
 package richtercloud.reflection.form.builder.jpa.storage;
 
 import java.util.List;
+import javax.persistence.EntityManager;
 import richtercloud.reflection.form.builder.storage.Storage;
 import richtercloud.reflection.form.builder.storage.StorageException;
 
@@ -24,13 +25,22 @@ import richtercloud.reflection.form.builder.storage.StorageException;
  */
 /*
 internal implementation notes:
-- this interface currently only directly exposes EntityManager which makes quite
-ambiguous, but it allows to create query components (similar to
-reflection-form-builders QueryPanel) on XML files, etc. For this remove exposure
-of Entity
-- A method to fetch lazy entity fields can be here because it can be handled
-well using reflection and PersistenceStorage can easily get knowledge about the
-owning field of a value
+- Where to place a method for fetching lazy entity fields:
+- here: allows access to EntityManager in implementations without exposing it in
+the interface, but requires dependency on JPA provider's custom classes (like
+Session and such) since there's no portable way in JPA -> inacceptable
+- leaving the method unimplemented, thus making all implementations in this
+module abstract and providing a module with implementations for every+
+persistence provider makes things tricky with inheritance hierarchies (either
+the initialize method has to be implemented redundantly in every
+PersistenceStorage implementation, an ugly static workaround has to be used to
+the initialize method has to be sorted out into an interface which then doesn't
+have easy access to EntityManager)
+-> make PersistenceStorage JPA-aware because it just doesn't make sense another
+way -> Then it's very easy to expose EntityManager (while this interface still
+makes sense because implementations handle a lot of workarounds as well as start
+and shutdown routines) and leave initialization to a FieldInitializer interface
+which can get the EntityManager to unwrap JPA provider specific classes.
 */
 public interface PersistenceStorage extends Storage<Object, AbstractPersistenceStorageConf> {
 
@@ -47,4 +57,6 @@ public interface PersistenceStorage extends Storage<Object, AbstractPersistenceS
     boolean isClassSupported(Class<?> clazz);
 
     boolean isManaged(Object object);
+
+    EntityManager retrieveEntityManager();
 }

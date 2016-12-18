@@ -31,12 +31,18 @@ public class DelegatingPersistenceStorageFactory implements StorageFactory<Persi
     private final MySQLAutoPersistenceStorageFactory mySQLAutoPersistenceStorageFactory;
 
     public DelegatingPersistenceStorageFactory(String persistenceUnitName,
+            int parallelQueryCount,
             MessageHandler messageHandler) {
-        this.derbyEmbeddedPersistenceStorageFactory = new DerbyEmbeddedPersistenceStorageFactory(persistenceUnitName);
-        this.derbyNetworkPersistenceStorageFactory = new DerbyNetworkPersistenceStorageFactory(persistenceUnitName);
-        this.postgresqlPersistenceStorageFactory = new PostgresqlPersistenceStorageFactory(persistenceUnitName);
-        this.postgresqlAutoPersistenceStorageFactory = new PostgresqlAutoPersistenceStorageFactory(persistenceUnitName);
+        this.derbyEmbeddedPersistenceStorageFactory = new DerbyEmbeddedPersistenceStorageFactory(persistenceUnitName,
+                parallelQueryCount);
+        this.derbyNetworkPersistenceStorageFactory = new DerbyNetworkPersistenceStorageFactory(persistenceUnitName,
+                parallelQueryCount);
+        this.postgresqlPersistenceStorageFactory = new PostgresqlPersistenceStorageFactory(persistenceUnitName,
+                parallelQueryCount);
+        this.postgresqlAutoPersistenceStorageFactory = new PostgresqlAutoPersistenceStorageFactory(persistenceUnitName,
+                parallelQueryCount);
         this.mySQLAutoPersistenceStorageFactory = new MySQLAutoPersistenceStorageFactory(persistenceUnitName,
+                parallelQueryCount,
                 messageHandler);
     }
 

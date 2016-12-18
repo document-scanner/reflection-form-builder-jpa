@@ -23,8 +23,10 @@ import richtercloud.reflection.form.builder.storage.StorageCreationException;
  */
 public class PostgresqlPersistenceStorageFactory extends AbstractPersistenceStorageFactory<PostgresqlPersistenceStorage, PostgresqlPersistenceStorageConf>{
 
-    public PostgresqlPersistenceStorageFactory(String persistenceUnitName) {
-        super(persistenceUnitName);
+    public PostgresqlPersistenceStorageFactory(String persistenceUnitName,
+            int parallelQueryCount) {
+        super(persistenceUnitName,
+                parallelQueryCount);
     }
 
     @Override
@@ -32,7 +34,8 @@ public class PostgresqlPersistenceStorageFactory extends AbstractPersistenceStor
         PostgresqlPersistenceStorage retValue;
         try {
             retValue = new PostgresqlPersistenceStorage(storageConf,
-                    getPersistenceUnitName());
+                    getPersistenceUnitName(),
+                    getParallelQueryCount());
         } catch (StorageConfInitializationException ex) {
             throw new StorageCreationException(ex);
         }

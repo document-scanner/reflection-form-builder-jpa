@@ -26,8 +26,10 @@ public class MySQLAutoPersistenceStorageFactory extends AbstractPersistenceStora
     private final MessageHandler messageHandler;
 
     public MySQLAutoPersistenceStorageFactory(String persistenceUnitName,
+            int parallelQueryCount,
             MessageHandler messageHandler) {
-        super(persistenceUnitName);
+        super(persistenceUnitName,
+                parallelQueryCount);
         this.messageHandler = messageHandler;
     }
 
@@ -37,6 +39,7 @@ public class MySQLAutoPersistenceStorageFactory extends AbstractPersistenceStora
         try {
             retValue = new MySQLAutoPersistenceStorage(storageConf,
                     getPersistenceUnitName(),
+                    getParallelQueryCount(),
                     messageHandler);
         } catch (StorageConfInitializationException ex) {
             throw new StorageCreationException(ex);

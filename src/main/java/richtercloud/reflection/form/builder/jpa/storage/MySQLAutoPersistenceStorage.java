@@ -52,7 +52,15 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
      * specifying {@code bind-address} in {@code my.cnf}.
      */
     private final static String SOCKET = "/tmp/mysql.document-scanner.socket";
-    private boolean serverRunning = false;
+    /**
+     * Whether or not the server is running.
+     */
+    /*
+    internal implementation notes:
+    - Don't initialize with false because it overwrites the state set in init
+    when called in super constructor.
+    */
+    private boolean serverRunning;
     private Thread mysqldThread;
     private Process mysqldProcess;
     /**
@@ -65,9 +73,11 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
 
     public MySQLAutoPersistenceStorage(MySQLAutoPersistenceStorageConf storageConf,
             String persistenceUnitName,
+            int parallelQueryCount,
             MessageHandler messageHandler) throws StorageConfInitializationException, StorageCreationException {
         super(storageConf,
-                persistenceUnitName);
+                persistenceUnitName,
+                parallelQueryCount);
         this.messageHandler = messageHandler;
     }
 

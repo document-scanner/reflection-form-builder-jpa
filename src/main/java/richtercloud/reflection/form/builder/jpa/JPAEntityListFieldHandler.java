@@ -22,11 +22,11 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.fieldhandler.AbstractListFieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.typehandler.JPAEntityListTypeHandler;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  *
