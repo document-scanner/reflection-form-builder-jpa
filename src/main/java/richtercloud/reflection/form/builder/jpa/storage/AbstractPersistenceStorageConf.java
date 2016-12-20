@@ -14,6 +14,7 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -29,7 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import richtercloud.reflection.form.builder.storage.StorageConf;
-import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 
 /**
  * Holds configuration parameter for file-based database persistence storage as
@@ -154,9 +155,9 @@ public abstract class AbstractPersistenceStorageConf implements StorageConf, Ser
     and ObjectInputStream
     */
     @Override
-    public void validate() throws StorageConfInitializationException {
+    public void validate() throws StorageConfValidationException {
         if(this.databaseName == null) {
-            throw new StorageConfInitializationException("Database name isn't specified");
+            throw new StorageConfValidationException("Database name isn't specified");
         }
         if(!schemeChecksumFile.exists()) {
             try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(schemeChecksumFile))) {
@@ -164,7 +165,7 @@ public abstract class AbstractPersistenceStorageConf implements StorageConf, Ser
                 objectOutputStream.writeObject(checksumMap);
                 objectOutputStream.flush();
             } catch (IOException ex) {
-                throw new StorageConfInitializationException(ex);
+                throw new StorageConfValidationException(ex);
             }
         }else {
             try {
@@ -172,7 +173,7 @@ public abstract class AbstractPersistenceStorageConf implements StorageConf, Ser
                 Map<Class<?>, Long> checksumMapOld = (Map<Class<?>, Long>) objectInputStream.readObject();
                 Map<Class<?>, Long> checksumMap = generateSchemeChecksumMap(entityClasses);
                 if(!checksumMap.equals(checksumMapOld)) {
-                    throw new StorageConfInitializationException(String.format(
+                    throw new StorageConfValidationException(String.format(
                             "The sum of checksum of class fields and methods "
                                     + "doesn't match with the persisted map in "
                                     + "'%s'. The indicates a change to the "
@@ -188,8 +189,11 @@ public abstract class AbstractPersistenceStorageConf implements StorageConf, Ser
                             this.schemeChecksumFile.getAbsolutePath(),
                             this.schemeChecksumFile.getAbsolutePath()));
                 }
-            } catch (IOException | ClassNotFoundException ex) {
-                throw new StorageConfInitializationException(ex);
+            } catch(EOFException ex) {
+                //empty file for scheme checksum has been specified -> skip
+                //check without complaining
+            }catch (IOException | ClassNotFoundException ex) {
+                throw new StorageConfValidationException(ex);
             }
         }
     }

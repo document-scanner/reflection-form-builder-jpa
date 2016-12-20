@@ -14,7 +14,7 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
-import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
 /**
@@ -30,13 +30,13 @@ public class DerbyNetworkPersistenceStorageFactory extends AbstractPersistenceSt
     }
 
     @Override
-    public DerbyNetworkPersistenceStorage create(DerbyNetworkPersistenceStorageConf storageConf) throws StorageCreationException {
+    public DerbyNetworkPersistenceStorage create0(DerbyNetworkPersistenceStorageConf storageConf) throws StorageCreationException {
         DerbyNetworkPersistenceStorage retValue;
         try {
             retValue = new DerbyNetworkPersistenceStorage(storageConf,
                     getPersistenceUnitName(),
                     getParallelQueryCount());
-        } catch (StorageConfInitializationException ex) {
+        } catch (StorageConfValidationException ex) {
             throw new StorageCreationException(ex);
         }
         return retValue;

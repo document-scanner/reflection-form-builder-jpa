@@ -16,6 +16,7 @@ package richtercloud.reflection.form.builder.jpa.storage;
 
 import richtercloud.reflection.form.builder.storage.Storage;
 import richtercloud.reflection.form.builder.storage.StorageConf;
+import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageFactory;
 
 /**
@@ -39,4 +40,13 @@ public abstract class AbstractPersistenceStorageFactory<S extends Storage, C ext
     public int getParallelQueryCount() {
         return parallelQueryCount;
     }
+
+    @Override
+    public final S create(C storageConf) throws StorageCreationException {
+        S retValue = create0(storageConf);
+        retValue.start();
+        return retValue;
+    }
+
+    protected abstract S create0(C storageConf) throws StorageCreationException;
 }

@@ -18,7 +18,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
 /**
@@ -30,7 +30,7 @@ public class DerbyEmbeddedPersistenceStorage extends AbstractPersistenceStorage<
 
     public DerbyEmbeddedPersistenceStorage(DerbyEmbeddedPersistenceStorageConf storageConf,
             String persistenceUnitName,
-            int parallelQueryCount) throws StorageConfInitializationException, StorageCreationException {
+            int parallelQueryCount) throws StorageConfValidationException, StorageCreationException {
         super(storageConf,
                 persistenceUnitName,
                 parallelQueryCount);

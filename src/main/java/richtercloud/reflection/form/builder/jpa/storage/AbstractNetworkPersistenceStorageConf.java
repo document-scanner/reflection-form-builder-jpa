@@ -19,7 +19,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
-import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 
 /**
  *
@@ -71,13 +71,13 @@ public abstract class AbstractNetworkPersistenceStorageConf extends AbstractPers
     }
 
     @Override
-    public void validate() throws StorageConfInitializationException {
+    public void validate() throws StorageConfValidationException {
         super.validate();
         if(getPassword() == null || getPassword().isEmpty()) {
-            throw new StorageConfInitializationException("Password mustn't be empty");
+            throw new StorageConfValidationException("Password mustn't be empty");
         }
         if(getUsername() == null || getUsername().isEmpty()) {
-            throw new StorageConfInitializationException("Password mustn't be empty");
+            throw new StorageConfValidationException("Password mustn't be empty");
         }
     }
 

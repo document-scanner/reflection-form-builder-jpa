@@ -19,12 +19,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
 /**
@@ -32,30 +30,15 @@ import richtercloud.reflection.form.builder.storage.StorageCreationException;
  *
  * @author richter
  */
-public class PostgresqlAutoPersistenceStorage extends AbstractPersistenceStorage<PostgresqlAutoPersistenceStorageConf> {
+public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistenceStorage<PostgresqlAutoPersistenceStorageConf> {
     private static final long serialVersionUID = 1L;
     private final static Logger LOGGER = LoggerFactory.getLogger(PostgresqlAutoPersistenceStorage.class);
-    /**
-     * Whether or not the server is running.
-     */
-    /*
-    internal implementation notes:
-    - Don't initialize with false because it overwrites the state set in init
-    when called in super constructor.
-    */
-    private boolean serverRunning;
     private Process postgresProcess;
     private Thread postgresThread;
-    /**
-     * Used to prevent messing up {@link #shutdown0() } routine when run by more
-     * than one thread and to check whether shutdown has been requested after
-     * {@code mysqld} process returned.
-     */
-    private final Lock shutdownLock = new ReentrantLock();
 
     public PostgresqlAutoPersistenceStorage(PostgresqlAutoPersistenceStorageConf storageConf,
             String persistenceUnitName,
-            int parallelQueryCount) throws IOException, InterruptedException, StorageConfInitializationException, StorageCreationException {
+            int parallelQueryCount) throws IOException, InterruptedException, StorageConfValidationException, StorageCreationException {
         super(storageConf,
                 persistenceUnitName,
                 parallelQueryCount);
@@ -137,16 +120,17 @@ public class PostgresqlAutoPersistenceStorage extends AbstractPersistenceStorage
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 shutdown0();
             }));
-            serverRunning = true;
+            setServerRunning(true);
         }catch (IOException | InterruptedException ex) {
             throw new StorageCreationException(ex);
         }
     }
 
-    private void shutdown0() {
-        shutdownLock.lock();
-        if(!serverRunning) {
-            shutdownLock.unlock();
+    @Override
+    protected void shutdown0() {
+        getShutdownLock().lock();
+        if(!isServerRunning()) {
+            getShutdownLock().unlock();
             return;
         }
         try {
@@ -165,13 +149,7 @@ public class PostgresqlAutoPersistenceStorage extends AbstractPersistenceStorage
                 LOGGER.error("unexpected exception, see nested exception for details", ex);
             }
         }finally{
-            shutdownLock.unlock();
+            getShutdownLock().unlock();
         }
-    }
-
-    @Override
-    public void shutdown() {
-        super.shutdown();
-        shutdown0();
     }
 }

@@ -21,15 +21,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import javax.swing.JOptionPane;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
-import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
 /**
@@ -44,7 +42,7 @@ import richtercloud.reflection.form.builder.storage.StorageCreationException;
  *
  * @author richter
  */
-public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQLAutoPersistenceStorageConf> {
+public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStorage<MySQLAutoPersistenceStorageConf> {
     private final static Logger LOGGER = LoggerFactory.getLogger(MySQLAutoPersistenceStorage.class);
     /**
      * Unclear why {@code --socket} has to be specified for connections to
@@ -52,29 +50,14 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
      * specifying {@code bind-address} in {@code my.cnf}.
      */
     private final static String SOCKET = "/tmp/mysql.document-scanner.socket";
-    /**
-     * Whether or not the server is running.
-     */
-    /*
-    internal implementation notes:
-    - Don't initialize with false because it overwrites the state set in init
-    when called in super constructor.
-    */
-    private boolean serverRunning;
     private Thread mysqldThread;
     private Process mysqldProcess;
-    /**
-     * Used to prevent messing up {@link #shutdown0() } routine when run by more
-     * than one thread and to check whether shutdown has been requested after
-     * {@code mysqld} process returned.
-     */
-    private final Lock shutdownLock = new ReentrantLock();
     private final MessageHandler messageHandler;
 
     public MySQLAutoPersistenceStorage(MySQLAutoPersistenceStorageConf storageConf,
             String persistenceUnitName,
             int parallelQueryCount,
-            MessageHandler messageHandler) throws StorageConfInitializationException, StorageCreationException {
+            MessageHandler messageHandler) throws StorageConfValidationException, StorageCreationException {
         super(storageConf,
                 persistenceUnitName,
                 parallelQueryCount);
@@ -100,7 +83,7 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
             assert new File(getStorageConf().getMysqladmin()).exists();
             assert new File(getStorageConf().getMysql()).exists();
             File databaseDirFile = new File(getStorageConf().getDatabaseDir());
-            File myCnfFile = new File(getStorageConf().getBaseDir(), "my.cnf");
+            File myCnfFile = new File(getStorageConf().getMyCnfFilePath());
             boolean needToCreate = !databaseDirFile.exists();
             if(needToCreate) {
                 LOGGER.debug(String.format("creating inexisting database directory '%s'", getStorageConf().getDatabaseDir()));
@@ -162,14 +145,14 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
                     mysqldProcess.waitFor();
                     IOUtils.copy(mysqldProcess.getInputStream(), System.out);
                     IOUtils.copy(mysqldProcess.getErrorStream(), System.err);
-                    if(shutdownLock.tryLock()) {
+                    if(getShutdownLock().tryLock()) {
                         try {
                             messageHandler.handle(new Message(String.format("MySQL server process process '%s' crashed or was shutdown from outside the application. Restart the application in order to avoid data loss.", getStorageConf().getMysqld()),
                                     JOptionPane.ERROR_MESSAGE,
                                     "MySQL server crashed"));
-                            serverRunning = false;
+                            setServerRunning(false);
                         }finally{
-                            shutdownLock.unlock();
+                            getShutdownLock().unlock();
                         }
                     }else {
                         LOGGER.warn("process 'mysqld' returned expectedly during shutdown process");
@@ -261,7 +244,7 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
                 LOGGER.debug(String.format("running shutdown hooks in %s", MySQLAutoPersistenceStorage.class));
                 shutdown0();
             }));
-            serverRunning = true;
+            setServerRunning(true);
         }catch(IOException | InterruptedException ex) {
             throw new StorageCreationException(ex);
                 //@TODO: this StorageCreationException is ignored by the JVM
@@ -271,10 +254,11 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
         }
     }
 
-    private void shutdown0() {
-        shutdownLock.lock();
-        if(!serverRunning) {
-            shutdownLock.unlock();
+    @Override
+    protected void shutdown0() {
+        getShutdownLock().lock();
+        if(!isServerRunning()) {
+            getShutdownLock().unlock();
             return;
         }
         try {
@@ -328,16 +312,10 @@ public class MySQLAutoPersistenceStorage extends AbstractPersistenceStorage<MySQ
                 LOGGER.error("unexpected exception during shutdown of MySQL abandoned connection clean thread, see nested exception for details", ex);
             }
             LOGGER.info(String.format("shutdown hooks in %s finished", MySQLAutoPersistenceStorage.class));
-            serverRunning = false;
+            setServerRunning(false);
         }finally {
-            shutdownLock.unlock();
+            getShutdownLock().unlock();
         }
-    }
-
-    @Override
-    public void shutdown() {
-        super.shutdown();
-        shutdown0();
     }
 
     @Override

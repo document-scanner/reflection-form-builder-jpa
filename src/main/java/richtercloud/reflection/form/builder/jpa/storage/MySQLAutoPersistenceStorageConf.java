@@ -19,7 +19,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
-import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 
 /**
  *
@@ -30,6 +30,7 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
     public final static String DATABASE_DRIVER = com.mysql.jdbc.Driver.class.getName();
     public final static int PORT_DEFAULT = 3306;
     public final static String DATABASE_NAME_DEFAULT = "document-scanner";
+    public final static String MY_CNF_FILE_NAME_DEFAULT = "my.cnf";
     private String databaseDir;
     /**
      * Since some OS prevent {@code mysqld} from being executed as non-root user
@@ -52,6 +53,12 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
      * {@code baseDir}.
      */
     private String mysql = null;
+    /**
+     * The path to the {@code my.cnf} file which is used to initialize the
+     * database directory and start the server. {@code null} indicates that the
+     * path ought to be resolved relative to {@code baseDir}.
+     */
+    private String myCnfFilePath = null;
 
     public MySQLAutoPersistenceStorageConf(Set<Class<?>> entityClasses,
             String username,
@@ -91,6 +98,14 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
         this.baseDir = baseDir;
     }
 
+    public String getMyCnfFilePath() {
+        return myCnfFilePath != null ? myCnfFilePath : new File(baseDir, MY_CNF_FILE_NAME_DEFAULT).getAbsolutePath();
+    }
+
+    public void setMyCnfFilePath(String myCnfFilePath) {
+        this.myCnfFilePath = myCnfFilePath;
+    }
+
     @Override
     public String getShortDescription() {
         return "MySQL managed server network connection";
@@ -102,13 +117,13 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
     }
 
     @Override
-    public void validate() throws StorageConfInitializationException {
+    public void validate() throws StorageConfValidationException {
         super.validate();
         if(getDatabaseDir() == null || getDatabaseDir().isEmpty()) {
-            throw new StorageConfInitializationException("database directory path mustn't be null or empty");
+            throw new StorageConfValidationException("database directory path mustn't be null or empty");
         }
         if(getBaseDir() == null || getBaseDir().isEmpty()) {
-            throw new StorageConfInitializationException("base directory path mustn't be null or empty");
+            throw new StorageConfValidationException("base directory path mustn't be null or empty");
         }
     }
 

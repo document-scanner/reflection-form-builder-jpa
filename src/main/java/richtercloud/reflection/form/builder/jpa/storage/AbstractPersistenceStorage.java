@@ -29,7 +29,7 @@ import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.Metamodel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.reflection.form.builder.storage.StorageConfInitializationException;
+import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageException;
 
@@ -63,14 +63,18 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     private final C storageConf;
     private final String persistenceUnitName;
     /**
-     * A value for {@code parallelQueryCount} which can be considered save.
+     * Determines how many queries can run in parallel.
      */
-    public final static int PARALLEL_QUERY_COUNT_DEFAULT = 2;
+    /*
+    internal implementation notes:
+    - providing a default value doesn't make sense because callers need to
+    determine which value makes sense based on expected memory consumption
+    */
     private final Semaphore querySemaphore;
 
     public AbstractPersistenceStorage(C storageConf,
             String persistenceUnitName,
-            int parallelQueryCount) throws StorageConfInitializationException, StorageCreationException {
+            int parallelQueryCount) throws StorageConfValidationException {
         this.storageConf = storageConf;
         this.persistenceUnitName = persistenceUnitName;
         if(parallelQueryCount <= 0) {
@@ -78,6 +82,11 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
         }
         this.querySemaphore = new Semaphore(parallelQueryCount);
         storageConf.validate();
+    }
+
+    @Override
+    public void start() throws StorageCreationException {
+        //storageConf already validated in constructor (and immutable)
         init();
         recreateEntityManager();
     }
@@ -194,7 +203,9 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
             Class<T> clazz,
             int queryLimit) throws StorageException {
         try {
-            LOGGER.trace("waiting for semaphore");
+            LOGGER.trace(String.format("waiting for semaphore (with approx. %d "
+                    + "other threads)",
+                    querySemaphore.getQueueLength()));
             querySemaphore.acquire();
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
@@ -217,13 +228,17 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
             String attributeValue,
             Class<T> clazz) {
         try {
-            LOGGER.trace("waiting for semaphore");
+            LOGGER.trace(String.format("waiting for semaphore (with approx. %d "
+                    + "other threads)",
+                    querySemaphore.getQueueLength()));
             querySemaphore.acquire();
         }catch(InterruptedException ex) {
             throw new RuntimeException(ex);
         }
         try {
-            LOGGER.trace(String.format("semaphore aquired (%d remaining permits)", querySemaphore.availablePermits()));
+            LOGGER.trace(String.format("semaphore aquired (%d remaining permits, approx. %d threads waiting)",
+                    querySemaphore.availablePermits(),
+                    querySemaphore.getQueueLength()));
             EntityManager entityManager = this.retrieveEntityManager();
             CriteriaQuery<T> criteria = entityManager.getCriteriaBuilder().createQuery(clazz);
             Root<T> personRoot = criteria.from(clazz);
@@ -243,7 +258,9 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     @Override
     public <T> List<T> runQueryAll(Class<T> clazz) {
         try {
-            LOGGER.trace("waiting for semaphore");
+            LOGGER.trace(String.format("waiting for semaphore (with approx. %d "
+                    + "other threads)",
+                    querySemaphore.getQueueLength()));
             querySemaphore.acquire();
         }catch(InterruptedException ex) {
             throw new RuntimeException(ex);
