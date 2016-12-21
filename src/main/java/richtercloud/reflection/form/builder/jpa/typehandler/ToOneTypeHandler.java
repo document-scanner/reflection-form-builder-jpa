@@ -97,7 +97,8 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
         retValue.addUpdateListener(new QueryPanelUpdateListener() {
             @Override
             public void onUpdate(QueryPanelUpdateEvent event) {
-                updateListener.onUpdate(new MappedFieldUpdateEvent<>(event.getNewSelectionItem(),
+                Object newSelectionItem = event.getNewSelectionItem();
+                updateListener.onUpdate(new MappedFieldUpdateEvent<>(newSelectionItem,
                         retValue.getBidirectionalControlPanel().getMappedField()));
             }
         });
