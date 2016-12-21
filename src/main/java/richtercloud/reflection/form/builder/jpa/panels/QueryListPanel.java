@@ -252,8 +252,11 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                             Short.MAX_VALUE//max
                             ));
         getLayout().setVerticalGroup(verticalSequentialGroup);
-        this.resultSplitPane.setContinuousLayout(true);
-        this.resultSplitPane.setDividerLocation(0.5d);
+        this.resultSplitPane.setDividerLocation(queryResultTableHeight);
+            //- JSplitPane.setDividerLocation(double) doesn't have any effect if
+            //the split pane isn't displayed (see Javadoc for details)
+            //- There's no point in trying to figure out the height determined
+            //by layout if queryResultTableHeight is available
     }
 
     public void addItemListener(ListPanelItemListener<E> updateListener) {
