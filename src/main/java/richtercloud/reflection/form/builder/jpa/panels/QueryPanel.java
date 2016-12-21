@@ -217,12 +217,19 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
         this.getQueryResultTableSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                if(e.getFirstIndex() >= QueryPanel.this.getQueryResultTable().getModel().getRowCount()) {
+                //ListSelectionEvent.getFirstIndex and
+                //ListSelectionEvent.getLastIndex include the previously
+                //selected index which make them not suitable to figure out the
+                //new selection
+                int newSelectionIndex = QueryPanel.this.getQueryResultTableSelectionModel().getMinSelectionIndex();
+                if(newSelectionIndex == -1) {
+                    //no selection (might occur during initialization)
                     return;
                 }
+                Object newSelectionItem = QueryPanel.this.getQueryResultTable().getModel().getEntities().get(newSelectionIndex);
                 for(QueryPanelUpdateListener updateListener : getUpdateListeners()) {
                     LOGGER.debug("notifying update listener {} about selection change", updateListener);
-                    updateListener.onUpdate(new QueryPanelUpdateEvent(QueryPanel.this.getQueryResultTable().getModel().getEntities().get(e.getFirstIndex()),
+                    updateListener.onUpdate(new QueryPanelUpdateEvent(newSelectionItem,
                             QueryPanel.this));
                 }
             }
