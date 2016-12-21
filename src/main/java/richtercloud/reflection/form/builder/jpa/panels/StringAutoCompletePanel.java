@@ -136,25 +136,46 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
 
         this.comboBox.setSelectedItem(initialValue);
         this.comboBox.getEditor().getEditorComponent().addKeyListener(new KeyAdapter() {
+            private boolean queryRunning = false;
             @Override
             public void keyReleased(KeyEvent e) {
-                //listen to keyReleased rather than keyPressed in order to avoid
-                //listening to Ctrl being pressed when using Ctrl+V or else
-                try {
-                    String textFieldText = ((JTextComponent)comboBox.getEditor().getEditorComponent()).getText();
-                    assert textFieldText != null;
+                //Listen to keyReleased rather than keyPressed in order to avoid
+                //listening to Ctrl being pressed when using Ctrl+V or else.
+                //Since queries might be slow (later if the database is full or
+                //far), add skipping function which can only be realized with
+                //a thread.
+                String textFieldText = ((JTextComponent)comboBox.getEditor().getEditorComponent()).getText();
+                assert textFieldText != null;
+                if(!queryRunning) {
+                    queryRunning = true;
                     LOGGER.trace(String.format("checking auto-completion for text field text '%s'", textFieldText));
-                    List<?> checkResults = check(textFieldText);
-                    if(!lastCheckResults.equals(checkResults)) {
-                        comboBoxEventList.clear();
-                        for(Object checkResult : checkResults) {
-                            String fieldValue = (String) field.get(checkResult);
-                            comboBoxEventList.add(fieldValue);
+                    Thread checkThread = new Thread(() -> {
+                        List<String> checkResults;
+                        try {
+                            checkResults = check(textFieldText);
+                            if(!lastCheckResults.equals(checkResults)) {
+                                try {
+                                    SwingUtilities.invokeAndWait(() -> {
+                                        //avoid `IllegalStateException: Events to DefaultEventComboBoxModel must arrive on the EDT - consider adding GlazedListsSwing.swingThreadProxyList(source) somewhere in your list pipeline`
+                                        comboBoxEventList.clear();
+                                        for(String checkResult : checkResults) {
+                                            comboBoxEventList.add(checkResult);
+                                        }
+                                    });
+                                } catch (InterruptedException | InvocationTargetException ex) {
+                                    throw new RuntimeException(ex);
+                                }
+                                lastCheckResults = checkResults;
+                            }
+                        }catch(StorageException ex) {
+                            throw new RuntimeException(ex);
+                        } finally {
+                            queryRunning = false;
                         }
-                        lastCheckResults = checkResults;
-                    }
-                } catch (SecurityException | IllegalArgumentException | IllegalAccessException | StorageException ex) {
-                    throw new RuntimeException(ex);
+                    });
+                    checkThread.start();
+                }else {
+                    LOGGER.trace(String.format("skipping auto-completion check for text field text '%s'", textFieldText));
                 }
             }
         });

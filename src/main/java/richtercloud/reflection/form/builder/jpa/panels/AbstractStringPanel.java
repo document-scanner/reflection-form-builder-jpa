@@ -67,9 +67,10 @@ public abstract class AbstractStringPanel extends JPanel {
     - retrieving Query.getResultList is the shortest, maybe only way of getting
     the size of the result set
     */
-    protected List<?> check(String textFieldText) throws StorageException {
-        List<?> retValue = storage.runQuery(generateQueryText(textFieldText),
-                entityClass,
+    protected List<String> check(String textFieldText) throws StorageException {
+        String queryText = generateQueryText(textFieldText);
+        List<String> retValue = storage.runQuery(queryText,
+                String.class, //clazz
                 this.initialQueryLimit);
         return retValue;
     }
@@ -95,8 +96,9 @@ public abstract class AbstractStringPanel extends JPanel {
 //        TypedQuery<T> q = this.entityManager.createQuery(c);
 
         String entityClassQueryIdentifier = QueryComponent.generateEntityClassQueryIdentifier(entityClass);
-        String retValue = String.format("SELECT %s from %s %s WHERE %s.%s LIKE '%s'",
+        String retValue = String.format("SELECT %s.%s from %s %s WHERE %s.%s LIKE '%s'",
                 entityClassQueryIdentifier,
+                this.fieldName,
                 entityClass.getSimpleName(),
                 entityClassQueryIdentifier,
                 entityClassQueryIdentifier,

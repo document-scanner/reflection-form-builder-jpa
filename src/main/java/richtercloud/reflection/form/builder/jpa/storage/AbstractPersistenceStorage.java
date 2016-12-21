@@ -212,6 +212,7 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
         }
         try {
             LOGGER.trace(String.format("semaphore aquired (%d remaining permits)", querySemaphore.availablePermits()));
+            LOGGER.debug(String.format("running query '%s'", queryString));
             List<T> retValue;
             TypedQuery<T> query = createQuery(queryString,
                     clazz);
