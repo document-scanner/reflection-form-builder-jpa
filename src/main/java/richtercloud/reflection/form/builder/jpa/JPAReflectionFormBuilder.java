@@ -151,6 +151,14 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFie
                         || field.getAnnotation(ManyToMany.class) != null) {
                     Collection fieldValueList = (Collection) field.get(instance);
                     Collection newValueList = (Collection) event.getNewValue();
+                    if(fieldValueList == null) {
+                        throw new IllegalArgumentException(String.format(
+                                "fields annotated with %s or %s are expected "
+                                + "to be initialized with an empty instance of "
+                                + "the field type collection",
+                                OneToMany.class,
+                                ManyToMany.class));
+                    }
                     for(Object fieldValue : fieldValueList) {
                         if(!newValueList.contains(fieldValue)) {
                             eventCast.getMappedField().set(fieldValue, null); //reference has been removed
