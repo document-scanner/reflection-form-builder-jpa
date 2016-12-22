@@ -19,6 +19,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.commons.lang3.SystemUtils;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 
 /**
@@ -39,18 +40,24 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
      */
     private String baseDir;
     /**
-     * The {@code mysqld} binary. {@code null} indicates to resolve relatively
-     * to {@code baseDir}.
+     * The {@code mysqld} binary. {@code null} or an empty value indicates to
+     * resolve relatively to {@code baseDir}.
      */
+    /*
+    internal implementation notes:
+    - including an empty value to indicate resolution relative to baseDir makes
+    retrieving values from GUI components much more easy. In case this causes
+    trouble, it can be adjusted with some programming effort.
+    */
     private String mysqld = null;
     /**
-     * The {@code mysqladmin} binary. {@code null} indicates to resolve
-     * relatively to {@code baseDir}.
+     * The {@code mysqladmin} binary. {@code null} or an empty value indicates to
+     * resolve relatively to {@code baseDir}.
      */
     private String mysqladmin = null;
     /**
-     * The {@code mysql} binary. {@code} null indicates to resolve relatively to
-     * {@code baseDir}.
+     * The {@code mysql} binary. {@code null} or an empty value indicates to
+     * resolve relatively to {@code baseDir}.
      */
     private String mysql = null;
     /**
@@ -131,7 +138,17 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
      * @return the mysqld
      */
     public String getMysqld() {
-        return mysqld == null ? new File(baseDir, "bin/mysqld").getAbsolutePath() : mysqld;
+        String retValue;
+        if(mysqld != null && !mysqld.isEmpty()) {
+            retValue = mysqld;
+        }else {
+            if(SystemUtils.IS_OS_WINDOWS) {
+                retValue = new File(baseDir, "bin/mysqld.exe").getAbsolutePath();
+            }else {
+                retValue = new File(baseDir, "bin/mysqld").getAbsolutePath();
+            }
+        }
+        return retValue;
     }
 
     /**
@@ -145,7 +162,17 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
      * @return the mysqladmin
      */
     public String getMysqladmin() {
-        return mysqladmin == null ? new File(baseDir, "bin/mysqladmin").getAbsolutePath() : mysqladmin;
+        String retValue;
+        if(mysqladmin != null && !mysqladmin.isEmpty()) {
+            retValue = mysqladmin;
+        }else {
+            if(SystemUtils.IS_OS_WINDOWS) {
+                retValue = new File(baseDir, "bin/mysqladmin.exe").getAbsolutePath();
+            }else {
+                retValue = new File(baseDir, "bin/mysqladmin").getAbsolutePath();
+            }
+        }
+        return retValue;
     }
 
     /**
@@ -159,7 +186,17 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
      * @return the mysql
      */
     public String getMysql() {
-        return mysql == null ? new File(baseDir, "bin/mysql").getAbsolutePath() : mysql;
+        String retValue;
+        if(mysql != null && !mysql.isEmpty()) {
+            retValue = mysql;
+        }else {
+            if(SystemUtils.IS_OS_WINDOWS) {
+                retValue = new File(baseDir, "bin/mysql.exe").getAbsolutePath();
+            }else {
+                retValue = new File(baseDir, "bin/mysql").getAbsolutePath();
+            }
+        }
+        return retValue;
     }
 
     /**
