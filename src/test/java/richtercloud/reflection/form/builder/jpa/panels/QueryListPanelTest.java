@@ -17,7 +17,6 @@ package richtercloud.reflection.form.builder.jpa.panels;
 import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.ManyToMany;
-import javax.swing.JFrame;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
 import org.slf4j.Logger;
@@ -27,8 +26,8 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.JPACachedFieldRetriever;
-import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
  *
@@ -41,7 +40,7 @@ public class QueryListPanelTest {
     @Test
     public void testInit() throws IllegalArgumentException, IllegalAccessException {
         PersistenceStorage storage = mock(PersistenceStorage.class);
-        when(storage.isManaged(any())).thenReturn(true);
+        when(storage.isClassSupported(any())).thenReturn(true);
         ReflectionFormBuilder reflectionFormBuilder = mock(ReflectionFormBuilder.class);
         FieldRetriever fieldRetriever = new JPACachedFieldRetriever();
         when(reflectionFormBuilder.getFieldRetriever()).thenReturn(fieldRetriever);
@@ -57,11 +56,6 @@ public class QueryListPanelTest {
                 initialValues,
                 bidirectionalHelpDialogTitle,
                 fieldInitializer);
-        JFrame x = new JFrame();
-        x.getContentPane().add(instance);
-        x.setBounds(0, 0, 200, 200);
-        x.pack();
-        x.setVisible(true);
     }
 
     /**
