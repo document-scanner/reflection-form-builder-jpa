@@ -54,8 +54,20 @@ public interface PersistenceStorage extends Storage<Object, AbstractPersistenceS
 
     <T> List<T> runQueryAll(Class<T> clazz);
 
+    /**
+     * Checks whether {@code clazz} is a managed entity.
+     * @param clazz
+     * @return {@code true} if {@code clazz} is a managed entity, {@code false}
+     * otherwise
+     */
     boolean isClassSupported(Class<?> clazz);
 
+    /**
+     * Checks whether {@code object} in managed in a JPA context.
+     * @param object
+     * @return {@code true} if {@code object} is managed, {@code false}
+     * otherwise
+     */
     boolean isManaged(Object object);
 
     EntityManager retrieveEntityManager();
