@@ -45,6 +45,34 @@ public abstract class AbstractNetworkPersistenceStorageConf extends AbstractPers
         this.port = port;
     }
 
+    /**
+     * Copy constructor.
+     * @param port
+     * @param databaseDriver
+     * @param entityClasses
+     * @param username
+     * @param password
+     * @param databaseName
+     * @param schemeChecksumFile
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
+    public AbstractNetworkPersistenceStorageConf(int port,
+            String databaseDriver,
+            Set<Class<?>> entityClasses,
+            String username,
+            String password,
+            String databaseName,
+            File schemeChecksumFile) throws FileNotFoundException, IOException {
+        super(databaseDriver,
+                entityClasses,
+                username,
+                password,
+                databaseName,
+                schemeChecksumFile);
+        this.port = port;
+    }
+
     public String getHostname() {
         return hostname;
     }

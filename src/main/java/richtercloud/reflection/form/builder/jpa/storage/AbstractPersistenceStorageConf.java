@@ -99,10 +99,35 @@ public abstract class AbstractPersistenceStorageConf implements StorageConf, Ser
             String username,
             String databaseDir,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
+        this(databaseDriver,
+                entityClasses,
+                username,
+                null, //password
+                databaseDir,
+                schemeChecksumFile);
+    }
+
+    /**
+     * Copy constructor.
+     * @param databaseDriver
+     * @param entityClasses
+     * @param username
+     * @param databaseName
+     * @param schemeChecksumFile
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
+    public AbstractPersistenceStorageConf(String databaseDriver,
+            Set<Class<?>> entityClasses,
+            String username,
+            String password,
+            String databaseName,
+            File schemeChecksumFile) throws FileNotFoundException, IOException {
         this.databaseDriver = databaseDriver;
         this.entityClasses = entityClasses;
         this.username = username;
-        this.databaseName = databaseDir;
+        this.password = password;
+        this.databaseName = databaseName;
         this.schemeChecksumFile = schemeChecksumFile;
     }
 
@@ -134,6 +159,22 @@ public abstract class AbstractPersistenceStorageConf implements StorageConf, Ser
 
     public String getDatabaseDriver() {
         return databaseDriver;
+    }
+
+    public Set<Class<?>> getEntityClasses() {
+        return entityClasses;
+    }
+
+    public void setEntityClasses(Set<Class<?>> entityClasses) {
+        this.entityClasses = entityClasses;
+    }
+
+    public File getSchemeChecksumFile() {
+        return schemeChecksumFile;
+    }
+
+    public void setSchemeChecksumFile(File schemeChecksumFile) {
+        this.schemeChecksumFile = schemeChecksumFile;
     }
 
     /**

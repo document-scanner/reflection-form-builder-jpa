@@ -42,6 +42,37 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
         this.databaseDir = databaseDir;
     }
 
+    /**
+     * Copy constructor.
+     * @param databaseDir
+     * @param port
+     * @param databaseDriver
+     * @param entityClasses
+     * @param username
+     * @param password
+     * @param databaseName
+     * @param schemeChecksumFile
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
+    public PostgresqlAutoPersistenceStorageConf(String databaseDir,
+            int port,
+            String databaseDriver,
+            Set<Class<?>> entityClasses,
+            String username,
+            String password,
+            String databaseName,
+            File schemeChecksumFile) throws FileNotFoundException, IOException {
+        super(port,
+                databaseDriver,
+                entityClasses,
+                username,
+                password,
+                databaseName,
+                schemeChecksumFile);
+        this.databaseDir = databaseDir;
+    }
+
     public String getDatabaseDir() {
         return databaseDir;
     }

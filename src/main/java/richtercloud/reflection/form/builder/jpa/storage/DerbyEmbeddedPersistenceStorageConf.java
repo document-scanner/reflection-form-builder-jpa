@@ -15,6 +15,7 @@
 package richtercloud.reflection.form.builder.jpa.storage;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Set;
 import org.apache.derby.jdbc.EmbeddedDriver;
@@ -42,6 +43,20 @@ public class DerbyEmbeddedPersistenceStorageConf extends AbstractPersistenceStor
         super(DRIVER_NAME, //databaseDriver
                 entityClasses,
                 USERNAME_DEFAULT,
+                databaseName,
+                schemeChecksumFile);
+    }
+
+    public DerbyEmbeddedPersistenceStorageConf(String databaseDriver,
+            Set<Class<?>> entityClasses,
+            String username,
+            String password,
+            String databaseName,
+            File schemeChecksumFile) throws FileNotFoundException, IOException {
+        super(databaseDriver,
+                entityClasses,
+                username,
+                password,
                 databaseName,
                 schemeChecksumFile);
     }

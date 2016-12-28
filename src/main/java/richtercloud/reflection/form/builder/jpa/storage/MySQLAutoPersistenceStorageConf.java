@@ -80,6 +80,40 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
         this.databaseDir = databaseDir;
     }
 
+    /**
+     * Copy constructor.
+     * @param databaseDir
+     * @param baseDir
+     * @param port
+     * @param databaseDriver
+     * @param entityClasses
+     * @param username
+     * @param password
+     * @param databaseName
+     * @param schemeChecksumFile
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
+    public MySQLAutoPersistenceStorageConf(String databaseDir,
+            String baseDir,
+            int port,
+            String databaseDriver,
+            Set<Class<?>> entityClasses,
+            String username,
+            String password,
+            String databaseName,
+            File schemeChecksumFile) throws FileNotFoundException, IOException {
+        super(port,
+                databaseDriver,
+                entityClasses,
+                username,
+                password,
+                databaseName,
+                schemeChecksumFile);
+        this.databaseDir = databaseDir;
+        this.baseDir = baseDir;
+    }
+
     @Override
     public String getConnectionURL() {
         String retValue = String.format("jdbc:mysql://%s:%d/%s",
