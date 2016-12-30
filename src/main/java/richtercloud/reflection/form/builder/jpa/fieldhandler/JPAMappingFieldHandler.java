@@ -46,6 +46,7 @@ import richtercloud.reflection.form.builder.fieldhandler.factory.AmountMoneyMapp
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.fieldhandler.factory.JPAAmountMoneyMappingFieldHandlerFactory;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
+import richtercloud.reflection.form.builder.jpa.panels.InitialQueryTextGenerator;
 import richtercloud.reflection.form.builder.jpa.panels.LongIdPanel;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.typehandler.ElementCollectionTypeHandler;
@@ -86,7 +87,8 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             AmountMoneyExchangeRateRetriever amountMoneyExchangeRateRetriever,
             String bidirectionalHelpDialogTitle,
             IdApplier idApplier,
-            FieldInitializer fieldInitializer) {
+            FieldInitializer fieldInitializer,
+            InitialQueryTextGenerator initialQueryTextGenerator) {
         JPAAmountMoneyMappingFieldHandlerFactory jPAAmountMoneyClassMappingFactory = new JPAAmountMoneyMappingFieldHandlerFactory(storage,
                 initialQueryLimit,
                 messageHandler,
@@ -115,11 +117,13 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 bidirectionalHelpDialogTitle,
-                fieldInitializer);
+                fieldInitializer,
+                initialQueryTextGenerator);
         ToOneTypeHandler toOneTypeHandler = new ToOneTypeHandler(storage,
                 messageHandler,
                 bidirectionalHelpDialogTitle,
-                fieldInitializer);
+                fieldInitializer,
+                initialQueryTextGenerator);
         return new JPAMappingFieldHandler(jPAAmountMoneyClassMappingFactory.generateClassMapping(),
                 amountMoneyClassMappingFactory.generateClassMapping(),
                 jPAAmountMoneyClassMappingFactory.generatePrimitiveMapping(),

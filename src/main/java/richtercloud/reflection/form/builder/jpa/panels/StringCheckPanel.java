@@ -61,7 +61,8 @@ public class StringCheckPanel extends AbstractStringPanel {
             int initialQueryLimit,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
-            boolean async) throws IllegalArgumentException, IllegalAccessException {
+            boolean async,
+            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
         super(storage,
                 entityClass,
                 fieldName,
@@ -74,7 +75,8 @@ public class StringCheckPanel extends AbstractStringPanel {
                 null, //initialValue
                 null, //bidirectionalControlPanel (needs to be read-only)
                 ListSelectionModel.SINGLE_SELECTION,
-                fieldInitializer
+                fieldInitializer,
+                initialQueryTextGenerator
         ); //will be reused by manipulating the queryComboBoxModel
         GroupLayout queryPanelDialogLayout = new GroupLayout(queryPanelDialog.getContentPane());
         queryPanelDialog.getContentPane().setLayout(queryPanelDialogLayout);

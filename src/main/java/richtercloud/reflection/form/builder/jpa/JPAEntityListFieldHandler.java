@@ -22,6 +22,7 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.fieldhandler.AbstractListFieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
+import richtercloud.reflection.form.builder.jpa.panels.InitialQueryTextGenerator;
 import richtercloud.reflection.form.builder.jpa.typehandler.JPAEntityListTypeHandler;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
@@ -38,12 +39,14 @@ public class JPAEntityListFieldHandler extends AbstractListFieldHandler<List<Obj
     public JPAEntityListFieldHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle,
-            FieldInitializer fieldInitializer) {
+            FieldInitializer fieldInitializer,
+            InitialQueryTextGenerator initialQueryTextGenerator) {
         super(messageHandler,
                 new JPAEntityListTypeHandler(storage,
                         messageHandler,
                         bidirectionalHelpDialogTitle,
-                        fieldInitializer));
+                        fieldInitializer,
+                        initialQueryTextGenerator));
     }
 
     public JPAEntityListFieldHandler(EntityManager entityManager,

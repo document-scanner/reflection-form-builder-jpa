@@ -321,7 +321,7 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
         //seems like properties need to be specified on EntityManagerFactory
         //difference between setting on EMF and EntityManager unclear
         this.entityManagerFactory = Persistence.createEntityManagerFactory(persistenceUnitName,
-                properties
+                properties //additional properties
         );
     }
 

@@ -96,60 +96,17 @@ public class QueryComponent<E> extends JPanel {
      * @param entityClass
      * @return
      */
-    public static List<HistoryEntry> generateInitialHistoryDefault(Class<?> entityClass) {
-        List<HistoryEntry> retValue = new ArrayList<>(Arrays.asList(new HistoryEntry(createQueryText(entityClass,
-                                false //forbidSubtypes
-                        ), //queryText
+    public static List<HistoryEntry> generateInitialHistoryDefault(Class<?> entityClass,
+            InitialQueryTextGenerator initialQueryTextGenerator,
+            boolean forbidSubtypes) {
+        String queryText = initialQueryTextGenerator.generateInitialQueryText(entityClass, forbidSubtypes);
+        List<HistoryEntry> retValue = new ArrayList<>(Arrays.asList(new HistoryEntry(queryText, //queryText
                         1, //usageCount
                         new Date() //lastUsage
                 ),
-                new HistoryEntry(createQueryText(entityClass,
-                                true //forbidSubtypes
-                        ),
+                new HistoryEntry(queryText,
                         1,
                         new Date())));
-        return retValue;
-    }
-
-    public static String generateEntityClassQueryIdentifier(Class<?> entityClass) {
-        String retValue = String.valueOf(Character.toLowerCase(entityClass.getSimpleName().charAt(0)));
-        return retValue;
-    }
-
-    /**
-     * This doesn't work with Hibernate 5.1.0 as JPA provider due to bug
-     * https://hibernate.atlassian.net/browse/HHH-10653!
-     *
-     * Since it's possible to use {@link Class#getSimpleName() } to identify
-     * classes it's not necessary to use parameters which provides queries which
-     * are much more readable if plain text and simple names are used. Note that
-     * JPA 2.1 query API and CriteriaBuilder API are seriously incapable of
-     * retrieving the text of the query (both Query and TypedQuery) after it has
-     * been created with parameters so that it'd be necessary to store
-     * parameters like {@code entityClass} in {@link HistoryEntry}s which is
-     * quite unelegant or keep the parameter escape string (e.g.
-     * {@code :entityClass} in the query).
-     *
-     * @param entityManager
-     * @param entityClass
-     * @return
-     */
-    private static String createQueryText(Class<?> entityClass,
-            boolean forbidSubtypes) {
-        //Criteria API doesn't allow retrieval of string/text from objects
-        //created with CriteriaBuilder, but text should be the first entry in
-        //the query combobox -> construct String instead of using
-        //CriteriaBuilder
-        String entityClassQueryIdentifier = generateEntityClassQueryIdentifier(entityClass);
-        String retValue = String.format("SELECT %s FROM %s %s%s",
-                entityClassQueryIdentifier,
-                entityClass.getSimpleName(),
-                entityClassQueryIdentifier,
-                forbidSubtypes
-                        ? String.format(" WHERE TYPE(%s) = %s",
-                                entityClassQueryIdentifier,
-                                entityClass.getSimpleName())
-                        : "");
         return retValue;
     }
 
@@ -185,6 +142,7 @@ public class QueryComponent<E> extends JPanel {
     public final static String SUBTYPES_ALLOW = "Allow subtypes";
     public final static String SUBTYPES_FILTER = "Filter subtypes";
     public final static String SUBTYPES_FORBID = "Forbid/Fail on subtypes";
+    public final static String SUBTYPES_DEFAULT = SUBTYPES_ALLOW;
     /**
      * Allows handling for different proceedure for subtypes in queries (allow,
      * filter, fail on occurance).
@@ -196,18 +154,28 @@ public class QueryComponent<E> extends JPanel {
     private final JScrollPane queryStatusLabelScrollPane;
     private final Set<QueryComponentListener<E>> listeners = new HashSet<>();
     private final MessageHandler messageHandler;
+    /**
+     * The text which is the initial query. {@code null} indicates that
+     * {@link #createQueryText(java.lang.Class, boolean) } ought to be used to
+     * create the text.
+     */
+    private final InitialQueryTextGenerator initialQueryTextGenerator;
 
     public QueryComponent(PersistenceStorage storage,
             Class<E> entityClass,
             MessageHandler messageHandler,
-            boolean async) throws IllegalArgumentException, IllegalAccessException {
+            boolean async,
+            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
                 messageHandler,
-                generateInitialHistoryDefault(entityClass),
+                generateInitialHistoryDefault(entityClass,
+                        initialQueryTextGenerator,
+                        SUBTYPES_DEFAULT.equals(SUBTYPES_ALLOW)),
                 null, //initialSelectedHistoryEntry (null means point to the first item of initialHistory
                 INITIAL_QUERY_LIMIT_DEFAULT,
-                async);
+                async,
+                initialQueryTextGenerator);
     }
 
     /**
@@ -232,10 +200,12 @@ public class QueryComponent<E> extends JPanel {
             List<HistoryEntry> initialHistory,
             HistoryEntry initialSelectedHistoryEntry,
             int initialQueryLimit,
-            boolean async) throws IllegalArgumentException {
+            boolean async,
+            InitialQueryTextGenerator initialQueryText) throws IllegalArgumentException {
         if(entityClass == null) {
             throw new IllegalArgumentException("entityClass mustn't be null");
         }
+        this.initialQueryTextGenerator = initialQueryText;
         queryLabel = new JLabel();
         queryButton = new JButton();
         queryComboBox = new JComboBox<>();
@@ -270,9 +240,9 @@ public class QueryComponent<E> extends JPanel {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
         this.messageHandler = messageHandler;
-        this.subtypeComboBox.setSelectedItem(SUBTYPES_ALLOW);
+        this.subtypeComboBox.setSelectedItem(SUBTYPES_DEFAULT);
         this.queryLabel.setText(String.format("%s query:", entityClass.getSimpleName()));
-        String queryText = createQueryText(entityClass,
+        String queryText = initialQueryTextGenerator.generateInitialQueryText(entityClass,
                 false //forbidSubtypes
         );
         executeQuery(lastQueryLimit,
@@ -293,6 +263,10 @@ public class QueryComponent<E> extends JPanel {
     */
     public SortedComboBoxModel<HistoryEntry> getQueryComboBoxModel() {
         return queryComboBoxModel;
+    }
+
+    public InitialQueryTextGenerator getInitialQueryText() {
+        return initialQueryTextGenerator;
     }
 
     private void initComponents() {

@@ -91,7 +91,8 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             MessageHandler messageHandler,
             List<E> initialValues,
             String bidirectionalHelpDialogTitle,
-            FieldInitializer fieldInitializer) throws IllegalArgumentException, IllegalAccessException {
+            FieldInitializer fieldInitializer,
+            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 reflectionFormBuilder,
                 entityClass,
@@ -99,7 +100,8 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                 initialValues,
                 bidirectionalHelpDialogTitle,
                 QUERY_RESULT_TABLE_HEIGHT_DEFAULT,
-                fieldInitializer);
+                fieldInitializer,
+                initialQueryTextGenerator);
     }
 
     /**
@@ -121,14 +123,16 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             List<E> initialValues,
             String bidirectionalHelpDialogTitle,
             int queryResultTableHeight,
-            FieldInitializer fieldInitializer) throws IllegalArgumentException, IllegalAccessException {
+            FieldInitializer fieldInitializer,
+            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
         super(generateBidirectionalControlPanel(entityClass,
                 reflectionFormBuilder.getFieldRetriever(),
                 bidirectionalHelpDialogTitle),
                 new QueryComponent<>(storage,
                         entityClass,
                         messageHandler,
-                        true //async
+                        true, //async
+                        initialQueryTextGenerator
                 ),
                 reflectionFormBuilder,
                 entityClass,

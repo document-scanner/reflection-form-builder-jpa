@@ -113,7 +113,8 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             E initialValue,
             BidirectionalControlPanel bidirectionalControlPanel,
             int queryResultTableSelectionMode,
-            FieldInitializer fieldInitializer) throws IllegalArgumentException, IllegalAccessException {
+            FieldInitializer fieldInitializer,
+            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
                 messageHandler,
@@ -122,7 +123,8 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                 bidirectionalControlPanel,
                 QUERY_RESULT_TABLE_HEIGHT_DEFAULT,
                 queryResultTableSelectionMode,
-                fieldInitializer);
+                fieldInitializer,
+                initialQueryTextGenerator);
     }
 
     public QueryPanel(PersistenceStorage storage,
@@ -134,7 +136,8 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             int queryResultTableHeight,
             String bidirectionalHelpDialogTitle,
             int queryResultTableSelectionMode,
-            FieldInitializer fieldInitializer) throws IllegalArgumentException, IllegalAccessException {
+            FieldInitializer fieldInitializer,
+            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
                 messageHandler,
@@ -147,7 +150,8 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                                 reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass))),
                 queryResultTableHeight,
                 queryResultTableSelectionMode,
-                fieldInitializer);
+                fieldInitializer,
+                initialQueryTextGenerator);
     }
 
     /**
@@ -179,12 +183,14 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             BidirectionalControlPanel bidirectionalControlPanel,
             int queryResultTableHeight,
             int queryResultTableSelectionMode,
-            FieldInitializer fieldInitializer) throws IllegalArgumentException, IllegalAccessException {
+            FieldInitializer fieldInitializer,
+            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
         super(bidirectionalControlPanel,
                 new QueryComponent<>(storage,
                         entityClass,
                         messageHandler,
-                        true //async
+                        true, //async
+                        initialQueryTextGenerator
                 ),
                 reflectionFormBuilder,
                 entityClass,

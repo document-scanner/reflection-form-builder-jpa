@@ -27,6 +27,7 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
+import richtercloud.reflection.form.builder.jpa.panels.InitialQueryTextGenerator;
 import richtercloud.reflection.form.builder.jpa.panels.QueryListPanel;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
@@ -44,13 +45,15 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
     private final String bidirectionalHelpDialogTitle;
     private final MessageHandler messageHandler;
     private final FieldInitializer fieldInitializer;
+    private final InitialQueryTextGenerator initialQueryTextGenerator;
 
     public ToManyTypeHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
             Map<Type, TypeHandler<?, ?, ?, ?>> genericsTypeHandlerMapping,
             Map<Type, TypeHandler<?, ?, ?, ?>> fieldTypeHandlerMapping,
             String bidirectionalHelpDialogTitle,
-            FieldInitializer fieldInitializer) {
+            FieldInitializer fieldInitializer,
+            InitialQueryTextGenerator initialQueryTextGenerator) {
         super(genericsTypeHandlerMapping,
                 fieldTypeHandlerMapping);
         if(storage == null) {
@@ -63,6 +66,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
         this.messageHandler = messageHandler;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.fieldInitializer = fieldInitializer;
+        this.initialQueryTextGenerator = initialQueryTextGenerator;
     }
 
     @Override
@@ -82,7 +86,8 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
                 messageHandler,
                 fieldValue,
                 bidirectionalHelpDialogTitle,
-                fieldInitializer);
+                fieldInitializer,
+                initialQueryTextGenerator);
         retValue.addItemListener(new ListPanelItemListener<Object>() {
             @Override
             public void onItemAdded(ListPanelItemEvent<Object> event) {

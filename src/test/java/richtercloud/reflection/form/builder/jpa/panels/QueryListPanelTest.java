@@ -49,13 +49,15 @@ public class QueryListPanelTest {
         String bidirectionalHelpDialogTitle = "test";
         MessageHandler messageHandler = new LoggerMessageHandler(LOGGER);
         FieldInitializer fieldInitializer = mock(FieldInitializer.class);
+        InitialQueryTextGenerator initialQueryTextGenerator = new DefaultInitialQueryTextGenerator();
         QueryListPanel instance = new QueryListPanel(storage,
                 reflectionFormBuilder,
                 entityClass,
                 messageHandler,
                 initialValues,
                 bidirectionalHelpDialogTitle,
-                fieldInitializer);
+                fieldInitializer,
+                initialQueryTextGenerator);
     }
 
     /**

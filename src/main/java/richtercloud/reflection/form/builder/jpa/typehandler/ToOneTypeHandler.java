@@ -31,6 +31,7 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.panels.BidirectionalControlPanel;
+import richtercloud.reflection.form.builder.jpa.panels.InitialQueryTextGenerator;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanel;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
@@ -47,11 +48,13 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
     private final String bidirectionalHelpDialogTitle;
     private final MessageHandler messageHandler;
     private final FieldInitializer fieldInitializer;
+    private final InitialQueryTextGenerator initialQueryTextGenerator;
 
     public ToOneTypeHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle,
-            FieldInitializer fieldInitializer) {
+            FieldInitializer fieldInitializer,
+            InitialQueryTextGenerator initialQueryTextGenerator) {
         if(storage == null) {
             throw new IllegalArgumentException("storage mustn't be null");
         }
@@ -62,6 +65,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
         this.messageHandler = messageHandler;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.fieldInitializer = fieldInitializer;
+        this.initialQueryTextGenerator = initialQueryTextGenerator;
     }
 
     @Override
@@ -93,7 +97,8 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
                 fieldValue,
                 bidirectionalControlPanel,
                 ListSelectionModel.SINGLE_SELECTION,
-                fieldInitializer);
+                fieldInitializer,
+                initialQueryTextGenerator);
         retValue.addUpdateListener(new QueryPanelUpdateListener() {
             @Override
             public void onUpdate(QueryPanelUpdateEvent event) {
