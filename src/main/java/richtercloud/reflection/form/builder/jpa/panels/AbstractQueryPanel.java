@@ -32,6 +32,7 @@ import javax.swing.LayoutStyle;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableRowSorter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
@@ -53,6 +54,8 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
     private final JSeparator bidirectionalControlPanelSeparator;
     private final JLabel queryResultLabel;
     private final EntityTable<E> queryResultTable;
+    private final EntityTableModel<E> queryResultTableModel;
+    private final TableRowSorter<EntityTableModel<E>> queryResultTableRowSorter;
     private final JScrollPane queryResultTableScrollPane;
     private final ListSelectionModel queryResultTableSelectionModel = new DefaultListSelectionModel();
     private final QueryComponent<E> queryComponent;
@@ -112,16 +115,17 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         queryResultLabel = new JLabel();
         queryResultTableScrollPane = new JScrollPane();
         try {
-            queryResultTable = new EntityTable<E>(new EntityTableModel<E>(fieldRetriever)) {
-                private static final long serialVersionUID = 1L;
-                @Override
-                public boolean isCellEditable(int row, int column) {
-                    return false;
-                }
-            };
+            this.queryResultTableModel = new EntityTableModel<>(fieldRetriever);
         } catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException(ex);
         }
+        queryResultTable = new EntityTable<E>(this.queryResultTableModel) {
+            private static final long serialVersionUID = 1L;
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
 
         QueryComponent.validateEntityClass(entityClass,
                 storage);
@@ -130,25 +134,31 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         queryResultTable.setSelectionModel(this.queryResultTableSelectionModel);
         queryResultTableScrollPane.setViewportView(queryResultTable);
         this.queryResultTableSelectionModel.setSelectionMode(queryResultTableSelectionMode);
+        this.queryResultTableRowSorter = new TableRowSorter<>(queryResultTableModel);
+        this.queryResultTable.setRowSorter(queryResultTableRowSorter);
         this.queryComponent.addListener(new QueryComponentListener<E>() {
             @Override
             public void onQueryExecuted(QueryComponentEvent<E> event) {
                 List<E> queryResults = event.getQueryResults();
-                EntityTableModel<E> queryResultModel;
                 try {
                     for(E queryResult : queryResults) {
                         fieldInitializer.initialize(queryResult);
                             //every result retrieved for the query should be
                             //initialized
                     }
-                    queryResultModel = new EntityTableModel<>(queryResults,
-                            fieldRetriever);
+                    //don't initialize a new table model in order to avoid
+                    //updating model reference on table row sorter (unelegant)
+                    queryResultTableRowSorter.setSortKeys(null);
+                        //reset sorting which what user might want after
+                        //eventually sorting in the query
+                    queryResultTableModel.clear();
+                    queryResultTableModel.updateColumns(queryResults);
+                    queryResultTableModel.addAllEntities(queryResults);
                 } catch (IllegalArgumentException | IllegalAccessException ex) {
                     throw new RuntimeException(ex);
                 }
-                AbstractQueryPanel.this.queryResultTable.setModel(queryResultModel);
                 for(E initialValue : AbstractQueryPanel.this.initialValues) {
-                    int initialValueIndex = queryResultModel.getEntities().indexOf(initialValue);
+                    int initialValueIndex = queryResultTableModel.getEntities().indexOf(initialValue);
                     AbstractQueryPanel.this.queryResultTable.getSelectionModel().addSelectionInterval(initialValueIndex,
                             initialValueIndex);
                 }
@@ -288,6 +298,10 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
 
     public EntityTable<E> getQueryResultTable() {
         return queryResultTable;
+    }
+
+    public EntityTableModel<E> getQueryResultTableModel() {
+        return queryResultTableModel;
     }
 
     public JScrollPane getQueryResultTableScrollPane() {

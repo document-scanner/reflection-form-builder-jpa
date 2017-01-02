@@ -77,6 +77,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
     private final JButton addButton;
     private final JButton removeButton;
     private final EntityTable<E> resultTable;
+    private final EntityTableModel<E> resultTableModel;
     private final JLabel resultTableLabel;
     private final JScrollPane resultTableScrollPane;
     private final List<E> initialValues;
@@ -145,7 +146,8 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         addButton = new JButton();
         resultTableLabel = new JLabel();
         resultTableScrollPane = new JScrollPane();
-        resultTable = new EntityTable<E>(new EntityTableModel<E>(fieldRetriever)) {
+        this.resultTableModel = new EntityTableModel<>(getFieldRetriever());
+        resultTable = new EntityTable<E>(this.resultTableModel) {
             private static final long serialVersionUID = 1L;
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -202,7 +204,6 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
 
         resultTableLabel.setText("Selected entities:");
 
-        resultTable.setModel(new EntityTableModel<>(getFieldRetriever()));
         resultTableScrollPane.setViewportView(resultTable);
 
         GroupLayout resultPanelLayout = new GroupLayout(resultPanel);
@@ -328,13 +329,10 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
 
     private void reset0() {
         this.resultTable.getModel().clear();
-        try {
-            this.resultTable.setModel(new EntityTableModel<>(getFieldRetriever()));
-        }catch(IllegalAccessException ex) {
-            throw new RuntimeException(ex);
-        }
+        this.resultTableModel.clear();
         if(initialValues != null) {
             try {
+                this.resultTableModel.updateColumns(initialValues);
                 this.resultTable.getModel().addAllEntities(initialValues); //before initComponents (simply use resultList for initialization)
             } catch (IllegalArgumentException | IllegalAccessException ex) {
                 throw new RuntimeException(ex);

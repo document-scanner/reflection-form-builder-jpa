@@ -262,11 +262,10 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
     }
 
     private void reset0() {
-        try {
-            this.getQueryResultTable().setModel(new EntityTableModel<E>(getFieldRetriever()));
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
-            throw new RuntimeException(ex);
-        }
+        this.getQueryResultTableModel().clear();
+            //no need to update columns (with EntityTableModel.updateColumns)
+            //because that will only happen if the next query is run (which is
+            //not part of resetting)
         if(initialValue != null) {
             if(!this.getStorage().isManaged(initialValue)) {
                 this.getQueryResultLabel().setText(String.format("previously managed entity %s has been removed from persistent storage, ignoring", initialValue));

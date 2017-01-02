@@ -53,7 +53,7 @@ public class EntityTableModel<E> extends DefaultTableModel {
      * Keep class information in class and update in {@link #updateColumns(java.util.List) }
      * in order to avoid unnecessary iterations.
      */
-    private final Set<Class<?>> entityClasses = new HashSet<>();
+    private Set<Class<?>> entityClasses = new HashSet<>();
 
     public EntityTableModel(FieldRetriever fieldRetriever) throws IllegalArgumentException, IllegalAccessException {
         this(new LinkedList<E>(),
@@ -100,19 +100,34 @@ public class EntityTableModel<E> extends DefaultTableModel {
     /**
      * Only configures the columns based on classes in {@code entities}, but
      * doesn't change the entities which provide the data of this model.
+     *
+     * This operation requires to remove all entities which are currently in the
+     * model and add them again which is costy, so try to avoid avoidable calls
+     * (new entities still need to be added with
+     * {@link #addEntity(java.lang.Object) } or
+     * {@link #addAllEntities(java.util.Collection) }).
+     *
      * @param entities the entities which ought to be used to update the model
      */
     public void updateColumns(List<E> entities) throws IllegalArgumentException, IllegalAccessException {
+        Set<Class<?>> entityClassesNew = new HashSet<>();
+        for(E entity : entities) {
+            entityClassesNew.add(entity.getClass());
+        }
+        if(entityClassesNew.equals(this.entityClasses)) {
+            //if the classes are the same in entities (none removed or added)
+            //the columns, fields, tooltipTextMap and entityclasses can stay the
+            //same
+            return;
+        }
+
         fields.clear();
         tooltipTextMap.clear();
         //Remove all rows and add them again after the columns have been changed
         while(this.getRowCount() > 0) {
             this.removeRow(0);
         }
-        entityClasses.clear();
-        for(Object entity: entities) {
-            entityClasses.add(entity.getClass());
-        }
+        this.entityClasses = entityClassesNew;
         List<E> entitiesOriginal = new LinkedList<>(this.entities);
         this.entities.clear();
         int i=0;
@@ -142,6 +157,14 @@ public class EntityTableModel<E> extends DefaultTableModel {
         }
     }
 
+    /**
+     * Adds {@code entity} to the model, i.e. it's field values to columns which
+     * have to be configured using {@link #updateColumns(java.util.List) }
+     * before.
+     * @param entity
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException
+     */
     public void addEntity(E entity) throws IllegalArgumentException,
             IllegalAccessException {
         List<Class<?>> entityClassesHierarchy = new LinkedList<>(this.entityClasses);
@@ -186,7 +209,7 @@ public class EntityTableModel<E> extends DefaultTableModel {
     }
 
     public void addAllEntities(Collection<E> entities) throws IllegalArgumentException, IllegalAccessException {
-        for(E entity : this.entities) {
+        for(E entity : entities) {
             addEntity(entity);
         }
     }
@@ -209,10 +232,17 @@ public class EntityTableModel<E> extends DefaultTableModel {
         return Collections.unmodifiableMap(tooltipTextMap);
     }
 
+    /**
+     * Clears all data structures of the model.
+     */
     public void clear() {
         while(this.getRowCount() > 0) {
             this.removeRow(0);
         }
         this.entities.clear();
+        //don't clear entityClass, field and tooltipTextMap because if the next
+        //call to updateColumns doesn't introduce any new classes, they can
+        //remain exactly the same and they would be certainly overwritten if new
+        //classes are introduced
     }
 }
