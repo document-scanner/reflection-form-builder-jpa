@@ -67,7 +67,9 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
     private final FieldRetriever fieldRetriever;
     private List<?> lastCheckResults = new LinkedList<>();
 
-    private static Field retrieveFieldByName(FieldRetriever fieldRetriever, Class<?> entityClass, String fieldName) {
+    private static Field retrieveFieldByName(FieldRetriever fieldRetriever,
+            Class<?> entityClass,
+            String fieldName) {
         Field retValue = null;
         List<Field> entityClassFields = fieldRetriever.retrieveRelevantFields(entityClass);
         for(Field entityClassField : entityClassFields) {
@@ -84,11 +86,13 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
 
     /**
      * Creates new form StringAutoCompletePanel
-     * @param entityManager
+     * @param storage
      * @param entityClass
+     * @param initialValue
      * @param fieldName
      * @param initialQueryLimit
-     * @param fieldRetriever
+     * @param fieldRetriever the {@link FieldRetriever} to use for searching the
+     * field with {@code fieldName}
      */
     public StringAutoCompletePanel(PersistenceStorage storage,
             String initialValue,
@@ -110,7 +114,9 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                 }
             }
         });
-        final Field field = retrieveFieldByName(fieldRetriever, entityClass, fieldName);
+        final Field field = retrieveFieldByName(fieldRetriever,
+                entityClass,
+                fieldName);
         if(field == null) {
             throw new IllegalArgumentException();
         }

@@ -20,7 +20,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
-import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.panels.ListPanelTableModel;
 
 /**
@@ -42,9 +42,9 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
      * retrieval of this constructor with {@link Class#getDeclaredConstructor(java.lang.Class...) }
      */
     public EmbeddableListPanelTableModel(Class<?> embeddableClass,
-            ReflectionFormBuilder reflectionFormBuilder) {
+            FieldRetriever fieldRetriever) {
         super(0, //rowCount
-                reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(embeddableClass).size() //columnCount
+                fieldRetriever.retrieveRelevantFields(embeddableClass).size() //columnCount
         );
         if(embeddableClass == null) {
             throw new IllegalArgumentException("embeddableClass mustn't be null");
@@ -55,7 +55,7 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
             throw new IllegalArgumentException(String.format("embeddableClass %s doesn't have a zero-argument constructor", embeddableClass), ex);
         }
         this.embeddableClassConstructor.setAccessible(true);
-        this.embeddableClassFields = reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(embeddableClass);
+        this.embeddableClassFields = fieldRetriever.retrieveRelevantFields(embeddableClass);
     }
 
     /*

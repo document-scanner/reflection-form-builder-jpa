@@ -48,7 +48,7 @@ internal implementation notes:
 - before changing method signatures, see internal implementation notes of
 FieldHandler for how to provide a portable interface
 */
-public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFieldRetriever> {
+public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetriever> {
     private PersistenceStorage storage;
     private final IdApplier idApplier;
     private final ConfirmMessageHandler confirmMessageHandler;
@@ -58,7 +58,7 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPACachedFie
             String fieldDescriptionDialogTitle,
             MessageHandler messageHandler,
             ConfirmMessageHandler confirmMessageHandler,
-            JPACachedFieldRetriever fieldRetriever,
+            JPAFieldRetriever fieldRetriever,
             IdApplier idApplier,
             Map<Class<?>, WarningHandler<?>> warningHandlers) {
         super(fieldDescriptionDialogTitle,

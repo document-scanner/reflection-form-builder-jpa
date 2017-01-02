@@ -20,6 +20,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -39,15 +40,18 @@ public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEven
     private final int initialQueryLimit;
     private final MessageHandler messageHandler;
     private final String bidirectionalHelpDialogTitle;
+    private final FieldRetriever fieldRetriever;
 
     public JPAStringTypeHandler(PersistenceStorage storage,
             int initialQueryLimit,
             MessageHandler messageHandler,
-            String bidirectionalHelpDialogTitle) {
+            String bidirectionalHelpDialogTitle,
+            FieldRetriever fieldRetriever) {
         this.storage = storage;
         this.initialQueryLimit = initialQueryLimit;
         this.messageHandler = messageHandler;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
+        this.fieldRetriever = fieldRetriever;
     }
 
     @Override
@@ -64,7 +68,7 @@ public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEven
                 declaringClass,
                 fieldName,
                 initialQueryLimit,
-                reflectionFormBuilder.getFieldRetriever());
+                fieldRetriever);
         retValue.addUpdateListener(new StringPanelUpdateListener() {
             @Override
             public void onUpdate(StringPanelUpdateEvent event) {

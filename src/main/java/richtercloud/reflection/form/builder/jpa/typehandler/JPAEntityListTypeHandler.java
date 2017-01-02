@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -47,17 +48,20 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
     private final PersistenceStorage storage;
     private final FieldInitializer fieldInitializer;
     private final InitialQueryTextGenerator initialQueryTextGenerator;
+    private final FieldRetriever readOnlyFieldRetriever;
 
     public JPAEntityListTypeHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator) {
+            InitialQueryTextGenerator initialQueryTextGenerator,
+            FieldRetriever readOnlyFieldRetriever) {
         super(messageHandler);
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.storage = storage;
         this.fieldInitializer = fieldInitializer;
         this.initialQueryTextGenerator = initialQueryTextGenerator;
+        this.readOnlyFieldRetriever = readOnlyFieldRetriever;
     }
 
     @Override
@@ -86,7 +90,7 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
             entityClass = Object.class;
         }
         final QueryListPanel retValue = new QueryListPanel(storage,
-                reflectionFormBuilder,
+                readOnlyFieldRetriever,
                 entityClass,
                 getMessageHandler(),
                 fieldValue,

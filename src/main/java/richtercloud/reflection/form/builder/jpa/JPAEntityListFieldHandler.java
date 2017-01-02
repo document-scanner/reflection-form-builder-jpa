@@ -19,6 +19,7 @@ import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.AbstractListFieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
@@ -40,13 +41,15 @@ public class JPAEntityListFieldHandler extends AbstractListFieldHandler<List<Obj
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator) {
+            InitialQueryTextGenerator initialQueryTextGenerator,
+            FieldRetriever readOnlyFieldRetriever) {
         super(messageHandler,
                 new JPAEntityListTypeHandler(storage,
                         messageHandler,
                         bidirectionalHelpDialogTitle,
                         fieldInitializer,
-                        initialQueryTextGenerator));
+                        initialQueryTextGenerator,
+                        readOnlyFieldRetriever));
     }
 
     public JPAEntityListFieldHandler(EntityManager entityManager,

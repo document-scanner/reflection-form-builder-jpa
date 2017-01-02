@@ -24,7 +24,7 @@ import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldInfo;
-import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
@@ -45,9 +45,9 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
     - no need to pass renderers because editing takes place in dialog
      */
     private static DefaultTableColumnModel createMainListColumnModel(Class<?> embeddableClass,
-            ReflectionFormBuilder reflectionFormBuilder) {
+            FieldRetriever fieldRetriever) {
         DefaultTableColumnModel mainListColumnModel = new DefaultTableColumnModel();
-        List<Field> embeddableClassFields = reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(embeddableClass);
+        List<Field> embeddableClassFields = fieldRetriever.retrieveRelevantFields(embeddableClass);
         int i=0;
         for(Field embeddableClassField : embeddableClassFields) {
             TableColumn tableColumn = new TableColumn(i, 100);
@@ -69,15 +69,16 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
             Class<?> embeddableClass,
             List<Object> initialValues,
             MessageHandler messageHandler,
-            FieldHandler embeddableFieldHandler) {
+            FieldHandler embeddableFieldHandler,
+            FieldRetriever fieldRetriever) {
         super(reflectionFormBuilder,
                 new EmbeddableListPanelCellEditor(),
                 new EmbeddableListPanelCellRenderer(),
                 new EmbeddableListPanelTableModel(embeddableClass,
-                        reflectionFormBuilder),
+                        fieldRetriever),
                 initialValues,
                 messageHandler,
-                new RightHeightTableHeader(createMainListColumnModel(embeddableClass, reflectionFormBuilder), 16));
+                new RightHeightTableHeader(createMainListColumnModel(embeddableClass, fieldRetriever), 16));
         if(embeddableClass == null) {
             throw new IllegalArgumentException("embeddableClass mustn't be null");
         }

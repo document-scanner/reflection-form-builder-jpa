@@ -88,14 +88,16 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             String bidirectionalHelpDialogTitle,
             IdApplier idApplier,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator) {
+            InitialQueryTextGenerator initialQueryTextGenerator,
+            FieldRetriever readOnlyFieldRetriever) {
         JPAAmountMoneyMappingFieldHandlerFactory jPAAmountMoneyClassMappingFactory = new JPAAmountMoneyMappingFieldHandlerFactory(storage,
                 initialQueryLimit,
                 messageHandler,
                 amountMoneyUsageStatisticsStorage,
                 amountMoneyCurrencyStorage,
                 amountMoneyExchangeRateRetriever,
-                bidirectionalHelpDialogTitle);
+                bidirectionalHelpDialogTitle,
+                readOnlyFieldRetriever);
         AmountMoneyMappingFieldHandlerFactory amountMoneyClassMappingFactory = new AmountMoneyMappingFieldHandlerFactory(amountMoneyUsageStatisticsStorage,
                 amountMoneyCurrencyStorage,
                 amountMoneyExchangeRateRetriever,
@@ -103,7 +105,8 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
         JPAAmountMoneyMappingTypeHandlerFactory jPAAmountMoneyTypeHandlerMappingFactory = new JPAAmountMoneyMappingTypeHandlerFactory(storage,
                 initialQueryLimit,
                 messageHandler,
-                bidirectionalHelpDialogTitle);
+                bidirectionalHelpDialogTitle,
+                readOnlyFieldRetriever);
         AmountMoneyFieldHandler amountMoneyFieldHandler = new AmountMoneyFieldHandler(amountMoneyUsageStatisticsStorage,
                 amountMoneyExchangeRateRetriever,
                 amountMoneyCurrencyStorage,
@@ -111,19 +114,22 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
         ElementCollectionTypeHandler elementCollectionTypeHandler = new ElementCollectionTypeHandler(jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 messageHandler,
-                amountMoneyFieldHandler);
+                amountMoneyFieldHandler,
+                readOnlyFieldRetriever);
         ToManyTypeHandler toManyTypeHandler = new ToManyTypeHandler(storage,
                 messageHandler,
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 bidirectionalHelpDialogTitle,
                 fieldInitializer,
-                initialQueryTextGenerator);
+                initialQueryTextGenerator,
+                readOnlyFieldRetriever);
         ToOneTypeHandler toOneTypeHandler = new ToOneTypeHandler(storage,
                 messageHandler,
                 bidirectionalHelpDialogTitle,
                 fieldInitializer,
-                initialQueryTextGenerator);
+                initialQueryTextGenerator,
+                readOnlyFieldRetriever);
         return new JPAMappingFieldHandler(jPAAmountMoneyClassMappingFactory.generateClassMapping(),
                 amountMoneyClassMappingFactory.generateClassMapping(),
                 jPAAmountMoneyClassMappingFactory.generatePrimitiveMapping(),

@@ -88,7 +88,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
     private final GroupLayout.Group horizontalEntityControlsGroup = getLayout().createParallelGroup();
     private final GroupLayout.Group verticalEntityControlsGroup = getLayout().createSequentialGroup();
     private final IdApplier idApplier;
-    private final JPACachedFieldRetriever fieldRetriever;
+    private final JPAFieldRetriever fieldRetriever;
 
     /**
      *
@@ -115,7 +115,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
             MessageHandler messageHandler,
             ConfirmMessageHandler confirmMessageHandler,
             boolean editingMode,
-            JPACachedFieldRetriever fieldRetriever,
+            JPAFieldRetriever fieldRetriever,
             FieldHandler fieldHandler,
             IdApplier idApplier,
             Map<Class<?>, WarningHandler<?>> warningHandlers) throws IllegalArgumentException, IllegalAccessException {

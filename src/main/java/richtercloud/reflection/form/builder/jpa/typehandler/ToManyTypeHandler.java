@@ -23,6 +23,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
@@ -46,6 +47,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
     private final MessageHandler messageHandler;
     private final FieldInitializer fieldInitializer;
     private final InitialQueryTextGenerator initialQueryTextGenerator;
+    private final FieldRetriever readOnlyFieldRetriever;
 
     public ToManyTypeHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
@@ -53,7 +55,8 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
             Map<Type, TypeHandler<?, ?, ?, ?>> fieldTypeHandlerMapping,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator) {
+            InitialQueryTextGenerator initialQueryTextGenerator,
+            FieldRetriever readOnlyFieldRetriever) {
         super(genericsTypeHandlerMapping,
                 fieldTypeHandlerMapping);
         if(storage == null) {
@@ -67,6 +70,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.fieldInitializer = fieldInitializer;
         this.initialQueryTextGenerator = initialQueryTextGenerator;
+        this.readOnlyFieldRetriever = readOnlyFieldRetriever;
     }
 
     @Override
@@ -81,7 +85,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
             throw new IllegalArgumentException("the generic type of type has to be instanceof Class");
         }
         final QueryListPanel retValue = new QueryListPanel(storage,
-                reflectionFormBuilder,
+                readOnlyFieldRetriever,
                 (Class<?>) type,
                 messageHandler,
                 fieldValue,

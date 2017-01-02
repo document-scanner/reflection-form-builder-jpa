@@ -20,6 +20,7 @@ import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -38,11 +39,13 @@ public class JPAStringFieldHandler extends ResettableFieldHandler<String, FieldU
     public JPAStringFieldHandler(PersistenceStorage storage,
             int initialQueryLimit,
             MessageHandler messageHandler,
-            String bidirectionalHelpDialogTitle) {
+            String bidirectionalHelpDialogTitle,
+            FieldRetriever readOnlyFieldRetriever) {
         this.jPAStringTypeHandler = new JPAStringTypeHandler(storage,
                 initialQueryLimit,
                 messageHandler,
-                bidirectionalHelpDialogTitle);
+                bidirectionalHelpDialogTitle,
+                readOnlyFieldRetriever);
     }
 
     public JPAStringFieldHandler(JPAStringTypeHandler jPAStringTypeHandler) {

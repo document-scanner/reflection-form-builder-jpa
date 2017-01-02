@@ -23,6 +23,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -47,14 +48,17 @@ import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 public class ElementCollectionTypeHandler extends GenericListTypeHandler<JPAReflectionFormBuilder, EmbeddableListPanel> {
     private final MessageHandler messageHandler;
     private final FieldHandler embeddableFieldHandler;
+    private final FieldRetriever readOnlyFieldRetriever;
 
     public ElementCollectionTypeHandler(Map<Type, TypeHandler<?, ?,?, ?>> genericsTypeHandlerMapping,
             Map<Type, TypeHandler<?,?,?, ?>> fieldTypeHandlerMapping,
             MessageHandler messageHandler,
-            FieldHandler embeddableFieldHandler) {
+            FieldHandler embeddableFieldHandler,
+            FieldRetriever readOnlyFieldRetriever) {
         super(genericsTypeHandlerMapping, fieldTypeHandlerMapping);
         this.messageHandler = messageHandler;
         this.embeddableFieldHandler = embeddableFieldHandler;
+        this.readOnlyFieldRetriever = readOnlyFieldRetriever;
     }
 
     @Override
@@ -97,7 +101,8 @@ public class ElementCollectionTypeHandler extends GenericListTypeHandler<JPARefl
                 (Class<?>) genericType,
                 fieldValue,
                 messageHandler,
-                embeddableFieldHandler
+                embeddableFieldHandler,
+                readOnlyFieldRetriever
         );
         retValue.addItemListener(new ListPanelItemListener<Object>() {
 

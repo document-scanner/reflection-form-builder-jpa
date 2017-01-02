@@ -22,7 +22,7 @@ import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
-import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.HistoryEntry;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
@@ -55,7 +55,7 @@ public class StringCheckPanel extends AbstractStringPanel {
     public StringCheckPanel(PersistenceStorage storage,
             Class<?> entityClass,
             MessageHandler messageHandler,
-            ReflectionFormBuilder reflectionFormBuilder,
+            FieldRetriever fieldRetriever,
             String initialValue,
             String fieldName,
             int initialQueryLimit,
@@ -71,7 +71,7 @@ public class StringCheckPanel extends AbstractStringPanel {
         this.queryPanel = new QueryPanel<>(storage,
                 entityClass,
                 messageHandler,
-                reflectionFormBuilder,
+                fieldRetriever,
                 null, //initialValue
                 null, //bidirectionalControlPanel (needs to be read-only)
                 ListSelectionModel.SINGLE_SELECTION,
@@ -260,6 +260,7 @@ public class StringCheckPanel extends AbstractStringPanel {
         }
     }
 
+    @Override
     public void reset() {
         reset0(false //async
         );

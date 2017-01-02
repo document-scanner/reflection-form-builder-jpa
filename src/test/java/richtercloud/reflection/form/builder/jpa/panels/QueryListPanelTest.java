@@ -43,7 +43,6 @@ public class QueryListPanelTest {
         when(storage.isClassSupported(any())).thenReturn(true);
         ReflectionFormBuilder reflectionFormBuilder = mock(ReflectionFormBuilder.class);
         FieldRetriever fieldRetriever = new JPACachedFieldRetriever();
-        when(reflectionFormBuilder.getFieldRetriever()).thenReturn(fieldRetriever);
         Class entityClass = A.class;
         List<Object> initialValues = null;
         String bidirectionalHelpDialogTitle = "test";
@@ -51,7 +50,7 @@ public class QueryListPanelTest {
         FieldInitializer fieldInitializer = mock(FieldInitializer.class);
         InitialQueryTextGenerator initialQueryTextGenerator = new DefaultInitialQueryTextGenerator();
         QueryListPanel instance = new QueryListPanel(storage,
-                reflectionFormBuilder,
+                fieldRetriever,
                 entityClass,
                 messageHandler,
                 initialValues,

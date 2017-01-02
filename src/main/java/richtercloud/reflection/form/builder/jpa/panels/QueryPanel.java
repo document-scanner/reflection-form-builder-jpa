@@ -29,7 +29,7 @@ import javax.swing.event.ListSelectionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
-import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
@@ -40,8 +40,10 @@ import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
  * <li>queries with the wrong result type/class</li>
  * <li>(unexpected) errors which occured during execution of the query</li>
  * </ul> and an overview of the result in a table displaying all class fields
- * (as returned by {@link ReflectionFormBuilder#retrieveRelevantFields(java.lang.Class) }. The feedback is given in a scrollable (non-editable) label in order
- * to provide a fixed size layout.
+ * (as returned by
+ * {@link FieldRetriever#retrieveRelevantFields(java.lang.Class) }.
+ * The feedback is given in a scrollable (non-editable) label in order to
+ * provide a fixed size layout.
  *
  * In favour of immutability as design principle QueryPanel needs to be
  * recreated in order to handle a different entity class.
@@ -109,7 +111,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
     public QueryPanel(PersistenceStorage storage,
             Class<E> entityClass,
             MessageHandler messageHandler,
-            ReflectionFormBuilder reflectionFormBuilder,
+            FieldRetriever fieldRetriever,
             E initialValue,
             BidirectionalControlPanel bidirectionalControlPanel,
             int queryResultTableSelectionMode,
@@ -118,7 +120,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
         this(storage,
                 entityClass,
                 messageHandler,
-                reflectionFormBuilder,
+                fieldRetriever,
                 initialValue,
                 bidirectionalControlPanel,
                 QUERY_RESULT_TABLE_HEIGHT_DEFAULT,
@@ -130,7 +132,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
     public QueryPanel(PersistenceStorage storage,
             Class<E> entityClass,
             MessageHandler messageHandler,
-            ReflectionFormBuilder reflectionFormBuilder,
+            FieldRetriever fieldRetriever,
             E initialValue,
             Set<Class<?>> entityClasses,
             int queryResultTableHeight,
@@ -141,13 +143,13 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
         this(storage,
                 entityClass,
                 messageHandler,
-                reflectionFormBuilder,
+                fieldRetriever,
                 initialValue,
                 new BidirectionalControlPanel(entityClass,
                         bidirectionalHelpDialogTitle,
-                        retrieveMappedByFieldPanel(reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass)),
+                        retrieveMappedByFieldPanel(fieldRetriever.retrieveRelevantFields(entityClass)),
                         retrieveMappedFieldCandidates(entityClass,
-                                reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass))),
+                                fieldRetriever.retrieveRelevantFields(entityClass))),
                 queryResultTableHeight,
                 queryResultTableSelectionMode,
                 fieldInitializer,
@@ -178,7 +180,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
     public QueryPanel(PersistenceStorage storage,
             Class<E> entityClass,
             MessageHandler messageHandler,
-            ReflectionFormBuilder reflectionFormBuilder,
+            FieldRetriever fieldRetriever,
             E initialValue,
             BidirectionalControlPanel bidirectionalControlPanel,
             int queryResultTableHeight,
@@ -192,7 +194,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                         true, //async
                         initialQueryTextGenerator
                 ),
-                reflectionFormBuilder,
+                fieldRetriever,
                 entityClass,
                 storage,
                 fieldInitializer,
@@ -261,7 +263,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
 
     private void reset0() {
         try {
-            this.getQueryResultTable().setModel(new EntityTableModel<E>(getReflectionFormBuilder().getFieldRetriever()));
+            this.getQueryResultTable().setModel(new EntityTableModel<E>(getFieldRetriever()));
         } catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException(ex);
         }

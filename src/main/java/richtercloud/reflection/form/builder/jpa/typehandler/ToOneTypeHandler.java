@@ -25,6 +25,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -49,12 +50,14 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
     private final MessageHandler messageHandler;
     private final FieldInitializer fieldInitializer;
     private final InitialQueryTextGenerator initialQueryTextGenerator;
+    private final FieldRetriever readOnlyFieldRetriever;
 
     public ToOneTypeHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator) {
+            InitialQueryTextGenerator initialQueryTextGenerator,
+            FieldRetriever readOnlyFieldRetriever) {
         if(storage == null) {
             throw new IllegalArgumentException("storage mustn't be null");
         }
@@ -66,6 +69,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.fieldInitializer = fieldInitializer;
         this.initialQueryTextGenerator = initialQueryTextGenerator;
+        this.readOnlyFieldRetriever = readOnlyFieldRetriever;
     }
 
     @Override
@@ -83,7 +87,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
             throw new IllegalArgumentException("the generic type of type has to be instanceof Class");
         }
         Class<?> entityClass = (Class<?>)type;
-        List<Field> entityClassFields = reflectionFormBuilder.getFieldRetriever().retrieveRelevantFields(entityClass);
+        List<Field> entityClassFields = readOnlyFieldRetriever.retrieveRelevantFields(entityClass);
         Set<Field> mappedFieldCandidates = QueryPanel.retrieveMappedFieldCandidates(entityClass,
                         entityClassFields);
         BidirectionalControlPanel bidirectionalControlPanel = new BidirectionalControlPanel(declaringClass,
@@ -93,7 +97,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
         final QueryPanel retValue = new QueryPanel(storage,
                 entityClass,
                 messageHandler,
-                reflectionFormBuilder,
+                readOnlyFieldRetriever,
                 fieldValue,
                 bidirectionalControlPanel,
                 ListSelectionModel.SINGLE_SELECTION,

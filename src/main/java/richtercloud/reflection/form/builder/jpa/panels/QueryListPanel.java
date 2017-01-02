@@ -34,14 +34,13 @@ import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
-import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.ReflectionFormBuilderHelperJPA;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEventVetoException;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  * Provides a {@link QueryPanel} and controls to add and remove stored
@@ -86,7 +85,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
     private final JPanel resultPanel;
 
     public QueryListPanel(PersistenceStorage storage,
-            ReflectionFormBuilder reflectionFormBuilder,
+            FieldRetriever fieldRetriever,
             Class<E> entityClass,
             MessageHandler messageHandler,
             List<E> initialValues,
@@ -94,7 +93,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             FieldInitializer fieldInitializer,
             InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
-                reflectionFormBuilder,
+                fieldRetriever,
                 entityClass,
                 messageHandler,
                 initialValues,
@@ -117,7 +116,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
      * @throws IllegalAccessException
      */
     public QueryListPanel(PersistenceStorage storage,
-            final ReflectionFormBuilder reflectionFormBuilder,
+            FieldRetriever fieldRetriever,
             Class<E> entityClass,
             MessageHandler messageHandler,
             List<E> initialValues,
@@ -126,7 +125,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             FieldInitializer fieldInitializer,
             InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
         super(generateBidirectionalControlPanel(entityClass,
-                reflectionFormBuilder.getFieldRetriever(),
+                fieldRetriever,
                 bidirectionalHelpDialogTitle),
                 new QueryComponent<>(storage,
                         entityClass,
@@ -134,7 +133,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                         true, //async
                         initialQueryTextGenerator
                 ),
-                reflectionFormBuilder,
+                fieldRetriever,
                 entityClass,
                 storage,
                 fieldInitializer,
@@ -146,7 +145,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         addButton = new JButton();
         resultTableLabel = new JLabel();
         resultTableScrollPane = new JScrollPane();
-        resultTable = new EntityTable<E>(new EntityTableModel<E>(reflectionFormBuilder.getFieldRetriever())) {
+        resultTable = new EntityTable<E>(new EntityTableModel<E>(fieldRetriever)) {
             private static final long serialVersionUID = 1L;
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -203,7 +202,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
 
         resultTableLabel.setText("Selected entities:");
 
-        resultTable.setModel(new EntityTableModel<>(getReflectionFormBuilder().getFieldRetriever()));
+        resultTable.setModel(new EntityTableModel<>(getFieldRetriever()));
         resultTableScrollPane.setViewportView(resultTable);
 
         GroupLayout resultPanelLayout = new GroupLayout(resultPanel);
@@ -330,7 +329,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
     private void reset0() {
         this.resultTable.getModel().clear();
         try {
-            this.resultTable.setModel(new EntityTableModel<>(getReflectionFormBuilder().getFieldRetriever()));
+            this.resultTable.setModel(new EntityTableModel<>(getFieldRetriever()));
         }catch(IllegalAccessException ex) {
             throw new RuntimeException(ex);
         }

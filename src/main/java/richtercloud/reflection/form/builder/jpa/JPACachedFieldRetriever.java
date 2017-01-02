@@ -27,7 +27,7 @@ import richtercloud.reflection.form.builder.CachedFieldRetriever;
  *
  * @author richter
  */
-public class JPACachedFieldRetriever extends CachedFieldRetriever {
+public class JPACachedFieldRetriever extends CachedFieldRetriever implements JPAFieldRetriever {
 
     /**
      * Retrieves relevant fields from super class and removes fields with
@@ -70,6 +70,7 @@ public class JPACachedFieldRetriever extends CachedFieldRetriever {
      * @param entityClass
      * @return the ID fields
      */
+    @Override
     public Set<Field> getIdFields(Class<?> entityClass) {
         Set<Field> retValue = new HashSet<>();
         List<Field> fields = retrieveRelevantFields(entityClass);

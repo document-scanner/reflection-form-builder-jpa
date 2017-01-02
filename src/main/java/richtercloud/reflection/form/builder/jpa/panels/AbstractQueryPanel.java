@@ -35,7 +35,7 @@ import javax.swing.table.TableCellRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
-import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
@@ -56,7 +56,6 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
     private final JScrollPane queryResultTableScrollPane;
     private final ListSelectionModel queryResultTableSelectionModel = new DefaultListSelectionModel();
     private final QueryComponent<E> queryComponent;
-    private final ReflectionFormBuilder reflectionFormBuilder;
     private final Class<?> entityClass;
     private final PersistenceStorage storage;
     private final JSeparator separator;
@@ -65,6 +64,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
     private final BidirectionalControlPanel bidirectionalControlPanel;
     private final MessageHandler messageHandler;
     private final List<E> initialValues;
+    private final FieldRetriever fieldRetriever;
 
     /**
      * Creates an {@code AbstractQueryPanel}.
@@ -81,7 +81,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
      */
     public AbstractQueryPanel(BidirectionalControlPanel bidirectionalControlPanel,
             QueryComponent<E> queryComponent,
-            final ReflectionFormBuilder reflectionFormBuilder,
+            FieldRetriever fieldRetriever,
             final Class<?> entityClass,
             PersistenceStorage storage,
             FieldInitializer fieldInitializer,
@@ -92,14 +92,14 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         if(storage == null) {
             throw new IllegalArgumentException("entityManager mustn't be null");
         }
-        if(reflectionFormBuilder == null) {
+        if(fieldRetriever == null) {
             throw new IllegalArgumentException("reflectionFormBuilder mustn't be null");
         }
         if(entityClass == null) {
             throw new IllegalArgumentException("entityClass mustn't be null");
         }
         this.queryComponent = queryComponent;
-        this.reflectionFormBuilder = reflectionFormBuilder;
+        this.fieldRetriever = fieldRetriever;
         this.entityClass = entityClass;
         this.storage = storage;
         if(messageHandler == null) {
@@ -112,7 +112,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         queryResultLabel = new JLabel();
         queryResultTableScrollPane = new JScrollPane();
         try {
-            queryResultTable = new EntityTable<E>(new EntityTableModel<E>(reflectionFormBuilder.getFieldRetriever())) {
+            queryResultTable = new EntityTable<E>(new EntityTableModel<E>(fieldRetriever)) {
                 private static final long serialVersionUID = 1L;
                 @Override
                 public boolean isCellEditable(int row, int column) {
@@ -142,7 +142,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
                             //initialized
                     }
                     queryResultModel = new EntityTableModel<>(queryResults,
-                            reflectionFormBuilder.getFieldRetriever());
+                            fieldRetriever);
                 } catch (IllegalArgumentException | IllegalAccessException ex) {
                     throw new RuntimeException(ex);
                 }
@@ -302,8 +302,8 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         return queryResultLabel;
     }
 
-    public ReflectionFormBuilder getReflectionFormBuilder() {
-        return reflectionFormBuilder;
+    public FieldRetriever getFieldRetriever() {
+        return fieldRetriever;
     }
 
     public Class<?> getEntityClass() {
