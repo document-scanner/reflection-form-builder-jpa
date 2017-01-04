@@ -170,9 +170,9 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
      * @return
      */
     @Override
-    public Object retrieve(Object id, Class clazz) {
+    public <T> T retrieve(Object id, Class<T> clazz) {
         EntityManager entityManager = this.retrieveEntityManager();
-        Object retValue = entityManager.find(clazz, id);
+        T retValue = entityManager.find(clazz, id);
         return retValue;
     }
 
