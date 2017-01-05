@@ -16,6 +16,7 @@ package richtercloud.reflection.form.builder.jpa.storage;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
@@ -37,10 +38,12 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractPersis
 
     public AbstractProcessPersistenceStorage(C storageConf,
             String persistenceUnitName,
-            int parallelQueryCount) throws StorageConfValidationException, StorageCreationException {
+            int parallelQueryCount,
+            FieldRetriever fieldRetriever) throws StorageConfValidationException, StorageCreationException {
         super(storageConf,
                 persistenceUnitName,
-                parallelQueryCount);
+                parallelQueryCount,
+                fieldRetriever);
     }
 
     public Lock getShutdownLock() {
@@ -58,7 +61,7 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractPersis
     protected abstract void shutdown0();
 
     @Override
-    public void shutdown() {
+    public final void shutdown() {
         super.shutdown();
         shutdown0();
     }

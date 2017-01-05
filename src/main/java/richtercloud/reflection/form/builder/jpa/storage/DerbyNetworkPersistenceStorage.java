@@ -16,6 +16,7 @@ package richtercloud.reflection.form.builder.jpa.storage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
@@ -30,10 +31,12 @@ public class DerbyNetworkPersistenceStorage extends AbstractPersistenceStorage<D
 
     public DerbyNetworkPersistenceStorage(DerbyNetworkPersistenceStorageConf storageConf,
             String persistenceUnitName,
-            int parallelQueryCount) throws StorageConfValidationException, StorageCreationException {
+            int parallelQueryCount,
+            FieldRetriever fieldRetriever) throws StorageConfValidationException, StorageCreationException {
         super(storageConf,
                 persistenceUnitName,
-                parallelQueryCount);
+                parallelQueryCount,
+                fieldRetriever);
     }
 
     @Override

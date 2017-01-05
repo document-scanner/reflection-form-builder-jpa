@@ -15,6 +15,7 @@
 package richtercloud.reflection.form.builder.jpa.storage;
 
 import richtercloud.message.handler.MessageHandler;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
@@ -27,9 +28,11 @@ public class MySQLAutoPersistenceStorageFactory extends AbstractPersistenceStora
 
     public MySQLAutoPersistenceStorageFactory(String persistenceUnitName,
             int parallelQueryCount,
-            MessageHandler messageHandler) {
+            MessageHandler messageHandler,
+            FieldRetriever fieldRetriever) {
         super(persistenceUnitName,
-                parallelQueryCount);
+                parallelQueryCount,
+                fieldRetriever);
         this.messageHandler = messageHandler;
     }
 
@@ -40,7 +43,8 @@ public class MySQLAutoPersistenceStorageFactory extends AbstractPersistenceStora
             retValue = new MySQLAutoPersistenceStorage(storageConf,
                     getPersistenceUnitName(),
                     getParallelQueryCount(),
-                    messageHandler);
+                    messageHandler,
+                    getFieldRetriever());
         } catch (StorageConfValidationException ex) {
             throw new StorageCreationException(ex);
         }

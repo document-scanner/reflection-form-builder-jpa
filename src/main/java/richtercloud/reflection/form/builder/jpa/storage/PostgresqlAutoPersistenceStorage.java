@@ -22,6 +22,7 @@ import java.nio.file.StandardOpenOption;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
@@ -38,10 +39,12 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
 
     public PostgresqlAutoPersistenceStorage(PostgresqlAutoPersistenceStorageConf storageConf,
             String persistenceUnitName,
-            int parallelQueryCount) throws IOException, InterruptedException, StorageConfValidationException, StorageCreationException {
+            int parallelQueryCount,
+            FieldRetriever fieldRetriever) throws IOException, InterruptedException, StorageConfValidationException, StorageCreationException {
         super(storageConf,
                 persistenceUnitName,
-                parallelQueryCount);
+                parallelQueryCount,
+                fieldRetriever);
     }
 
     @Override

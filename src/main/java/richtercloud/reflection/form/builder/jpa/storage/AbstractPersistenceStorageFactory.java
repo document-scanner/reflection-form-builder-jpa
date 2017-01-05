@@ -14,6 +14,7 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.storage.Storage;
 import richtercloud.reflection.form.builder.storage.StorageConf;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
@@ -26,11 +27,14 @@ import richtercloud.reflection.form.builder.storage.StorageFactory;
 public abstract class AbstractPersistenceStorageFactory<S extends Storage, C extends StorageConf> implements StorageFactory<S, C> {
     private final String persistenceUnitName;
     private final int parallelQueryCount;
+    private final FieldRetriever fieldRetriever;
 
     public AbstractPersistenceStorageFactory(String persistenceUnitName,
-            int parallelQueryCount) {
+            int parallelQueryCount,
+            FieldRetriever fieldRetriever) {
         this.persistenceUnitName = persistenceUnitName;
         this.parallelQueryCount = parallelQueryCount;
+        this.fieldRetriever = fieldRetriever;
     }
 
     public String getPersistenceUnitName() {
@@ -39,6 +43,10 @@ public abstract class AbstractPersistenceStorageFactory<S extends Storage, C ext
 
     public int getParallelQueryCount() {
         return parallelQueryCount;
+    }
+
+    public FieldRetriever getFieldRetriever() {
+        return fieldRetriever;
     }
 
     @Override

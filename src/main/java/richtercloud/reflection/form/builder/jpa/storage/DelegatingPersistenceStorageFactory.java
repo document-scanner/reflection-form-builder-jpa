@@ -15,6 +15,7 @@
 package richtercloud.reflection.form.builder.jpa.storage;
 
 import richtercloud.message.handler.MessageHandler;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.storage.StorageConf;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageFactory;
@@ -32,18 +33,24 @@ public class DelegatingPersistenceStorageFactory implements StorageFactory<Persi
 
     public DelegatingPersistenceStorageFactory(String persistenceUnitName,
             int parallelQueryCount,
-            MessageHandler messageHandler) {
+            MessageHandler messageHandler,
+            FieldRetriever fieldRetriever) {
         this.derbyEmbeddedPersistenceStorageFactory = new DerbyEmbeddedPersistenceStorageFactory(persistenceUnitName,
-                parallelQueryCount);
+                parallelQueryCount,
+                fieldRetriever);
         this.derbyNetworkPersistenceStorageFactory = new DerbyNetworkPersistenceStorageFactory(persistenceUnitName,
-                parallelQueryCount);
+                parallelQueryCount,
+                fieldRetriever);
         this.postgresqlPersistenceStorageFactory = new PostgresqlPersistenceStorageFactory(persistenceUnitName,
-                parallelQueryCount);
+                parallelQueryCount,
+                fieldRetriever);
         this.postgresqlAutoPersistenceStorageFactory = new PostgresqlAutoPersistenceStorageFactory(persistenceUnitName,
-                parallelQueryCount);
+                parallelQueryCount,
+                fieldRetriever);
         this.mySQLAutoPersistenceStorageFactory = new MySQLAutoPersistenceStorageFactory(persistenceUnitName,
                 parallelQueryCount,
-                messageHandler);
+                messageHandler,
+                fieldRetriever);
     }
 
     public DelegatingPersistenceStorageFactory(DerbyEmbeddedPersistenceStorageFactory derbyEmbeddedPersistenceStorageFactory,

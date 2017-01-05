@@ -15,6 +15,7 @@
 package richtercloud.reflection.form.builder.jpa.storage;
 
 import java.io.IOException;
+import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
@@ -25,9 +26,11 @@ import richtercloud.reflection.form.builder.storage.StorageCreationException;
 public class PostgresqlAutoPersistenceStorageFactory extends AbstractPersistenceStorageFactory<PostgresqlAutoPersistenceStorage, PostgresqlAutoPersistenceStorageConf> {
 
     public PostgresqlAutoPersistenceStorageFactory(String persistenceUnitName,
-            int parallelQueryCount) {
+            int parallelQueryCount,
+            FieldRetriever fieldRetriever) {
         super(persistenceUnitName,
-                parallelQueryCount);
+                parallelQueryCount,
+                fieldRetriever);
     }
 
     @Override
@@ -36,7 +39,8 @@ public class PostgresqlAutoPersistenceStorageFactory extends AbstractPersistence
         try {
             retValue = new PostgresqlAutoPersistenceStorage(storageConf,
                     getPersistenceUnitName(),
-                    getParallelQueryCount());
+                    getParallelQueryCount(),
+                    getFieldRetriever());
         } catch (IOException | InterruptedException | StorageConfValidationException ex) {
             throw new StorageCreationException(ex);
         }

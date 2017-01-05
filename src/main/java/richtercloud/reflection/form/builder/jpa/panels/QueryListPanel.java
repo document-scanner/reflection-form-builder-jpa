@@ -43,19 +43,16 @@ import richtercloud.reflection.form.builder.panels.ListPanelItemEventVetoExcepti
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 
 /**
- * Provides a {@link QueryPanel} and controls to add and remove stored
- * entities from a list.
+ * Provides a {@link QueryComponent} and controls to add and remove stored
+ * entities from a query result list to selection result list with an add and
+ * remove button. The add button adds entities which are selected in the query
+ * result table to the selection result table and the remove button removes from
+ * them. The query result is read-only.
  *
  * Currently there're no editing facilities.
  *
  * @author richter
  */
-/*
-internal implementtion notes:
-- can't be used in NetBeans GUI builder because it requires a zero-argument
-constructor in QueryPanel which is used as imported component here -> the
-requirement to learn GroupLayout is very legitimate
-*/
 public class QueryListPanel<E> extends AbstractQueryPanel<E> {
     private static final long serialVersionUID = 1L;
     private final static Logger LOGGER = LoggerFactory.getLogger(QueryListPanel.class);
@@ -309,12 +306,12 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         }
         Collections.sort(selectedRowsSorted, AbstractListPanel.DESCENDING_ORDER);
         for(int selectedRow : selectedRowsSorted) {
-            this.getQueryResultTable().getModel().removeEntity(selectedRow);
+            resultTableModel.removeEntity(selectedRow);
             for(ListPanelItemListener<E> updateListener : updateListeners) {
                 try {
                     updateListener.onItemRemoved(new ListPanelItemEvent<>(ListPanelItemEvent.EVENT_TYPE_REMOVED,
                             selectedRow,
-                            new LinkedList<>(this.getQueryResultTable().getModel().getEntities())));
+                            new LinkedList<>(this.resultTableModel.getEntities())));
                 } catch (ListPanelItemEventVetoException ex) {
                     getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                     return;

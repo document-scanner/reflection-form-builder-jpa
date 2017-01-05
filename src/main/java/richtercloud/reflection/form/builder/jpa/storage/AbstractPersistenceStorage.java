@@ -27,8 +27,13 @@ import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 import javax.persistence.metamodel.Metamodel;
+import javax.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.reflection.form.builder.jpa.EntityValidator;
+import richtercloud.reflection.form.builder.storage.AbstractStorage;
+import richtercloud.reflection.form.builder.storage.StorageCallback;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageException;
@@ -57,7 +62,7 @@ when having one 7-page document (with ca. 100 MB binary data) in the database
 - need to limit parallel querying in order to avoid memory leak no matter
 whether large binary data is fetched lazily or not
 */
-public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceStorageConf> implements PersistenceStorage {
+public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceStorageConf> extends AbstractStorage<Object, AbstractPersistenceStorageConf> implements PersistenceStorage {
     private final static Logger LOGGER = LoggerFactory.getLogger(AbstractPersistenceStorage.class);
     private EntityManagerFactory entityManagerFactory;
     private final C storageConf;
@@ -71,11 +76,14 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     determine which value makes sense based on expected memory consumption
     */
     private final Semaphore querySemaphore;
+    private final FieldRetriever fieldRetriever;
 
     public AbstractPersistenceStorage(C storageConf,
             String persistenceUnitName,
-            int parallelQueryCount) throws StorageConfValidationException {
+            int parallelQueryCount,
+            FieldRetriever fieldRetriever) throws StorageConfValidationException {
         this.storageConf = storageConf;
+        this.fieldRetriever = fieldRetriever;
         this.persistenceUnitName = persistenceUnitName;
         if(parallelQueryCount <= 0) {
             throw new IllegalArgumentException("parallelQueryCount has to be > 0");
@@ -126,11 +134,25 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     public void store(Object object) throws StorageException {
         EntityManager entityManager = this.retrieveEntityManager();
         try {
-            Object toPersist = entityManager.merge(object);
+            //- Skipping of values in collections of mapped fields in many-to-many
+            //relationships have nothing to do with EntityManager.merge because
+            //they're persisted only on one side -> use StroageCallbacks to
+            //acchieve their storage
+            //- unclear why entityManger.merge(object) and working with return
+            //value was here before (helps in delete, but seems to be
+            //unnecessary here and causes id to be not set on object, i.e.
+            //omitting EntityManager.merge avoids to return the instance with
+            //its id set from store)
             entityManager.getTransaction().begin();
-            entityManager.persist(toPersist);
+            entityManager.persist(object);
             entityManager.getTransaction().commit();
-            entityManager.detach(toPersist); //detaching necessary in
+            List<StorageCallback> storeCallbacks = getPostStoreCallbacks(object);
+            if(storeCallbacks != null) {
+                for(StorageCallback storeCallback : storeCallbacks) {
+                    storeCallback.callback(object);
+                }
+            }
+            entityManager.detach(object); //detaching necessary in
                 //order to be able to change one single value and save again
         }catch(EntityExistsException ex) {
             entityManager.getTransaction().rollback();
@@ -139,6 +161,14 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
              //cannot call entityManager.getTransaction().rollback() here because transaction isn' active
             throw new StorageException(ex);
         }
+    }
+
+    @Override
+    public void refresh(Object object) throws StorageException {
+        EntityManager entityManager = this.retrieveEntityManager();
+        entityManager.getTransaction().begin();
+        entityManager.refresh(object);
+        entityManager.getTransaction().commit();
     }
 
     /**
@@ -154,6 +184,14 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
             entityManager.getTransaction().commit();
             entityManager.detach(object); //detaching necessary in
                 //order to be able to change one single value and save again
+        }catch(ConstraintViolationException ex) {
+            //needs to be caught here because ConstraintViolationException is
+            //so smart to not contain the violation text in its message
+            String message = EntityValidator.buildConstraintVioloationMessage(ex.getConstraintViolations(),
+                    object,
+                    fieldRetriever);
+            throw new StorageException(message,
+                    ex);
         }catch(EntityExistsException ex) {
             entityManager.getTransaction().rollback();
             throw new StorageException(ex);

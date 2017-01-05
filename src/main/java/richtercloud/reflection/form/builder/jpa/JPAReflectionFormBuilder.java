@@ -18,12 +18,17 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.swing.JComponent;
+import javax.swing.JOptionPane;
 import richtercloud.message.handler.ConfirmMessageHandler;
+import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
@@ -33,6 +38,7 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.reflection.form.builder.storage.StorageException;
 
 /**
  * Handles generation of {@link JPAReflectionFormPanel} from root entity class
@@ -138,20 +144,68 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
         return retValue;
     }
 
+    /**
+     * Sets the new field value from {@code event} on {@code field} using
+     * {@code instance} (see
+     * {@link Field#set(java.lang.Object, java.lang.Object) } for details).
+     *
+     * Checks whether {@code event} is a {@link MappedFieldUpdateEvent} in which
+     * case it handles setting values on mapped fields (as specified in
+     * {@link MappedFieldUpdateEvent#getMappedField() } as follows:<ul>
+     * <li>It fails if the mapped field's value is {@code null} (this avoids
+     * dealing with instantiation of collection fields and uninitialized fields
+     * are rare in entites). This might be handled one day.</li>
+     * <li>In a many-to-many and one-to-many relationship it adds a reference to
+     * {@code instance} to all items in {@code event}'s value.</li>
+     * <li>In a one-to-one and many-to-one relationship it sets the value of the
+     * mapped field to {@code instance}</li>
+     * </ul>
+     * @param event
+     * @param field
+     * @param instance
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException
+     */
     @Override
     protected void onFieldUpdate(FieldUpdateEvent event, Field field, Object instance) throws IllegalArgumentException, IllegalAccessException {
         if(event instanceof MappedFieldUpdateEvent) {
             MappedFieldUpdateEvent eventCast = (MappedFieldUpdateEvent) event;
-            if(eventCast.getMappedField() != null) {
+            field.setAccessible(true);
+            Field mappedField = eventCast.getMappedField();
+            if(mappedField != null) {
+                mappedField.setAccessible(true);
                 if(field.getAnnotation(OneToOne.class) != null) {
-                    Object fieldValueOld = field.get(instance); //get old field value because event.getNewValue might be null
-                    eventCast.getMappedField().set(fieldValueOld,
-                            event.getNewValue());
+                    mappedField.set(event.getNewValue(),
+                            instance);
+                    storage.registerPostStoreCallback(instance, (object) -> {
+                        try {
+                            storage.update(event.getNewValue());
+                        } catch (StorageException ex) {
+                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                        }
+                    });
+                }else if(field.getAnnotation(ManyToOne.class) != null) {
+                    Collection mappedFieldValue = (Collection) mappedField.get(event.getNewValue());
+                    if(mappedFieldValue == null) {
+                        throw new IllegalArgumentException(String.format("the mapped field %s.%s of field %s.%s mustn't be null",
+                                mappedField.getDeclaringClass().getName(),
+                                mappedField.getName(),
+                                field.getDeclaringClass().getName(),
+                                field.getName()));
+                    }
+                    mappedFieldValue.add(instance);
+                    storage.registerPostStoreCallback(instance, (object) -> {
+                        try {
+                            storage.update(event.getNewValue());
+                        } catch (StorageException ex) {
+                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                        }
+                    });
                 }else if(field.getAnnotation(OneToMany.class) != null
                         || field.getAnnotation(ManyToMany.class) != null) {
-                    Collection fieldValueList = (Collection) field.get(instance);
-                    Collection newValueList = (Collection) event.getNewValue();
-                    if(fieldValueList == null) {
+                    Collection fieldValues = (Collection) field.get(instance);
+                    Collection newValues = (Collection) event.getNewValue();
+                    if(fieldValues == null) {
                         throw new IllegalArgumentException(String.format(
                                 "fields annotated with %s or %s are expected "
                                 + "to be initialized with an empty instance of "
@@ -159,26 +213,56 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                                 OneToMany.class,
                                 ManyToMany.class));
                     }
-                    for(Object fieldValue : fieldValueList) {
-                        if(!newValueList.contains(fieldValue)) {
-                            eventCast.getMappedField().set(fieldValue, null); //reference has been removed
+                    //cannot use ListIterator to remove because we're operating
+                    //on Collection
+                    List<Object> fieldValuesToRemove = new LinkedList<>();
+                    for(Object fieldValue : fieldValues) {
+                        if(!newValues.contains(fieldValue)) {
+                            fieldValuesToRemove.add(fieldValue);
                         }
                     }
+                    for(Object fieldValueToRemove : fieldValuesToRemove) {
+                        fieldValues.remove(fieldValueToRemove);
+                    }
+
                     if(field.getAnnotation(OneToMany.class) != null) {
-                        for(Object newValue : newValueList) {
-                            eventCast.getMappedField().set(newValue, instance);
+                        for(Object newValue : newValues) {
+                            mappedField.set(newValue, instance);
+                            storage.registerPostStoreCallback(instance, (object) -> {
+                                try {
+                                    storage.update(newValue);
+                                } catch (StorageException ex) {
+                                    getMessageHandler().handle(new Message(ex,
+                                            JOptionPane.ERROR_MESSAGE));
+                                }
+                            });
                         }
                     }else {
                         //ManyToMany != null
-                        for(Object newValue : newValueList) {
+                        //In a many-to-many relationship simply add all values
+                        //which are added on one side on the other as well
+                        for(Object newValue : newValues) {
                             //add instance to list of reference on mapped site
                             //= get old field value, add instance and set the
                             //result as new value
                             //@TODO: figure out whether to add value is always appropriate (give different collection, like Set, List, etc.)
-                            Collection mappedFieldValue = (Collection) eventCast.getMappedField().get(newValue);
-                            mappedFieldValue.add(newValue);
-                            eventCast.getMappedField().set(newValue,
-                                    mappedFieldValue); //set reference on all element of event.newValue (will make unnecessary changes, but they shouldn't hurt)
+                            Collection mappedFieldValue = (Collection) mappedField.get(newValue);
+                            if(mappedFieldValue == null) {
+                                throw new IllegalArgumentException(String.format("the mapped field %s.%s of field %s.%s mustn't be null",
+                                        mappedField.getDeclaringClass().getName(),
+                                        mappedField.getName(),
+                                        field.getDeclaringClass().getName(),
+                                        field.getName()));
+                            }
+                            mappedFieldValue.add(instance);
+                            storage.registerPostStoreCallback(instance, (object) -> {
+                                try {
+                                    storage.update(newValue);
+                                } catch (StorageException ex) {
+                                    getMessageHandler().handle(new Message(ex,
+                                            JOptionPane.ERROR_MESSAGE));
+                                }
+                            });
                         }
                     }
                 }else {
@@ -187,5 +271,19 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
             }
         }
         super.onFieldUpdate(event, field, instance);
+    }
+
+    @Override
+    protected Object prepareInstance(Class<?> entityClass, Object entityToUpdate) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+        //PersistenceStorage.update might cause validation exception since it
+        //refers to a freshly created instance -> can't use any EntityManager
+        //factory methods -> use PersistenceStroage.registerStoreCallback where
+        //it makes sense (not necessary to persist bidirectional storage with or
+        //without mappedBy attribute as set in
+        //JPAReflectionFormBuilder.onFieldUpdate as shown in
+        //JPAReflectionFormBuilderIT
+        Object retValue = super.prepareInstance(entityClass,
+                entityToUpdate);
+        return retValue;
     }
 }
