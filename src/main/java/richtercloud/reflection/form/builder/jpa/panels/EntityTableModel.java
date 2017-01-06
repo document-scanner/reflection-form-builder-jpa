@@ -121,6 +121,8 @@ public class EntityTableModel<E> extends DefaultTableModel {
             return;
         }
 
+        this.setColumnCount(0); //(Default)TableModel doesn't have a better way
+            //to remove columns
         fields.clear();
         tooltipTextMap.clear();
         //Remove all rows and add them again after the columns have been changed
