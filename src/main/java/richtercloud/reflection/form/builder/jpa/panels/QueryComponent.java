@@ -245,7 +245,7 @@ public class QueryComponent<E> extends JPanel {
         String queryText = initialQueryTextGenerator.generateInitialQueryText(entityClass,
                 false //forbidSubtypes
         );
-        executeQuery(lastQueryLimit,
+        executeQuery(initialQueryLimit,
                 queryText,
                 async);
     }
