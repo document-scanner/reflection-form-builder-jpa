@@ -53,7 +53,9 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
             TableColumn tableColumn = new TableColumn(i, 100);
             FieldInfo fieldInfo = embeddableClassField.getAnnotation(FieldInfo.class);
             if(fieldInfo != null) {
-                tableColumn.setHeaderValue(fieldInfo.name());
+                tableColumn.setHeaderValue(String.format("%s (%s)",
+                        fieldInfo.name(),
+                        embeddableClassField.getName()));
             }else {
                 tableColumn.setHeaderValue(embeddableClassField.getName());
             }

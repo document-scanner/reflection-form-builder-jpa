@@ -144,7 +144,9 @@ public class EntityTableModel<E> extends DefaultTableModel {
                 }
                 FieldInfo fieldInfo = field.getAnnotation(FieldInfo.class);
                 if(fieldInfo != null) {
-                    this.addColumn(fieldInfo.name());
+                    this.addColumn(String.format("%s (%s)",
+                            fieldInfo.name(),
+                            field.getName()));
                     tooltipTextMap.put(i, fieldInfo.description());
                 }else {
                     this.addColumn(field.getName());
