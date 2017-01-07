@@ -14,6 +14,8 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
+import java.util.List;
+
 /**
  * Since the user ought to have maximal flexibility to set the initial query
  * displayed in a {@link QueryComponent} and it's potentially annoying to do
@@ -24,15 +26,19 @@ package richtercloud.reflection.form.builder.jpa.panels;
 public interface InitialQueryTextGenerator {
 
     /**
-     * Creates a query of {@code entityClass} eventually restricting it to the
-     * exact type of it or including subtypes dependening on whether
-     * {@code forbidSubtypes} if {@code true} or {@code false}.
+     * Creates interesting querys for {@code entityClass}. What interesting
+     * means is up to implementations.
+     *
+     * The first element in the return value ought to be the query which will be
+     * initially selected in {@link QueryComponent}. {@code forbidSubtypes}
+     * determines whether this initially selected query is of the exact type of
+     * {@code entityClass} or can include subtypes.
      *
      * @param entityClass
      * @param forbidSubtypes
-     * @return the created query text
+     * @return the created query texts
      */
-    String generateInitialQueryText(Class<?> entityClass,
+    List<String> generateInitialQueryTexts(Class<?> entityClass,
             boolean forbidSubtypes);
 
     public static String generateEntityClassQueryIdentifier(Class<?> entityClass) {

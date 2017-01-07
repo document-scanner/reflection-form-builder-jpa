@@ -14,6 +14,9 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  *
  * @author richter
@@ -34,27 +37,33 @@ public class DefaultInitialQueryTextGenerator implements InitialQueryTextGenerat
      * quite unelegant or keep the parameter escape string (e.g.
      * {@code :entityClass} in the query).
      *
-     * @param entityManager
      * @param entityClass
      * @return
      */
     @Override
-    public String generateInitialQueryText(Class<?> entityClass,
+    public List<String> generateInitialQueryTexts(Class<?> entityClass,
             boolean forbidSubtypes) {
         //Criteria API doesn't allow retrieval of string/text from objects
         //created with CriteriaBuilder, but text should be the first entry in
         //the query combobox -> construct String instead of using
         //CriteriaBuilder
         String entityClassQueryIdentifier = InitialQueryTextGenerator.generateEntityClassQueryIdentifier(entityClass);
-        String retValue = String.format("SELECT %s FROM %s %s%s",
+        String queryTextAllowSubclasses = String.format("SELECT %s FROM %s %s",
                 entityClassQueryIdentifier,
                 entityClass.getSimpleName(),
+                entityClassQueryIdentifier);
+        String queryTextForbidSubclasses = String.format("%s WHERE TYPE(%s) = %s",
+                queryTextAllowSubclasses,
                 entityClassQueryIdentifier,
-                forbidSubtypes
-                        ? String.format(" WHERE TYPE(%s) = %s",
-                                entityClassQueryIdentifier,
-                                entityClass.getSimpleName())
-                        : "");
+                entityClass.getSimpleName());
+        List<String> retValue = new LinkedList<>();
+        if(forbidSubtypes) {
+            retValue.add(queryTextForbidSubclasses);
+            retValue.add(queryTextAllowSubclasses);
+        }else {
+            retValue.add(queryTextAllowSubclasses);
+            retValue.add(queryTextForbidSubclasses);
+        }
         return retValue;
     }
 }

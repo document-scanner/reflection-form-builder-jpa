@@ -14,8 +14,6 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
@@ -89,6 +87,10 @@ public class QueryComponent<E> extends JPanel {
         }
     };
     private static final long serialVersionUID = 1L;
+    public final static String SUBTYPES_ALLOW = "Allow subtypes";
+    public final static String SUBTYPES_FILTER = "Filter subtypes";
+    public final static String SUBTYPES_FORBID = "Forbid/Fail on subtypes";
+    public final static String SUBTYPES_DEFAULT = SUBTYPES_ALLOW;
 
     /**
      * Creates a mutable list with one {@link HistoryEntry} to select all
@@ -99,14 +101,14 @@ public class QueryComponent<E> extends JPanel {
     public static List<HistoryEntry> generateInitialHistoryDefault(Class<?> entityClass,
             InitialQueryTextGenerator initialQueryTextGenerator,
             boolean forbidSubtypes) {
-        String queryText = initialQueryTextGenerator.generateInitialQueryText(entityClass, forbidSubtypes);
-        List<HistoryEntry> retValue = new ArrayList<>(Arrays.asList(new HistoryEntry(queryText, //queryText
-                        1, //usageCount
-                        new Date() //lastUsage
-                ),
-                new HistoryEntry(queryText,
-                        1,
-                        new Date())));
+        List<String> queryTexts = initialQueryTextGenerator.generateInitialQueryTexts(entityClass, forbidSubtypes);
+        List<HistoryEntry> retValue = new LinkedList<>();
+        for(String queryText : queryTexts) {
+            retValue.add(new HistoryEntry(queryText, //queryText
+                    1, //usageCount
+                    new Date() //lastUsage
+            ));
+        }
         return retValue;
     }
 
@@ -139,10 +141,6 @@ public class QueryComponent<E> extends JPanel {
     private final JLabel queryLabel;
     private final JLabel queryLimitLabel;
     private final JSpinner queryLimitSpinner;
-    public final static String SUBTYPES_ALLOW = "Allow subtypes";
-    public final static String SUBTYPES_FILTER = "Filter subtypes";
-    public final static String SUBTYPES_FORBID = "Forbid/Fail on subtypes";
-    public final static String SUBTYPES_DEFAULT = SUBTYPES_ALLOW;
     /**
      * Allows handling for different proceedure for subtypes in queries (allow,
      * filter, fail on occurance).
@@ -217,7 +215,8 @@ public class QueryComponent<E> extends JPanel {
         this.entityClass = entityClass;
         //initialize with initial item in order to minimize trouble with null
         //being set as editor item in JComboBox.setEditor
-        this.queryComboBoxModel = new SortedComboBoxModel<>(QUERY_HISTORY_COMPARATOR_USAGE, new LinkedList<>(initialHistory));
+        this.queryComboBoxModel = new SortedComboBoxModel<>(QUERY_HISTORY_COMPARATOR_USAGE,
+                new LinkedList<>(initialHistory));
         this.queryComboBoxEditor = new QueryComboBoxEditor(entityClass);
                 //before initComponents because it's used there (yet sets item
                 //of editor to null, so statement after initComponent is
@@ -242,9 +241,11 @@ public class QueryComponent<E> extends JPanel {
         this.messageHandler = messageHandler;
         this.subtypeComboBox.setSelectedItem(SUBTYPES_DEFAULT);
         this.queryLabel.setText(String.format("%s query:", entityClass.getSimpleName()));
-        String queryText = initialQueryTextGenerator.generateInitialQueryText(entityClass,
+        List<String> queryTexts = initialQueryTextGenerator.generateInitialQueryTexts(entityClass,
                 false //forbidSubtypes
         );
+        assert !queryTexts.isEmpty();
+        String queryText = queryTexts.get(0);
         executeQuery(initialQueryLimit,
                 queryText,
                 async);
