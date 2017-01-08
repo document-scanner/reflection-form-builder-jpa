@@ -36,6 +36,8 @@ import javax.swing.LayoutStyle;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.Message;
@@ -196,6 +198,28 @@ public class QueryComponent<E> extends JPanel {
                 //before initComponents because it's used there (yet sets item
                 //of editor to null, so statement after initComponent is
                 //necessary
+        this.queryComboBox.addPopupMenuListener(new PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                //get latest updates from other query components
+                List<QueryHistoryEntry> entries = entryStorage.retrieve(entityClass);
+                for(QueryHistoryEntry entry : entries) {
+                    if(!queryComboBoxModel.contains(entry)) {
+                        queryComboBoxModel.addElement(entry);
+                    }
+                }
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+                //nothing to do
+            }
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent e) {
+                //nothing to do
+            }
+        });
         this.initComponents();
         QueryHistoryEntry initiallySelectedEntry = entryStorage.getInitialEntry(entityClass);
         if(initiallySelectedEntry != null) {
