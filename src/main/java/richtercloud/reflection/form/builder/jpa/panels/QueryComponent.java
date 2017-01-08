@@ -289,10 +289,14 @@ public class QueryComponent<E> extends JPanel {
                 .addGap(18, 18, 18)
                 .addComponent(queryLimitSpinner,
                         0,
-                        150,
-                        Short.MAX_VALUE)
+                        GroupLayout.PREFERRED_SIZE+100, //initial preferred size
+                            //referes to spinner with value 0
+                        GroupLayout.PREFERRED_SIZE+100)
                 .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(subtypeComboBox)
+                .addComponent(subtypeComboBox,
+                        0,
+                        GroupLayout.PREFERRED_SIZE,
+                        GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(queryButton)
         ).addComponent(queryStatusLabelScrollPane, GroupLayout.Alignment.TRAILING)
