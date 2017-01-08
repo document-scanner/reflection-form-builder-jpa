@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package richtercloud.reflection.form.builder.jpa;
+package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -22,16 +22,16 @@ import java.util.Objects;
  *
  * @author richter
  */
-public class HistoryEntry implements Serializable, Comparable<HistoryEntry>{
+public class QueryHistoryEntry implements Serializable, Comparable<QueryHistoryEntry>{
     private static final long serialVersionUID = 1L;
     private String text;
     private int usageCount;
     private Date lastUsage;
 
-    protected HistoryEntry() {
+    protected QueryHistoryEntry() {
     }
 
-    public HistoryEntry(String text, int usageCount, Date lastUsage) {
+    public QueryHistoryEntry(String text, int usageCount, Date lastUsage) {
         this.text = text;
         this.usageCount = usageCount;
         this.lastUsage = lastUsage;
@@ -80,7 +80,7 @@ public class HistoryEntry implements Serializable, Comparable<HistoryEntry>{
     }
 
     @Override
-    public int compareTo(HistoryEntry o) {
+    public int compareTo(QueryHistoryEntry o) {
         return Integer.compare(this.getUsageCount(), o.getUsageCount());
     }
 
@@ -104,7 +104,7 @@ public class HistoryEntry implements Serializable, Comparable<HistoryEntry>{
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final HistoryEntry other = (HistoryEntry) obj;
+        final QueryHistoryEntry other = (QueryHistoryEntry) obj;
         if (!Objects.equals(this.text, other.text)) {
             return false;
         }

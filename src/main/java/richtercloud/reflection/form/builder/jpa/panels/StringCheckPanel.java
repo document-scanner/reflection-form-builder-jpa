@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
-import richtercloud.reflection.form.builder.jpa.HistoryEntry;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
@@ -62,7 +61,7 @@ public class StringCheckPanel extends AbstractStringPanel {
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
             boolean async,
-            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
         super(storage,
                 entityClass,
                 fieldName,
@@ -76,7 +75,7 @@ public class StringCheckPanel extends AbstractStringPanel {
                 null, //bidirectionalControlPanel (needs to be read-only)
                 ListSelectionModel.SINGLE_SELECTION,
                 fieldInitializer,
-                initialQueryTextGenerator
+                entryStorage
         ); //will be reused by manipulating the queryComboBoxModel
         GroupLayout queryPanelDialogLayout = new GroupLayout(queryPanelDialog.getContentPane());
         queryPanelDialog.getContentPane().setLayout(queryPanelDialogLayout);
@@ -201,7 +200,7 @@ public class StringCheckPanel extends AbstractStringPanel {
     }//GEN-LAST:event_checkButtonActionPerformed
 
     private void showButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showButtonActionPerformed
-        this.queryPanel.getQueryComponent().getQueryComboBoxModel().addElement(new HistoryEntry(generateQueryText(this.textField.getText()),
+        this.queryPanel.getQueryComponent().getQueryComboBoxModel().addElement(new QueryHistoryEntry(generateQueryText(this.textField.getText()),
                 1, //usageCount
                 new Date() //lastUsage
         ));

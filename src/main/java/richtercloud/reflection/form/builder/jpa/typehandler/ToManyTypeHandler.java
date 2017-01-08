@@ -28,14 +28,14 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
-import richtercloud.reflection.form.builder.jpa.panels.InitialQueryTextGenerator;
+import richtercloud.reflection.form.builder.jpa.panels.QueryHistoryEntryStorage;
 import richtercloud.reflection.form.builder.jpa.panels.QueryListPanel;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.typehandler.GenericListTypeHandler;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  *
@@ -46,7 +46,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
     private final String bidirectionalHelpDialogTitle;
     private final MessageHandler messageHandler;
     private final FieldInitializer fieldInitializer;
-    private final InitialQueryTextGenerator initialQueryTextGenerator;
+    private final QueryHistoryEntryStorage entryStorage;
     private final FieldRetriever readOnlyFieldRetriever;
 
     public ToManyTypeHandler(PersistenceStorage storage,
@@ -55,7 +55,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
             Map<Type, TypeHandler<?, ?, ?, ?>> fieldTypeHandlerMapping,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator,
+            QueryHistoryEntryStorage entryStorage,
             FieldRetriever readOnlyFieldRetriever) {
         super(genericsTypeHandlerMapping,
                 fieldTypeHandlerMapping);
@@ -69,7 +69,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
         this.messageHandler = messageHandler;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.fieldInitializer = fieldInitializer;
-        this.initialQueryTextGenerator = initialQueryTextGenerator;
+        this.entryStorage = entryStorage;
         this.readOnlyFieldRetriever = readOnlyFieldRetriever;
     }
 
@@ -91,7 +91,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
                 fieldValue,
                 bidirectionalHelpDialogTitle,
                 fieldInitializer,
-                initialQueryTextGenerator);
+                entryStorage);
         retValue.addItemListener(new ListPanelItemListener<Object>() {
             @Override
             public void onItemAdded(ListPanelItemEvent<Object> event) {

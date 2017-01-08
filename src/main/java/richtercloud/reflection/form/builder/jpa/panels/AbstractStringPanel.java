@@ -95,7 +95,7 @@ public abstract class AbstractStringPanel extends JPanel {
 //        c.where(criteria.get(0));
 //        TypedQuery<T> q = this.entityManager.createQuery(c);
 
-        String entityClassQueryIdentifier = InitialQueryTextGenerator.generateEntityClassQueryIdentifier(entityClass);
+        String entityClassQueryIdentifier = QueryHistoryEntryStorageFactory.generateEntityClassQueryIdentifier(entityClass);
         String retValue = String.format("SELECT %s.%s from %s %s WHERE %s.%s LIKE '%s'",
                 entityClassQueryIdentifier,
                 this.fieldName,

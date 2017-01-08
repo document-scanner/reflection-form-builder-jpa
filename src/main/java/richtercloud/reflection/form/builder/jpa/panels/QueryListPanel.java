@@ -89,7 +89,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             List<E> initialValues,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 fieldRetriever,
                 entityClass,
@@ -98,7 +98,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                 bidirectionalHelpDialogTitle,
                 QUERY_RESULT_TABLE_HEIGHT_DEFAULT,
                 fieldInitializer,
-                initialQueryTextGenerator);
+                entryStorage);
     }
 
     /**
@@ -121,7 +121,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             String bidirectionalHelpDialogTitle,
             int queryResultTableHeight,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
         super(generateBidirectionalControlPanel(entityClass,
                 fieldRetriever,
                 bidirectionalHelpDialogTitle),
@@ -129,7 +129,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                         entityClass,
                         messageHandler,
                         true, //async
-                        initialQueryTextGenerator
+                        entryStorage
                 ),
                 fieldRetriever,
                 entityClass,

@@ -30,13 +30,13 @@ import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
-import richtercloud.reflection.form.builder.jpa.panels.InitialQueryTextGenerator;
+import richtercloud.reflection.form.builder.jpa.panels.QueryHistoryEntryStorage;
 import richtercloud.reflection.form.builder.jpa.panels.QueryListPanel;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
-import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.AbstractListTypeHandler;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  *
@@ -47,20 +47,20 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
     private final String bidirectionalHelpDialogTitle;
     private final PersistenceStorage storage;
     private final FieldInitializer fieldInitializer;
-    private final InitialQueryTextGenerator initialQueryTextGenerator;
+    private final QueryHistoryEntryStorage entryStorage;
     private final FieldRetriever readOnlyFieldRetriever;
 
     public JPAEntityListTypeHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator,
+            QueryHistoryEntryStorage entryStorage,
             FieldRetriever readOnlyFieldRetriever) {
         super(messageHandler);
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.storage = storage;
         this.fieldInitializer = fieldInitializer;
-        this.initialQueryTextGenerator = initialQueryTextGenerator;
+        this.entryStorage = entryStorage;
         this.readOnlyFieldRetriever = readOnlyFieldRetriever;
     }
 
@@ -96,7 +96,7 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
                 fieldValue,
                 bidirectionalHelpDialogTitle,
                 fieldInitializer,
-                initialQueryTextGenerator);
+                entryStorage);
         retValue.addItemListener(new ListPanelItemListener<Object>() {
 
             @Override

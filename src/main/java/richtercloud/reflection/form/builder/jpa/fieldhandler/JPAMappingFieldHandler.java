@@ -46,8 +46,9 @@ import richtercloud.reflection.form.builder.fieldhandler.factory.AmountMoneyMapp
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.fieldhandler.factory.JPAAmountMoneyMappingFieldHandlerFactory;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
-import richtercloud.reflection.form.builder.jpa.panels.InitialQueryTextGenerator;
 import richtercloud.reflection.form.builder.jpa.panels.LongIdPanel;
+import richtercloud.reflection.form.builder.jpa.panels.QueryHistoryEntryStorage;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.typehandler.ElementCollectionTypeHandler;
 import richtercloud.reflection.form.builder.jpa.typehandler.ToManyTypeHandler;
@@ -56,7 +57,6 @@ import richtercloud.reflection.form.builder.jpa.typehandler.factory.JPAAmountMon
 import richtercloud.reflection.form.builder.panels.NumberPanel;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateEvent;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateListener;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  * Handles entities and embeddables differently based on two type component-{@link FieldHandler} mappings.
@@ -88,7 +88,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             String bidirectionalHelpDialogTitle,
             IdApplier idApplier,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator,
+            QueryHistoryEntryStorage entryStorage,
             FieldRetriever readOnlyFieldRetriever) {
         JPAAmountMoneyMappingFieldHandlerFactory jPAAmountMoneyClassMappingFactory = new JPAAmountMoneyMappingFieldHandlerFactory(storage,
                 initialQueryLimit,
@@ -122,13 +122,13 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 bidirectionalHelpDialogTitle,
                 fieldInitializer,
-                initialQueryTextGenerator,
+                entryStorage,
                 readOnlyFieldRetriever);
         ToOneTypeHandler toOneTypeHandler = new ToOneTypeHandler(storage,
                 messageHandler,
                 bidirectionalHelpDialogTitle,
                 fieldInitializer,
-                initialQueryTextGenerator,
+                entryStorage,
                 readOnlyFieldRetriever);
         return new JPAMappingFieldHandler(jPAAmountMoneyClassMappingFactory.generateClassMapping(),
                 amountMoneyClassMappingFactory.generateClassMapping(),

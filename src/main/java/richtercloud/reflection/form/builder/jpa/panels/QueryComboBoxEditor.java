@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Set;
 import javax.swing.ComboBoxEditor;
 import javax.swing.JTextField;
-import richtercloud.reflection.form.builder.jpa.HistoryEntry;
 
 /**
  *
@@ -36,7 +35,7 @@ class QueryComboBoxEditor implements ComboBoxEditor {
      * model of the {@link JComboBox} (can be retrieved with
      * {@link #getItem() }).
      */
-    private HistoryEntry item;
+    private QueryHistoryEntry item;
     private final Set<ActionListener> actionListeners = new HashSet<>();
 
     /**
@@ -44,7 +43,7 @@ class QueryComboBoxEditor implements ComboBoxEditor {
      */
     /*
     internal implementation notes:
-    - requires entityClass argument in order to create initial HistoryEntry
+    - requires entityClass argument in order to create initial QueryHistoryEntry
     -> remove if that causes trouble
      */
     QueryComboBoxEditor(Class<?> entityClass) {
@@ -52,7 +51,7 @@ class QueryComboBoxEditor implements ComboBoxEditor {
             @Override
             public void keyReleased(KeyEvent e) {
                 if (QueryComboBoxEditor.this.item == null) {
-                    QueryComboBoxEditor.this.item = new HistoryEntry(QueryComboBoxEditor.this.editorComponent.getText(), //queryText
+                    QueryComboBoxEditor.this.item = new QueryHistoryEntry(QueryComboBoxEditor.this.editorComponent.getText(), //queryText
                     1, //usageCount
                     new Date() //lastUsage
                     );
@@ -70,15 +69,15 @@ class QueryComboBoxEditor implements ComboBoxEditor {
 
     @Override
     public void setItem(Object anObject) {
-        assert anObject instanceof HistoryEntry;
-        this.item = (HistoryEntry) anObject;
+        assert anObject instanceof QueryHistoryEntry;
+        this.item = (QueryHistoryEntry) anObject;
         if (this.item != null) {
             this.editorComponent.setText(this.item.getText());
         }
     }
 
     @Override
-    public HistoryEntry getItem() {
+    public QueryHistoryEntry getItem() {
         return this.item;
     }
 

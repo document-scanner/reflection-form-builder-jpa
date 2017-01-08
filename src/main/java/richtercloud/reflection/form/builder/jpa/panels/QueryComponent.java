@@ -40,7 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
-import richtercloud.reflection.form.builder.jpa.HistoryEntry;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
 
@@ -74,15 +73,16 @@ public class QueryComponent<E> extends JPanel {
      * the default value for the initial query limit (see {@link #QueryPanel(javax.persistence.EntityManager, java.lang.Class, int) } for details
      */
     public static final int INITIAL_QUERY_LIMIT_DEFAULT = 20;
-    private final static Comparator<HistoryEntry> QUERY_HISTORY_COMPARATOR_USAGE = new Comparator<HistoryEntry>() {
+    private final static Comparator<QueryHistoryEntry> QUERY_HISTORY_COMPARATOR_USAGE = new Comparator<QueryHistoryEntry>() {
         @Override
-        public int compare(HistoryEntry o1, HistoryEntry o2) {
-            return Integer.compare(o1.getUsageCount(), o2.getUsageCount());
+        public int compare(QueryHistoryEntry o1, QueryHistoryEntry o2) {
+            return Integer.compare(o2.getUsageCount(), o1.getUsageCount());
+                //make highest usage count appear at the top
         }
     };
-    private final static Comparator<HistoryEntry> QUERY_HISTORY_COMPARATOR_DATE = new Comparator<HistoryEntry>() {
+    private final static Comparator<QueryHistoryEntry> QUERY_HISTORY_COMPARATOR_DATE = new Comparator<QueryHistoryEntry>() {
         @Override
-        public int compare(HistoryEntry o1, HistoryEntry o2) {
+        public int compare(QueryHistoryEntry o1, QueryHistoryEntry o2) {
             return o1.getLastUsage().compareTo(o2.getLastUsage());
         }
     };
@@ -91,26 +91,6 @@ public class QueryComponent<E> extends JPanel {
     public final static String SUBTYPES_FILTER = "Filter subtypes";
     public final static String SUBTYPES_FORBID = "Forbid/Fail on subtypes";
     public final static String SUBTYPES_DEFAULT = SUBTYPES_ALLOW;
-
-    /**
-     * Creates a mutable list with one {@link HistoryEntry} to select all
-     * entities of type {@code entityClass}.
-     * @param entityClass
-     * @return
-     */
-    public static List<HistoryEntry> generateInitialHistoryDefault(Class<?> entityClass,
-            InitialQueryTextGenerator initialQueryTextGenerator,
-            boolean forbidSubtypes) {
-        List<String> queryTexts = initialQueryTextGenerator.generateInitialQueryTexts(entityClass, forbidSubtypes);
-        List<HistoryEntry> retValue = new LinkedList<>();
-        for(String queryText : queryTexts) {
-            retValue.add(new HistoryEntry(queryText, //queryText
-                    1, //usageCount
-                    new Date() //lastUsage
-            ));
-        }
-        return retValue;
-    }
 
     public static void validateEntityClass(Class<?> entityClass,
             PersistenceStorage storage) {
@@ -126,7 +106,7 @@ public class QueryComponent<E> extends JPanel {
             null, //max
             1 //stepSize
     );
-    private final SortedComboBoxModel<HistoryEntry> queryComboBoxModel;
+    private final SortedComboBoxModel<QueryHistoryEntry> queryComboBoxModel;
     private final QueryComboBoxEditor queryComboBoxEditor;
     /**
      * the {@code queryLimit} arugment of the last execution of {@link #executeQuery(javax.persistence.TypedQuery, int, java.lang.String) }
@@ -137,7 +117,7 @@ public class QueryComponent<E> extends JPanel {
      */
     private String lastQueryText;
     private final JButton queryButton;
-    private final JComboBox<HistoryEntry> queryComboBox;
+    private final JComboBox<QueryHistoryEntry> queryComboBox;
     private final JLabel queryLabel;
     private final JLabel queryLimitLabel;
     private final JSpinner queryLimitSpinner;
@@ -157,23 +137,19 @@ public class QueryComponent<E> extends JPanel {
      * {@link #createQueryText(java.lang.Class, boolean) } ought to be used to
      * create the text.
      */
-    private final InitialQueryTextGenerator initialQueryTextGenerator;
+    private final QueryHistoryEntryStorage entryStorage;
 
     public QueryComponent(PersistenceStorage storage,
             Class<E> entityClass,
             MessageHandler messageHandler,
             boolean async,
-            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
                 messageHandler,
-                generateInitialHistoryDefault(entityClass,
-                        initialQueryTextGenerator,
-                        SUBTYPES_DEFAULT.equals(SUBTYPES_ALLOW)),
-                null, //initialSelectedHistoryEntry (null means point to the first item of initialHistory
                 INITIAL_QUERY_LIMIT_DEFAULT,
                 async,
-                initialQueryTextGenerator);
+                entryStorage);
     }
 
     /**
@@ -182,7 +158,7 @@ public class QueryComponent<E> extends JPanel {
      * @param entityClass
      * @param messageHandler
      * @param initialHistory
-     * @param initialSelectedHistoryEntry
+     * @param initialSelectedQueryHistoryEntry
      * @param initialQueryLimit
      * @throws IllegalArgumentException
      */
@@ -195,15 +171,13 @@ public class QueryComponent<E> extends JPanel {
     protected QueryComponent(PersistenceStorage storage,
             Class<E> entityClass,
             MessageHandler messageHandler,
-            List<HistoryEntry> initialHistory,
-            HistoryEntry initialSelectedHistoryEntry,
             int initialQueryLimit,
             boolean async,
-            InitialQueryTextGenerator initialQueryText) throws IllegalArgumentException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException {
         if(entityClass == null) {
             throw new IllegalArgumentException("entityClass mustn't be null");
         }
-        this.initialQueryTextGenerator = initialQueryText;
+        this.entryStorage = entryStorage;
         queryLabel = new JLabel();
         queryButton = new JButton();
         queryComboBox = new JComboBox<>();
@@ -215,6 +189,7 @@ public class QueryComponent<E> extends JPanel {
         this.entityClass = entityClass;
         //initialize with initial item in order to minimize trouble with null
         //being set as editor item in JComboBox.setEditor
+        List<QueryHistoryEntry> initialHistory = entryStorage.retrieve(entityClass);
         this.queryComboBoxModel = new SortedComboBoxModel<>(QUERY_HISTORY_COMPARATOR_USAGE,
                 new LinkedList<>(initialHistory));
         this.queryComboBoxEditor = new QueryComboBoxEditor(entityClass);
@@ -222,11 +197,12 @@ public class QueryComponent<E> extends JPanel {
                 //of editor to null, so statement after initComponent is
                 //necessary
         this.initComponents();
-        if(initialSelectedHistoryEntry != null) {
-            if(!initialHistory.contains(initialSelectedHistoryEntry)) {
-                throw new IllegalArgumentException("if initialSelectedHistoryEntry is != null it has to be contained in initialHistory");
+        QueryHistoryEntry initiallySelectedEntry = entryStorage.getInitialEntry(entityClass);
+        if(initiallySelectedEntry != null) {
+            if(!initialHistory.contains(initiallySelectedEntry)) {
+                throw new IllegalArgumentException("if initialSelectedQueryHistoryEntry is != null it has to be contained in initialHistory");
             }
-            this.queryComboBox.setSelectedItem(initialSelectedHistoryEntry);
+            this.queryComboBox.setSelectedItem(initiallySelectedEntry);
         } else {
             if(!initialHistory.isEmpty()) {
                 this.queryComboBox.setSelectedItem(initialHistory.get(0));
@@ -241,17 +217,15 @@ public class QueryComponent<E> extends JPanel {
         this.messageHandler = messageHandler;
         this.subtypeComboBox.setSelectedItem(SUBTYPES_DEFAULT);
         this.queryLabel.setText(String.format("%s query:", entityClass.getSimpleName()));
-        List<String> queryTexts = initialQueryTextGenerator.generateInitialQueryTexts(entityClass,
-                false //forbidSubtypes
-        );
-        assert !queryTexts.isEmpty();
-        String queryText = queryTexts.get(0);
-        executeQuery(initialQueryLimit,
-                queryText,
-                async);
+        if(initiallySelectedEntry != null) {
+            String queryText = initiallySelectedEntry.getText();
+            executeQuery(initialQueryLimit,
+                    queryText,
+                    async);
+        }
     }
 
-    public List<HistoryEntry> getQueryHistory() {
+    public List<QueryHistoryEntry> getQueryHistory() {
         return new LinkedList<>(this.getQueryComboBoxModel().getItems());
     }
 
@@ -262,12 +236,12 @@ public class QueryComponent<E> extends JPanel {
     internal implementation notes:
     - expose in order to be able to reuse/update queries
     */
-    public SortedComboBoxModel<HistoryEntry> getQueryComboBoxModel() {
+    public SortedComboBoxModel<QueryHistoryEntry> getQueryComboBoxModel() {
         return queryComboBoxModel;
     }
 
-    public InitialQueryTextGenerator getInitialQueryText() {
-        return initialQueryTextGenerator;
+    public QueryHistoryEntryStorage getEntryStorage() {
+        return entryStorage;
     }
 
     private void initComponents() {
@@ -364,8 +338,8 @@ public class QueryComponent<E> extends JPanel {
         //there's no good way to tell if the ComboBox is currently being edited
         //(the JComboBox doesn't know and thus doesn't change the selected item
         //and selected index property and the editor can't tell because it
-        //doesn't know the model)
-        HistoryEntry queryComboBoxEditorItem = queryComboBoxEditor.getItem();
+        //doesn't know the model) -> use editor to get the info
+        QueryHistoryEntry queryComboBoxEditorItem = queryComboBoxEditor.getItem();
         if(queryComboBoxEditorItem != null && !queryComboBoxModel.contains(queryComboBoxEditorItem)) {
             queryText = queryComboBoxEditorItem.getText();
             if(queryText == null || queryText.isEmpty()) {
@@ -373,8 +347,8 @@ public class QueryComponent<E> extends JPanel {
                 return;
             }
         }else if(queryComboBox.getSelectedIndex() >= 0) {
-            HistoryEntry selectedHistoryEntry = this.queryComboBox.getItemAt(this.queryComboBox.getSelectedIndex());
-            queryText = selectedHistoryEntry.getText();
+            QueryHistoryEntry selectedQueryHistoryEntry = this.queryComboBox.getItemAt(this.queryComboBox.getSelectedIndex());
+            queryText = selectedQueryHistoryEntry.getText();
         }else {
             this.queryStatusLabel.setText("No query entered or selected");
             return;
@@ -400,14 +374,14 @@ public class QueryComponent<E> extends JPanel {
     }
 
     /**
-     * Executes JQPL query {@code query}. Creates a {@link HistoryEntry} in the
+     * Executes JQPL query {@code query}. Creates a {@link QueryHistoryEntry} in the
      * {@code queryComboBoxModel} and resets the current item of
      * {@code queryComboBoxEditor}.
      * @param query
      */
     /*
     internal implementation notes:
-    - in order to produce HistoryEntrys from every query it's necessary to pass
+    - in order to produce QueryHistoryEntrys from every query it's necessary to pass
     the text of the query because there's no way to retrieve text from Criteria
     objects
     */
@@ -463,8 +437,10 @@ public class QueryComponent<E> extends JPanel {
 
     /**
      * The GUI-part of {@link #executeQuery(int, java.lang.String, boolean) }.
-     * @param queryResults
-     * @param queryText
+     * @param queryResults the query results which should have been retrieved
+     * in the non-GUI routine of executing queries, i.e.
+     * {@link #executeQueryNonGUI(int, java.lang.String) }
+     * @param queryText the text used to retrieve the query results
      */
     private void executeQueryGUI(List<E> queryResults,
             String queryText) {
@@ -508,14 +484,42 @@ public class QueryComponent<E> extends JPanel {
             listener.onQueryExecuted(new QueryComponentEvent<>(queryResults));
         }
         this.queryStatusLabel.setText("Query executed successfully.");
-        HistoryEntry entry = queryComboBoxEditor.getItem();
-        if(entry == null) {
-            //if the query came from a HistoryEntry from the combo box model
-            entry = new HistoryEntry(queryText, 1, new Date());
+        //- Rather than figuring out which (badly documented) JComboBox function
+        //returns which value in which state (editing, selected, initially
+        //empty, etc.) check that the value is added to the model and
+        //entry storage or - if already present - that it's usage count is
+        //increased
+        //- Assume that is model and store are in sync
+        QueryHistoryEntry modelEntry = null;
+        for(QueryHistoryEntry entry : queryComboBoxModel.getItems()) {
+            if(entry.getText().equals(queryText)) {
+                modelEntry = entry;
+            }
         }
-        if(!this.queryComboBoxModel.contains(entry)) {
-            this.getQueryComboBoxModel().addElement(entry);
+        if(modelEntry == null) {
+            QueryHistoryEntry newEntry = new QueryHistoryEntry(queryText,
+                    1, //usageCount
+                    new Date() //lastUsed
+            );
+            this.getQueryComboBoxModel().addElement(newEntry);
+            try {
+                this.entryStorage.store(this.entityClass,
+                        newEntry);
+            } catch (QueryHistoryEntryStorageException ex) {
+                messageHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+            }
+        }else {
+            modelEntry.setUsageCount(modelEntry.getUsageCount()+1);
+            try {
+                this.entryStorage.store(this.entityClass,
+                        modelEntry);
+            } catch (QueryHistoryEntryStorageException ex) {
+                messageHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+            }
         }
+        this.queryComboBoxModel.sort();
+            //sort no matter whether item has been added or usageCount or
+            //lastUsed has been updated
         this.queryComboBoxEditor.setItem(null); //reset to indicate the need
             //to create a new item
     }

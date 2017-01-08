@@ -14,7 +14,12 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.persistence.Entity;
 import javax.persistence.ManyToMany;
 import org.junit.Test;
@@ -38,7 +43,7 @@ public class QueryListPanelTest {
 
 
     @Test
-    public void testInit() throws IllegalArgumentException, IllegalAccessException {
+    public void testInit() throws IllegalArgumentException, IllegalAccessException, IOException, QueryHistoryEntryStorageCreationException {
         PersistenceStorage storage = mock(PersistenceStorage.class);
         when(storage.isClassSupported(any())).thenReturn(true);
         ReflectionFormBuilder reflectionFormBuilder = mock(ReflectionFormBuilder.class);
@@ -48,7 +53,13 @@ public class QueryListPanelTest {
         String bidirectionalHelpDialogTitle = "test";
         MessageHandler messageHandler = new LoggerMessageHandler(LOGGER);
         FieldInitializer fieldInitializer = mock(FieldInitializer.class);
-        InitialQueryTextGenerator initialQueryTextGenerator = new DefaultInitialQueryTextGenerator();
+        File entryStorageFile = File.createTempFile(QueryListPanelTest.class.getSimpleName(), null);
+        Set<Class<?>> entityClasses = new HashSet<>(Arrays.asList(A.class));
+        QueryHistoryEntryStorageFactory entryStorageFactory = new XMLFileQueryHistoryEntryStorageFactory(entryStorageFile,
+                entityClasses,
+                true,
+                messageHandler);
+        QueryHistoryEntryStorage initialQueryTextGenerator = entryStorageFactory.create();
         QueryListPanel instance = new QueryListPanel(storage,
                 fieldRetriever,
                 entityClass,

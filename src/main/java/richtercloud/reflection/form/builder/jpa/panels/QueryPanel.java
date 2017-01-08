@@ -116,7 +116,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             BidirectionalControlPanel bidirectionalControlPanel,
             int queryResultTableSelectionMode,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
                 messageHandler,
@@ -126,7 +126,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                 QUERY_RESULT_TABLE_HEIGHT_DEFAULT,
                 queryResultTableSelectionMode,
                 fieldInitializer,
-                initialQueryTextGenerator);
+                entryStorage);
     }
 
     public QueryPanel(PersistenceStorage storage,
@@ -139,7 +139,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             String bidirectionalHelpDialogTitle,
             int queryResultTableSelectionMode,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
                 messageHandler,
@@ -153,7 +153,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                 queryResultTableHeight,
                 queryResultTableSelectionMode,
                 fieldInitializer,
-                initialQueryTextGenerator);
+                entryStorage);
     }
 
     /**
@@ -186,13 +186,13 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             int queryResultTableHeight,
             int queryResultTableSelectionMode,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator) throws IllegalArgumentException, IllegalAccessException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
         super(bidirectionalControlPanel,
                 new QueryComponent<>(storage,
                         entityClass,
                         messageHandler,
                         true, //async
-                        initialQueryTextGenerator
+                        entryStorage
                 ),
                 fieldRetriever,
                 entityClass,

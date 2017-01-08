@@ -36,7 +36,7 @@ public class SortedComboBoxModel<E> extends DefaultComboBoxModel<E> {
     - comparator can only be assigned at instantiation of PriorityQueue, so
     it has to be set here
      */
-    SortedComboBoxModel(Comparator<E> comparator, List<E> items) {
+    public SortedComboBoxModel(Comparator<E> comparator, List<E> items) {
         this.comparator = comparator;
         this.items = items;
         //don't just intialize with reference, but do what addElement would
@@ -50,7 +50,7 @@ public class SortedComboBoxModel<E> extends DefaultComboBoxModel<E> {
     @Override
     public void addElement(E item) {
         this.items.add(item);
-        Collections.sort(this.items, this.comparator);
+        sort();
         super.addElement(item);
     }
 
@@ -63,7 +63,7 @@ public class SortedComboBoxModel<E> extends DefaultComboBoxModel<E> {
     @Override
     public void insertElementAt(E item, int index) {
         this.items.add(index, item);
-        Collections.sort(this.items, this.comparator);
+        sort();
         super.insertElementAt(item, index);
     }
 
@@ -87,12 +87,15 @@ public class SortedComboBoxModel<E> extends DefaultComboBoxModel<E> {
     internal implementation notes:
     - must not be unmodifiable because Hibernate will invoke clear on it
      */
-    List<E> getItems() {
+    public List<E> getItems() {
         return this.items;
     }
 
-    boolean contains(E element) {
+    public boolean contains(E element) {
         return this.items.contains(element);
     }
 
+    public void sort() {
+        Collections.sort(this.items, this.comparator);
+    }
 }

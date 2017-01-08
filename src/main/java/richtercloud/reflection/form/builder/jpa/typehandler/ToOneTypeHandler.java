@@ -32,13 +32,13 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.panels.BidirectionalControlPanel;
-import richtercloud.reflection.form.builder.jpa.panels.InitialQueryTextGenerator;
+import richtercloud.reflection.form.builder.jpa.panels.QueryHistoryEntryStorage;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanel;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 
 /**
  *
@@ -49,14 +49,14 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
     private final String bidirectionalHelpDialogTitle;
     private final MessageHandler messageHandler;
     private final FieldInitializer fieldInitializer;
-    private final InitialQueryTextGenerator initialQueryTextGenerator;
+    private final QueryHistoryEntryStorage entryStorage;
     private final FieldRetriever readOnlyFieldRetriever;
 
     public ToOneTypeHandler(PersistenceStorage storage,
             MessageHandler messageHandler,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
-            InitialQueryTextGenerator initialQueryTextGenerator,
+            QueryHistoryEntryStorage initialQueryTextGenerator,
             FieldRetriever readOnlyFieldRetriever) {
         if(storage == null) {
             throw new IllegalArgumentException("storage mustn't be null");
@@ -68,7 +68,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
         this.messageHandler = messageHandler;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.fieldInitializer = fieldInitializer;
-        this.initialQueryTextGenerator = initialQueryTextGenerator;
+        this.entryStorage = initialQueryTextGenerator;
         this.readOnlyFieldRetriever = readOnlyFieldRetriever;
     }
 
@@ -102,7 +102,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
                 bidirectionalControlPanel,
                 ListSelectionModel.SINGLE_SELECTION,
                 fieldInitializer,
-                initialQueryTextGenerator);
+                entryStorage);
         retValue.addUpdateListener(new QueryPanelUpdateListener() {
             @Override
             public void onUpdate(QueryPanelUpdateEvent event) {
