@@ -16,11 +16,13 @@ package richtercloud.reflection.form.builder.jpa.panels;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.swing.JOptionPane;
@@ -51,7 +53,7 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
         public void run() {
             try {
                 Map<Class<?>, List<QueryHistoryEntry>> head = fileStoreThreadQueue.take();
-                while(head != null) {
+                while(!(head instanceof Poison)) {
                     try {
                         store(head);
                     } catch (IOException ex) {
@@ -67,6 +69,9 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
 
     public AbstractFileQueryHistoryEntryStorage(File file,
             MessageHandler messageHandler) throws ClassNotFoundException, IOException {
+        if(file == null) {
+            throw new IllegalArgumentException("file mustn't be null");
+        }
         this.file = file;
         this.messageHandler = messageHandler;
         if(!file.exists()) {
@@ -85,7 +90,7 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
 
     @Override
     protected void finalize() throws Throwable {
-        fileStoreThreadQueue.offer(null);
+        fileStoreThreadQueue.add(new Poison());
         fileStoreThread.join();
         super.finalize();
     }
@@ -122,7 +127,10 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
                 //otherwise usageCount and lastUsage aren't updated
         }
         entries.add(entry);
-        fileStoreThreadQueue.offer(cache);
+        fileStoreThreadQueue.offer(new HashMap<>(cache //need to clone here in
+                //order to avoid ConcurrentModificationException (cloning after
+                //polling from queue in thread doesn't help)
+        ));
     }
 
     @Override
@@ -149,5 +157,68 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
             }
         }
         return mostUsed;
+    }
+
+    private class Poison implements Map<Class<?>, List<QueryHistoryEntry>> {
+
+        @Override
+        public int size() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public boolean isEmpty() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public boolean containsKey(Object key) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public boolean containsValue(Object value) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public List<QueryHistoryEntry> get(Object key) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public List<QueryHistoryEntry> put(Class<?> key, List<QueryHistoryEntry> value) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public List<QueryHistoryEntry> remove(Object key) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public void putAll(Map<? extends Class<?>, ? extends List<QueryHistoryEntry>> m) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public void clear() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public Set<Class<?>> keySet() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public Collection<List<QueryHistoryEntry>> values() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public Set<Entry<Class<?>, List<QueryHistoryEntry>>> entrySet() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
     }
 }

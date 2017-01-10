@@ -31,6 +31,12 @@ public class QueryHistoryEntry implements Serializable, Comparable<QueryHistoryE
     protected QueryHistoryEntry() {
     }
 
+    public QueryHistoryEntry(String text) {
+        this(text,
+                1,
+                new Date());
+    }
+
     public QueryHistoryEntry(String text, int usageCount, Date lastUsage) {
         this.text = text;
         this.usageCount = usageCount;
