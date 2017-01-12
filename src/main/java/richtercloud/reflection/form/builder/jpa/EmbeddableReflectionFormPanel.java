@@ -42,7 +42,7 @@ public class EmbeddableReflectionFormPanel<T> extends JPAReflectionFormPanel<T, 
             T instance,
             Class<? extends T> entityClass,
             Map<Field, JComponent> fieldMapping,
-            FieldHandler fieldHandler) throws IllegalArgumentException, IllegalAccessException {
+            FieldHandler fieldHandler) {
         super(storage,
                 instance,
                 entityClass,

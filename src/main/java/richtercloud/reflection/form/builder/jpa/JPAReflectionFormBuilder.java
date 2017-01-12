@@ -14,13 +14,20 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
+import java.awt.Component;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
@@ -32,10 +39,13 @@ import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
+import richtercloud.reflection.form.builder.TransformationException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
+import richtercloud.reflection.form.builder.jpa.annotations.UsedUpdate;
+import richtercloud.reflection.form.builder.jpa.idapplier.IdApplicationException;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
@@ -59,6 +69,8 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
     private final IdApplier idApplier;
     private final ConfirmMessageHandler confirmMessageHandler;
     private final Map<Class<?>, WarningHandler<?>> warningHandlers;
+    private final IdGenerator idGenerator;
+    private final Map<Object, Set<Component>> idFieldComponentMap = new HashMap<>();
 
     public JPAReflectionFormBuilder(PersistenceStorage storage,
             String fieldDescriptionDialogTitle,
@@ -66,6 +78,7 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
             ConfirmMessageHandler confirmMessageHandler,
             JPAFieldRetriever fieldRetriever,
             IdApplier idApplier,
+            IdGenerator idGenerator,
             Map<Class<?>, WarningHandler<?>> warningHandlers) {
         super(fieldDescriptionDialogTitle,
                 messageHandler,
@@ -78,14 +91,22 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
             throw new IllegalArgumentException("idApplier mustn't be null");
         }
         this.idApplier = idApplier;
+        if(idGenerator == null) {
+            throw new IllegalArgumentException("idGenerator mustn't be null");
+        }
+        this.idGenerator = idGenerator;
         this.confirmMessageHandler = confirmMessageHandler;
         this.warningHandlers = warningHandlers;
+    }
+
+    public Map<Object, Set<Component>> getIdFieldComponentMap() {
+        return idFieldComponentMap;
     }
 
     public ReflectionFormPanel transformEntityClass(Class<?> entityClass,
             Object entityToUpdate,
             boolean editingMode,
-            FieldHandler fieldHandler) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, FieldHandlingException {
+            FieldHandler fieldHandler) throws TransformationException {
         final Map<Field, JComponent> fieldMapping = new HashMap<>();
         Object instance = prepareInstance(entityClass, entityToUpdate);
         ReflectionFormPanel retValue = new EntityReflectionFormPanel(storage,
@@ -104,18 +125,22 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                 fieldMapping,
                 retValue,
                 fieldHandler);
+        Set<Component> idFieldComponents = idFieldComponentMap.get(instance);
+        try {
+            idApplier.applyId(instance,
+                    idFieldComponents);
+                //can't be moved to prepareInstance because idFieldComponentMap
+                //is still empty then
+        } catch (IdApplicationException ex) {
+            throw new TransformationException(ex);
+        }
         return retValue;
     }
 
     @Override
     public ReflectionFormPanel transformEntityClass(Class<?> entityClass,
             Object entityToUpdate,
-            FieldHandler fieldHandler) throws InstantiationException,
-            IllegalAccessException,
-            IllegalArgumentException,
-            InvocationTargetException,
-            NoSuchMethodException,
-            FieldHandlingException {
+            FieldHandler fieldHandler) throws TransformationException {
         return transformEntityClass(entityClass,
                 entityToUpdate,
                 false, //editingMode
@@ -124,11 +149,7 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
 
     public EmbeddableReflectionFormPanel<?> transformEmbeddable(Class<?> embeddableClass,
             Object instance,
-            FieldHandler fieldHandler) throws IllegalAccessException,
-            InvocationTargetException,
-            NoSuchMethodException,
-            FieldHandlingException,
-            InstantiationException {
+            FieldHandler fieldHandler) throws TransformationException {
         final Map<Field, JComponent> fieldMapping = new HashMap<>();
         Object instance0 = prepareInstance(embeddableClass, instance);
         EmbeddableReflectionFormPanel<Object> retValue = new EmbeddableReflectionFormPanel<>(storage,
@@ -167,7 +188,69 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
      * @throws IllegalAccessException
      */
     @Override
-    protected void onFieldUpdate(FieldUpdateEvent event, Field field, Object instance) throws IllegalArgumentException, IllegalAccessException {
+    protected void onFieldUpdate(FieldUpdateEvent event,
+            Field field,
+            Object instance) throws IllegalArgumentException,
+            IllegalAccessException,
+            InvocationTargetException {
+        Object eventNewValue = event.getNewValue();
+        //handle UsedUpdate annotated method
+        Class<?> fieldType = eventNewValue.getClass();
+        Class<?> fieldTypePointer = fieldType;
+        List<Method> fieldTypeMethods = new LinkedList<>();
+        while(fieldTypePointer != null
+                && !fieldTypePointer.equals(Object.class)) {
+            fieldTypeMethods.addAll(Arrays.asList(fieldTypePointer.getDeclaredMethods()));
+            fieldTypePointer = fieldTypePointer.getSuperclass();
+        }
+        Method usedUpdateMethod = null;
+        for(Method fieldClassMethod : fieldTypeMethods) {
+            if(fieldClassMethod.getDeclaredAnnotation(UsedUpdate.class) != null) {
+                if(usedUpdateMethod != null) {
+                    throw new IllegalStateException(String.format("Both methods %s and %s of class %s have annotation %s",
+                            fieldClassMethod,
+                            usedUpdateMethod,
+                            field.getType().getName(),
+                            UsedUpdate.class.getName()));
+                }
+                usedUpdateMethod = fieldClassMethod;
+            }
+        }
+        if(usedUpdateMethod != null) {
+            if(!Modifier.isPrivate(usedUpdateMethod.getModifiers())) {
+                throw new IllegalStateException(String.format("method %s of class %s has annotation %s and isn't private",
+                        usedUpdateMethod,
+                        fieldType.getName(),
+                        UsedUpdate.class.getName()));
+            }
+            if(!usedUpdateMethod.getReturnType().equals(void.class)) {
+                throw new IllegalArgumentException(String.format("method %s of class %s has annotation %s and doesn't return void",
+                        usedUpdateMethod,
+                        fieldType.getName(),
+                        UsedUpdate.class.getName()));
+            }
+            if(usedUpdateMethod.getParameterCount() != 0) {
+                throw new IllegalStateException(String.format("method %s of class %s has annotation %s and declares arguments",
+                        usedUpdateMethod,
+                        fieldType.getName(),
+                        UsedUpdate.class.getName()));
+            }
+            usedUpdateMethod.setAccessible(true);
+            usedUpdateMethod.invoke(eventNewValue);
+            try {
+                storage.registerPostStoreCallback(instance, (object) -> {
+                    try {
+                        storage.update(eventNewValue);
+                    } catch (StorageException ex) {
+                        getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                    }
+                });
+            } catch (StorageException ex) {
+                getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+            }
+        }
+
+        //handle MappedFieldUpdateEvent
         if(event instanceof MappedFieldUpdateEvent) {
             MappedFieldUpdateEvent eventCast = (MappedFieldUpdateEvent) event;
             field.setAccessible(true);
@@ -175,36 +258,44 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
             if(mappedField != null) {
                 mappedField.setAccessible(true);
                 if(field.getAnnotation(OneToOne.class) != null) {
-                    mappedField.set(event.getNewValue(),
+                    mappedField.set(eventNewValue,
                             instance);
-                    storage.registerPostStoreCallback(instance, (object) -> {
-                        try {
-                            storage.update(event.getNewValue());
-                        } catch (StorageException ex) {
-                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
-                        }
-                    });
+                    try {
+                        storage.registerPostStoreCallback(instance, (object) -> {
+                            try {
+                                storage.update(eventNewValue);
+                            } catch (StorageException ex) {
+                                getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                            }
+                        });
+                    } catch (StorageException ex) {
+                        getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                    }
                 }else if(field.getAnnotation(ManyToOne.class) != null) {
-                    Collection mappedFieldValue = (Collection) mappedField.get(event.getNewValue());
+                    Collection mappedFieldValue = (Collection) mappedField.get(eventNewValue);
                     if(mappedFieldValue == null) {
                         throw new IllegalArgumentException(String.format("the mapped field %s.%s of field %s.%s mustn't be null",
                                 mappedField.getDeclaringClass().getName(),
                                 mappedField.getName(),
-                                field.getDeclaringClass().getName(),
+                                fieldType.getName(),
                                 field.getName()));
                     }
                     mappedFieldValue.add(instance);
-                    storage.registerPostStoreCallback(instance, (object) -> {
-                        try {
-                            storage.update(event.getNewValue());
-                        } catch (StorageException ex) {
-                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
-                        }
-                    });
+                    try {
+                        storage.registerPostStoreCallback(instance, (object) -> {
+                            try {
+                                storage.update(eventNewValue);
+                            } catch (StorageException ex) {
+                                getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                            }
+                        });
+                    } catch (StorageException ex) {
+                        getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                    }
                 }else if(field.getAnnotation(OneToMany.class) != null
                         || field.getAnnotation(ManyToMany.class) != null) {
                     Collection fieldValues = (Collection) field.get(instance);
-                    Collection newValues = (Collection) event.getNewValue();
+                    Collection newValues = (Collection) eventNewValue;
                     if(fieldValues == null) {
                         throw new IllegalArgumentException(String.format(
                                 "fields annotated with %s or %s are expected "
@@ -228,14 +319,18 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                     if(field.getAnnotation(OneToMany.class) != null) {
                         for(Object newValue : newValues) {
                             mappedField.set(newValue, instance);
-                            storage.registerPostStoreCallback(instance, (object) -> {
-                                try {
-                                    storage.update(newValue);
-                                } catch (StorageException ex) {
-                                    getMessageHandler().handle(new Message(ex,
-                                            JOptionPane.ERROR_MESSAGE));
-                                }
-                            });
+                            try {
+                                storage.registerPostStoreCallback(instance, (object) -> {
+                                    try {
+                                        storage.update(newValue);
+                                    } catch (StorageException ex) {
+                                        getMessageHandler().handle(new Message(ex,
+                                                JOptionPane.ERROR_MESSAGE));
+                                    }
+                                });
+                            } catch (StorageException ex) {
+                                getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                            }
                         }
                     }else {
                         //ManyToMany != null
@@ -251,18 +346,22 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                                 throw new IllegalArgumentException(String.format("the mapped field %s.%s of field %s.%s mustn't be null",
                                         mappedField.getDeclaringClass().getName(),
                                         mappedField.getName(),
-                                        field.getDeclaringClass().getName(),
+                                        fieldType.getName(),
                                         field.getName()));
                             }
                             mappedFieldValue.add(instance);
-                            storage.registerPostStoreCallback(instance, (object) -> {
-                                try {
-                                    storage.update(newValue);
-                                } catch (StorageException ex) {
-                                    getMessageHandler().handle(new Message(ex,
-                                            JOptionPane.ERROR_MESSAGE));
-                                }
-                            });
+                            try {
+                                storage.registerPostStoreCallback(instance, (object) -> {
+                                    try {
+                                        storage.update(newValue);
+                                    } catch (StorageException ex) {
+                                        getMessageHandler().handle(new Message(ex,
+                                                JOptionPane.ERROR_MESSAGE));
+                                    }
+                                });
+                            } catch (StorageException ex) {
+                                getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                            }
                         }
                     }
                 }else {
@@ -274,7 +373,7 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
     }
 
     @Override
-    protected Object prepareInstance(Class<?> entityClass, Object entityToUpdate) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    protected Object prepareInstance(Class<?> entityClass, Object entityToUpdate) throws TransformationException {
         //PersistenceStorage.update might cause validation exception since it
         //refers to a freshly created instance -> can't use any EntityManager
         //factory methods -> use PersistenceStroage.registerStoreCallback where
@@ -285,5 +384,38 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
         Object retValue = super.prepareInstance(entityClass,
                 entityToUpdate);
         return retValue;
+    }
+
+    @Override
+    protected JComponent getClassComponent(Field field,
+            Class<?> entityClass,
+            Object instance,
+            FieldHandler fieldHandler) throws IllegalAccessException,
+            FieldHandlingException,
+            IllegalArgumentException,
+            InvocationTargetException,
+            NoSuchMethodException,
+            InstantiationException {
+        JComponent retValue = super.getClassComponent(field,
+                entityClass,
+                instance,
+                fieldHandler);
+        if(field.getAnnotation(Id.class) != null) {
+            registerIdFieldComponent(instance,
+                    retValue //fieldComponent
+            );
+        }
+        return retValue;
+    }
+
+    protected void registerIdFieldComponent(Object instance,
+            JComponent fieldComponent) {
+        Set<Component> idFieldComponents = this.idFieldComponentMap.get(instance);
+        if(idFieldComponents == null) {
+            idFieldComponents = new HashSet<>();
+            idFieldComponentMap.put(instance,
+                    idFieldComponents);
+        }
+        idFieldComponents.add(fieldComponent);
     }
 }

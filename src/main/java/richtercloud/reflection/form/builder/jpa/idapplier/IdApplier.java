@@ -27,5 +27,17 @@ import javax.swing.JComponent;
  */
 public interface IdApplier<C extends JComponent> {
 
-    boolean applyId(Object entity, Set<C> idFieldComponents);
+    /**
+     * Checks whether an ID has already been set on {@code idFieldComponents}
+     * and returns immediately if this is the case (it's up to implementations
+     * to decide how to determine that an ID has been set - most likely they'll
+     * assume that it isn't set if one or all fields are {@code null}), then
+     * retrieves a valid ID from a source (e.g. a {@link IdGenerator} and sets
+     * it on {@code idFieldComponents}.
+     *
+     * @param entity
+     * @param idFieldComponents
+     * @throws IdApplicationException
+     */
+    void applyId(Object entity, Set<C> idFieldComponents) throws IdApplicationException;
 }

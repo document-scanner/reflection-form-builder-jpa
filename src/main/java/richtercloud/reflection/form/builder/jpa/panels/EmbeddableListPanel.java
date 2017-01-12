@@ -26,8 +26,8 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
+import richtercloud.reflection.form.builder.TransformationException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
-import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
@@ -106,23 +106,19 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
     }
 
     @Override
-    protected void editRow() throws FieldHandlingException {
-        try {
-            ReflectionFormPanel reflectionFormPanel = this.getReflectionFormBuilder().transformEmbeddable(
-                    embeddableClass, //entityClass
-                    this.getMainListModel().getData().get(this.getMainList().getSelectedRow()), //entityToUpdate
-                    embeddableFieldHandler
-            );
-            JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-            EmbeddableListPanelEditDialog dialog = new EmbeddableListPanelEditDialog(topFrame, //parent
-                    reflectionFormPanel //reflectionFormPanel
-            );
-            dialog.setVisible(true); //since EmbeddableListPanelEditDialog is
-                //always model this will block until the dialog is closed
-            this.getMainList().updateUI(); //reflect changes done by field
-                    //updates
-        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException ex) {
-            throw new RuntimeException(ex);
-        }
+    protected void editRow() throws TransformationException {
+        ReflectionFormPanel reflectionFormPanel = this.getReflectionFormBuilder().transformEmbeddable(
+                embeddableClass, //entityClass
+                this.getMainListModel().getData().get(this.getMainList().getSelectedRow()), //entityToUpdate
+                embeddableFieldHandler
+        );
+        JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        EmbeddableListPanelEditDialog dialog = new EmbeddableListPanelEditDialog(topFrame, //parent
+                reflectionFormPanel //reflectionFormPanel
+        );
+        dialog.setVisible(true); //since EmbeddableListPanelEditDialog is
+            //always model this will block until the dialog is closed
+        this.getMainList().updateUI(); //reflect changes done by field
+                //updates
     }
 }

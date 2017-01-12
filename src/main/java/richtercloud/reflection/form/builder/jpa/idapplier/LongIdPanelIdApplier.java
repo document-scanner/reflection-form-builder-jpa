@@ -14,15 +14,9 @@
  */
 package richtercloud.reflection.form.builder.jpa.idapplier;
 
-import java.lang.reflect.Field;
-import java.util.Map;
 import java.util.Set;
-import javax.swing.JComponent;
-import javax.validation.Validation;
-import javax.validation.ValidatorFactory;
-import richtercloud.reflection.form.builder.jpa.EntityValidator;
+import richtercloud.reflection.form.builder.jpa.IdGenerationException;
 import richtercloud.reflection.form.builder.jpa.IdGenerator;
-import richtercloud.reflection.form.builder.jpa.panels.IdGenerationValidation;
 import richtercloud.reflection.form.builder.jpa.panels.LongIdPanel;
 
 /**
@@ -30,17 +24,10 @@ import richtercloud.reflection.form.builder.jpa.panels.LongIdPanel;
  * @author richter
  */
 public class LongIdPanelIdApplier implements IdApplier<LongIdPanel> {
-    private static final ValidatorFactory FACTORY = Validation.buildDefaultValidatorFactory();
-    private final Map<Field, JComponent> fieldMapping;
-    private final EntityValidator entityValidator;
     private final IdGenerator<Long> idGenerator;
 
-    public LongIdPanelIdApplier(Map<Field, JComponent> fieldMapping,
-            IdGenerator<Long> idGenerator,
-            EntityValidator entityValidator) {
-        this.fieldMapping = fieldMapping;
+    public LongIdPanelIdApplier(IdGenerator<Long> idGenerator) {
         this.idGenerator = idGenerator;
-        this.entityValidator = entityValidator;
     }
 
     /**
@@ -49,20 +36,24 @@ public class LongIdPanelIdApplier implements IdApplier<LongIdPanel> {
      * @param idFieldComponents
      * @throws IllegalArgumentException if {@code idFieldComponents} contains
      * more than one value
-     * @return {@code true} if the ID was applied successfully, {@code false}
-     * otherwise
      */
     @Override
-    public boolean applyId(Object entity, Set<LongIdPanel> idFieldComponents) {
+    public void applyId(Object entity, Set<LongIdPanel> idFieldComponents) throws IdApplicationException {
         if(idFieldComponents.size() != 1) {
-            throw new IllegalArgumentException("idFieldComponents has to contain exactly 1 component");
+            throw new IllegalArgumentException("more than one item in idFieldComponents not supported yet");
         }
-        if(!this.entityValidator.validate(entity, IdGenerationValidation.class)) {
-            return false;
-        }
-        Long nextId = idGenerator.getNextId(entity);
         LongIdPanel component = idFieldComponents.iterator().next();
+        if(component.getValue() != null) {
+            //id already set -> skip in order to avoid another id being assigned
+            //during persisting
+            return;
+        }
+        Long nextId;
+        try {
+            nextId = idGenerator.getNextId(entity);
+        } catch (IdGenerationException ex) {
+            throw new IdApplicationException(ex);
+        }
         component.setValue(nextId);
-        return true;
     }
 }

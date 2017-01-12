@@ -37,6 +37,7 @@ import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
+import richtercloud.reflection.form.builder.jpa.idapplier.IdApplicationException;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
@@ -118,7 +119,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
             JPAFieldRetriever fieldRetriever,
             FieldHandler fieldHandler,
             IdApplier idApplier,
-            Map<Class<?>, WarningHandler<?>> warningHandlers) throws IllegalArgumentException, IllegalAccessException {
+            Map<Class<?>, WarningHandler<?>> warningHandlers) {
         super(storage,
                 instance,
                 entityClass,
@@ -241,11 +242,18 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
             //only (try to) change id if not in editing mode
             Set<Field> idFields = this.fieldRetriever.getIdFields(getEntityClass());
             Set<JComponent> idFieldComponents = retrieveIdFieldComponents(idFields);
-            idApplier.applyId(instance,
-                    idFieldComponents);
+            try {
+                idApplier.applyId(instance,
+                        idFieldComponents);
+            } catch (IdApplicationException ex) {
+                messageHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+            }
         }
 
-        if(!this.entityValidator.validate(instance, Default.class)) {
+        try {
+            this.entityValidator.validate(instance, Default.class);
+        }catch(EntityValidationException ex) {
+            messageHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
             return;
         }
         if(!this.entityValidator.handleWarnings(instance)) {

@@ -19,8 +19,11 @@ import javax.swing.JComponent;
 
 /**
  * An {@link IdApplier} which relies on the {@link GeneratedValue} annotation
- * which is managed by the JPA provided and thus requires no actions except
- * updating the field values.
+ * which is managed by the JPA provider.
+ *
+ * Note that if you can't use a business key as JPA ID, you'll most likely have
+ * to manually assign your IDs and thus this implementation can't be used.
+ *
  * @author richter
  */
 /*
@@ -33,7 +36,7 @@ used
 public class GeneratedValueIdApplier implements IdApplier<JComponent> {
 
     @Override
-    public boolean applyId(Object entity, Set<JComponent> component) {
-        return true;
+    public void applyId(Object entity, Set<JComponent> component) {
+        //nothing to do
     }
 }

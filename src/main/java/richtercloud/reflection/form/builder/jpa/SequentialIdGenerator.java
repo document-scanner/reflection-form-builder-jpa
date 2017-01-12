@@ -14,31 +14,42 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
+
 /**
  *
  * @author richter
  */
 public class SequentialIdGenerator implements IdGenerator<Long> {
-    private final static SequentialIdGenerator INSTANCE = new SequentialIdGenerator();
+    private final static Logger LOGGER = LoggerFactory.getLogger(SequentialIdGenerator.class);
+    public final static String SEQUENCE_NAME_DEFAULT = "sequential-id";
+    private final String sequenceName = SEQUENCE_NAME_DEFAULT;
+    private final SequenceManager<Long> sequenceManager;
 
-    public static SequentialIdGenerator getInstance() {
-        return INSTANCE;
+    public SequentialIdGenerator(SequenceManager<Long> sequenceManager) throws IdGenerationException {
+        this.sequenceManager = sequenceManager;
+        init();
     }
-    private long nextId = 0;
 
-    protected SequentialIdGenerator() {
+    private void init() throws IdGenerationException {
+        try {
+            if(!sequenceManager.checkSequenceExists(sequenceName)) {
+                sequenceManager.createSequence(sequenceName);
+            }
+        } catch (SequenceManagementException ex) {
+            throw new IdGenerationException(ex);
+        }
     }
 
-    /**
-     * Returns the next id value, regardless which type is passed as
-     * {@code clazz} argument.
-     * @param instance
-     * @return
-     */
     @Override
-    public Long getNextId(Object instance) {
-        this.nextId += 1;
-        return nextId;
+    public Long getNextId(Object instance) throws IdGenerationException {
+        try {
+            return sequenceManager.getNextSequenceValue(sequenceName);
+        } catch (SequenceManagementException ex) {
+            throw new IdGenerationException(ex);
+        }
     }
-
 }

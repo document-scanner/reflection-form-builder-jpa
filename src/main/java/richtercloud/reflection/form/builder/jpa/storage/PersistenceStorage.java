@@ -41,6 +41,9 @@ way -> Then it's very easy to expose EntityManager (while this interface still
 makes sense because implementations handle a lot of workarounds as well as start
 and shutdown routines) and leave initialization to a FieldInitializer interface
 which can get the EntityManager to unwrap JPA provider specific classes.
+- handle check of existence of sequence and creation in SequenceManager in order
+to avoid messing up PersistenceStorage inheritance chain (composition over
+inheritance)
 */
 public interface PersistenceStorage extends Storage<Object, AbstractPersistenceStorageConf> {
 

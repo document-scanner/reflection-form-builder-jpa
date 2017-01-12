@@ -125,22 +125,16 @@ public class EntityValidator {
      *
      * @param instance
      * @param groups
-     * @return {@code true} if the validation passed without any violations,
-     * {@code false} otherwise
      */
-    public boolean validate(Object instance, Class<?>... groups) {
+    public void validate(Object instance, Class<?>... groups) throws EntityValidationException {
         Set violations = VALIDATOR.validate(instance,
                 groups);
         if(!violations.isEmpty()) {
             String message = buildConstraintVioloationMessage(violations,
                     instance,
                     this.fieldRetriever);
-            this.messageHandler.handle(new Message(message,
-                    JOptionPane.WARNING_MESSAGE,
-                    "Validation failed"));
-            return false;
+            throw new EntityValidationException(message);
         }
-        return true;
     }
 
     /**

@@ -27,6 +27,8 @@ needs to be ensured for JPA anyway
 - This interface is no longer used in document-scanner where it was used for
 programmatic ID generation (with the option of manual ID assignment), but it
 will be kept in the reflection-form-builder library
+- could be handled in PersistenceStorage, but a separate interface follows
+composition-over-inheritance
 */
 public interface IdGenerator<T> {
 
@@ -34,6 +36,8 @@ public interface IdGenerator<T> {
      * Get the next available Id for the entity {@code instance}.
      * @param instance
      * @return the next id
+     * @throws richtercloud.reflection.form.builder.jpa.IdGenerationException
+     * wraps any exception which occurs during ID generation
      */
-    T getNextId(Object instance);
+    T getNextId(Object instance) throws IdGenerationException;
 }

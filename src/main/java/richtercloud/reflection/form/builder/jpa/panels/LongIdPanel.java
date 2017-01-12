@@ -18,9 +18,12 @@ import java.util.Arrays;
 import java.util.HashSet;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.LayoutStyle;
+import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.reflection.form.builder.jpa.idapplier.IdApplicationException;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.panels.NumberPanel;
 
@@ -75,7 +78,11 @@ public class LongIdPanel extends NumberPanel<Long> {
     }
 
     private void nextIdButtonActionPerformed(java.awt.event.ActionEvent evt) {
-        idApplier.applyId(entity, new HashSet<>(Arrays.asList(this)));
+        try {
+            idApplier.applyId(entity, new HashSet<>(Arrays.asList(this)));
+        } catch (IdApplicationException ex) {
+            messageHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+        }
     }
 
 }

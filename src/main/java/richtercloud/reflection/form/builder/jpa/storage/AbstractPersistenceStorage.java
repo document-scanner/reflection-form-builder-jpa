@@ -134,6 +134,12 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     public void store(Object object) throws StorageException {
         EntityManager entityManager = this.retrieveEntityManager();
         try {
+            List<StorageCallback> preStoreCallbacks = getPreStoreCallbacks(object);
+            if(preStoreCallbacks != null) {
+                for(StorageCallback preStoreCallback : preStoreCallbacks) {
+                    preStoreCallback.callback(object);
+                }
+            }
             //- Skipping of values in collections of mapped fields in many-to-many
             //relationships have nothing to do with EntityManager.merge because
             //they're persisted only on one side -> use StroageCallbacks to
@@ -146,10 +152,10 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
             entityManager.getTransaction().begin();
             entityManager.persist(object);
             entityManager.getTransaction().commit();
-            List<StorageCallback> storeCallbacks = getPostStoreCallbacks(object);
-            if(storeCallbacks != null) {
-                for(StorageCallback storeCallback : storeCallbacks) {
-                    storeCallback.callback(object);
+            List<StorageCallback> postStoreCallbacks = getPostStoreCallbacks(object);
+            if(postStoreCallbacks != null) {
+                for(StorageCallback postStoreCallback : postStoreCallbacks) {
+                    postStoreCallback.callback(object);
                 }
             }
             entityManager.detach(object); //detaching necessary in
@@ -181,6 +187,7 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
         try {
             entityManager.getTransaction().begin();
             entityManager.merge(object);
+            entityManager.flush();
             entityManager.getTransaction().commit();
             entityManager.detach(object); //detaching necessary in
                 //order to be able to change one single value and save again
