@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.swing.JOptionPane;
 import org.apache.commons.io.FileUtils;
 import richtercloud.message.handler.Message;
@@ -66,6 +68,13 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
             }
         }
     };
+    /**
+     * It's not sufficient to create a swallow copy of {@code cache} because it
+     * only contains references to lists which remain the same and still can
+     * cause {@link ConcurrentModificationException}s when being persisted
+     * asynchronously.
+     */
+    private final Lock cacheCopyLock = new ReentrantLock();
 
     public AbstractFileQueryHistoryEntryStorage(File file,
             MessageHandler messageHandler) throws ClassNotFoundException, IOException {
@@ -127,10 +136,27 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
                 //otherwise usageCount and lastUsage aren't updated
         }
         entries.add(entry);
-        fileStoreThreadQueue.offer(new HashMap<>(cache //need to clone here in
-                //order to avoid ConcurrentModificationException (cloning after
-                //polling from queue in thread doesn't help)
-        ));
+
+        //copy cache (see field comment for cacheCopyLock for explanation)
+        Map<Class<?>, List<QueryHistoryEntry>> cacheCopy;
+        cacheCopyLock.lock();
+        try {
+            cacheCopy = copyCache();
+        }finally {
+            cacheCopyLock.unlock();
+        }
+        fileStoreThreadQueue.offer(new HashMap<>(cacheCopy));
+    }
+
+    private Map<Class<?>, List<QueryHistoryEntry>> copyCache() {
+        Map<Class<?>, List<QueryHistoryEntry>> retValue = new HashMap<>();
+        for(Class<?> key : cache.keySet()) {
+            List<QueryHistoryEntry> value = cache.get(key);
+            List<QueryHistoryEntry> copy = new LinkedList<>(value);
+            retValue.put(key,
+                    copy);
+        }
+        return retValue;
     }
 
     @Override
