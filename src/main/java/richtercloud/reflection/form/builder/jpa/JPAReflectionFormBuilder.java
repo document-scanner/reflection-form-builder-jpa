@@ -194,61 +194,63 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
             IllegalAccessException,
             InvocationTargetException {
         Object eventNewValue = event.getNewValue();
-        //handle UsedUpdate annotated method
-        Class<?> fieldType = eventNewValue.getClass();
-        Class<?> fieldTypePointer = fieldType;
-        List<Method> fieldTypeMethods = new LinkedList<>();
-        while(fieldTypePointer != null
-                && !fieldTypePointer.equals(Object.class)) {
-            fieldTypeMethods.addAll(Arrays.asList(fieldTypePointer.getDeclaredMethods()));
-            fieldTypePointer = fieldTypePointer.getSuperclass();
-        }
-        Method usedUpdateMethod = null;
-        for(Method fieldClassMethod : fieldTypeMethods) {
-            if(fieldClassMethod.getDeclaredAnnotation(UsedUpdate.class) != null) {
-                if(usedUpdateMethod != null) {
-                    throw new IllegalStateException(String.format("Both methods %s and %s of class %s have annotation %s",
-                            fieldClassMethod,
+        Class<?> fieldType = field.getType();
+        if(eventNewValue != null) {
+            //handle UsedUpdate annotated method
+            Class<?> fieldTypePointer = fieldType;
+            List<Method> fieldTypeMethods = new LinkedList<>();
+            while(fieldTypePointer != null
+                    && !fieldTypePointer.equals(Object.class)) {
+                fieldTypeMethods.addAll(Arrays.asList(fieldTypePointer.getDeclaredMethods()));
+                fieldTypePointer = fieldTypePointer.getSuperclass();
+            }
+            Method usedUpdateMethod = null;
+            for(Method fieldClassMethod : fieldTypeMethods) {
+                if(fieldClassMethod.getDeclaredAnnotation(UsedUpdate.class) != null) {
+                    if(usedUpdateMethod != null) {
+                        throw new IllegalStateException(String.format("Both methods %s and %s of class %s have annotation %s",
+                                fieldClassMethod,
+                                usedUpdateMethod,
+                                field.getType().getName(),
+                                UsedUpdate.class.getName()));
+                    }
+                    usedUpdateMethod = fieldClassMethod;
+                }
+            }
+            if(usedUpdateMethod != null) {
+                if(!Modifier.isPrivate(usedUpdateMethod.getModifiers())) {
+                    throw new IllegalStateException(String.format("method %s of class %s has annotation %s and isn't private",
                             usedUpdateMethod,
-                            field.getType().getName(),
+                            fieldType.getName(),
                             UsedUpdate.class.getName()));
                 }
-                usedUpdateMethod = fieldClassMethod;
+                if(!usedUpdateMethod.getReturnType().equals(void.class)) {
+                    throw new IllegalArgumentException(String.format("method %s of class %s has annotation %s and doesn't return void",
+                            usedUpdateMethod,
+                            fieldType.getName(),
+                            UsedUpdate.class.getName()));
+                }
+                if(usedUpdateMethod.getParameterCount() != 0) {
+                    throw new IllegalStateException(String.format("method %s of class %s has annotation %s and declares arguments",
+                            usedUpdateMethod,
+                            fieldType.getName(),
+                            UsedUpdate.class.getName()));
+                }
+                usedUpdateMethod.setAccessible(true);
+                usedUpdateMethod.invoke(eventNewValue);
+                try {
+                    storage.registerPostStoreCallback(instance, (object) -> {
+                        try {
+                            storage.update(eventNewValue);
+                        } catch (StorageException ex) {
+                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                        }
+                    });
+                } catch (StorageException ex) {
+                    getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                }
             }
-        }
-        if(usedUpdateMethod != null) {
-            if(!Modifier.isPrivate(usedUpdateMethod.getModifiers())) {
-                throw new IllegalStateException(String.format("method %s of class %s has annotation %s and isn't private",
-                        usedUpdateMethod,
-                        fieldType.getName(),
-                        UsedUpdate.class.getName()));
-            }
-            if(!usedUpdateMethod.getReturnType().equals(void.class)) {
-                throw new IllegalArgumentException(String.format("method %s of class %s has annotation %s and doesn't return void",
-                        usedUpdateMethod,
-                        fieldType.getName(),
-                        UsedUpdate.class.getName()));
-            }
-            if(usedUpdateMethod.getParameterCount() != 0) {
-                throw new IllegalStateException(String.format("method %s of class %s has annotation %s and declares arguments",
-                        usedUpdateMethod,
-                        fieldType.getName(),
-                        UsedUpdate.class.getName()));
-            }
-            usedUpdateMethod.setAccessible(true);
-            usedUpdateMethod.invoke(eventNewValue);
-            try {
-                storage.registerPostStoreCallback(instance, (object) -> {
-                    try {
-                        storage.update(eventNewValue);
-                    } catch (StorageException ex) {
-                        getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
-                    }
-                });
-            } catch (StorageException ex) {
-                getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
-            }
-        }
+        } //eventNewValue != null
 
         //handle MappedFieldUpdateEvent
         if(event instanceof MappedFieldUpdateEvent) {
@@ -256,23 +258,56 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
             field.setAccessible(true);
             Field mappedField = eventCast.getMappedField();
             if(mappedField != null) {
+                Object fieldCurrentValue = field.get(instance);
+                Set<Field> fieldTypeFields = new HashSet<>(Arrays.asList(field.getDeclaringClass().getDeclaredFields()));
+                if(fieldTypeFields.contains(mappedField)) {
+                    throw new IllegalArgumentException(String.format("the "
+                            + "mapped field %s.%s of event %s is declared in "
+                            + "the field's class %s",
+                            field.getDeclaringClass().getName(),
+                            field.getName(),
+                            event,
+                            fieldType.getName()));
+                }
                 mappedField.setAccessible(true);
                 if(field.getAnnotation(OneToOne.class) != null) {
-                    mappedField.set(eventNewValue,
-                            instance);
-                    try {
-                        storage.registerPostStoreCallback(instance, (object) -> {
-                            try {
-                                storage.update(eventNewValue);
-                            } catch (StorageException ex) {
-                                getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
-                            }
-                        });
-                    } catch (StorageException ex) {
-                        getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                    if(eventNewValue != null) {
+                        mappedField.set(eventNewValue,
+                                instance);
+                        try {
+                            storage.registerPostStoreCallback(instance, (object) -> {
+                                try {
+                                    storage.update(eventNewValue);
+                                } catch (StorageException ex) {
+                                    getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                                }
+                            });
+                        } catch (StorageException ex) {
+                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                        }
+                    }else {
+                        //eventNewValue == null
+                        mappedField.set(fieldCurrentValue,
+                                null);
+                        try {
+                            storage.registerPostStoreCallback(instance, (object) -> {
+                                try {
+                                    storage.update(fieldCurrentValue);
+                                } catch (StorageException ex) {
+                                    getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                                }
+                            });
+                        } catch (StorageException ex) {
+                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                        }
                     }
                 }else if(field.getAnnotation(ManyToOne.class) != null) {
-                    Collection mappedFieldValue = (Collection) mappedField.get(eventNewValue);
+                    Collection mappedFieldValue;
+                    if(eventNewValue != null) {
+                        mappedFieldValue = (Collection) mappedField.get(eventNewValue);
+                    }else {
+                        mappedFieldValue = (Collection) mappedField.get(fieldCurrentValue);
+                    }
                     if(mappedFieldValue == null) {
                         throw new IllegalArgumentException(String.format("the mapped field %s.%s of field %s.%s mustn't be null",
                                 mappedField.getDeclaringClass().getName(),
@@ -280,20 +315,43 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                                 fieldType.getName(),
                                 field.getName()));
                     }
-                    mappedFieldValue.add(instance);
-                    try {
-                        storage.registerPostStoreCallback(instance, (object) -> {
-                            try {
-                                storage.update(eventNewValue);
-                            } catch (StorageException ex) {
-                                getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
-                            }
-                        });
-                    } catch (StorageException ex) {
-                        getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                    if(eventNewValue != null) {
+                        mappedFieldValue.add(instance);
+                        try {
+                            storage.registerPostStoreCallback(instance, (object) -> {
+                                try {
+                                    storage.update(eventNewValue);
+                                } catch (StorageException ex) {
+                                    getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                                }
+                            });
+                        } catch (StorageException ex) {
+                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                        }
+                    }else {
+                        mappedFieldValue.remove(instance);
+                        try {
+                            storage.registerPostStoreCallback(instance, (object) -> {
+                                try {
+                                    storage.update(fieldCurrentValue);
+                                } catch (StorageException ex) {
+                                    getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                                }
+                            });
+                        } catch (StorageException ex) {
+                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                        }
                     }
                 }else if(field.getAnnotation(OneToMany.class) != null
                         || field.getAnnotation(ManyToMany.class) != null) {
+                    if(eventNewValue == null) {
+                        throw new IllegalArgumentException(String.format(
+                                "setting null on x-to-many relationship field "
+                                        + "%s.%s is not supported",
+                                fieldType.getName(),
+                                field.getName()));
+                    }
+
                     Collection fieldValues = (Collection) field.get(instance);
                     Collection newValues = (Collection) eventNewValue;
                     if(fieldValues == null) {
@@ -367,8 +425,8 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                 }else {
                     throw new IllegalArgumentException();
                 }
-            }
-        }
+            } //mappedField != null
+        } //event instanceof MappedFieldUpdateEvent
         super.onFieldUpdate(event, field, instance);
     }
 

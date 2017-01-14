@@ -14,16 +14,12 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import richtercloud.reflection.form.builder.jpa.entities.EntityD;
-import richtercloud.reflection.form.builder.jpa.entities.EntityE;
-import richtercloud.reflection.form.builder.jpa.entities.EntityF;
-import richtercloud.reflection.form.builder.jpa.entities.EntityB;
-import richtercloud.reflection.form.builder.jpa.entities.EntityA;
-import richtercloud.reflection.form.builder.jpa.entities.EntityC;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
+import org.junit.Assert;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import static org.mockito.Mockito.mock;
@@ -31,6 +27,12 @@ import richtercloud.message.handler.ConfirmMessageHandler;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
+import richtercloud.reflection.form.builder.jpa.entities.EntityA;
+import richtercloud.reflection.form.builder.jpa.entities.EntityB;
+import richtercloud.reflection.form.builder.jpa.entities.EntityC;
+import richtercloud.reflection.form.builder.jpa.entities.EntityD;
+import richtercloud.reflection.form.builder.jpa.entities.EntityE;
+import richtercloud.reflection.form.builder.jpa.entities.EntityF;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
@@ -42,14 +44,18 @@ public class JPAReflectionFormBuilderTest {
 
     /**
      * Test of onFieldUpdate method, of class JPAReflectionFormBuilder.
+     * @throws java.lang.NoSuchFieldException
+     * @throws java.lang.IllegalAccessException
+     * @throws java.lang.reflect.InvocationTargetException
      */
     @Test
-    public void testOnFieldUpdate() throws Exception {
+    public void testOnFieldUpdate() throws NoSuchFieldException, IllegalAccessException, InvocationTargetException {
         EntityA entityA1 = new EntityA(1L);
         EntityB entityB1 = new EntityB(2L);
         EntityB entityB2 = new EntityB(3L);
-        FieldUpdateEvent event = new MappedFieldUpdateEvent(new LinkedList(Arrays.asList(entityB1, entityB2)),
-                EntityB.class.getDeclaredField("as") //mappedField
+        Field mappedField = EntityA.class.getDeclaredField("bs");
+        FieldUpdateEvent<?> event = new MappedFieldUpdateEvent<>(new LinkedList<>(Arrays.asList(entityB1, entityB2)),
+                mappedField //mappedField
         );
             //only MappedFieldUpdateEvents are interesting
         Field field = EntityA.class.getDeclaredField("bs");
@@ -57,8 +63,8 @@ public class JPAReflectionFormBuilderTest {
         MessageHandler messageHandler = mock(MessageHandler.class);
         ConfirmMessageHandler confirmMesserHandler = mock(ConfirmMessageHandler.class);
         JPAFieldRetriever fieldRetriever = new JPACachedFieldRetriever();
-        IdApplier idApplier = mock(IdApplier.class);
-        IdGenerator idGenerator = new MemorySequentialIdGenerator();
+        IdApplier<?> idApplier = mock(IdApplier.class);
+        IdGenerator<?> idGenerator = new MemorySequentialIdGenerator();
         JPAReflectionFormBuilder instance = new JPAReflectionFormBuilder(storage, "title", //fieldDescriptionDialogTitle
                 messageHandler,
                 confirmMesserHandler,
@@ -67,7 +73,23 @@ public class JPAReflectionFormBuilderTest {
                 idGenerator,
                 new HashMap<>() //warningHandlers
         );
+
+        //test IllegalArgumentException if mappedField which is contained in
+        //field's class
+        try {
+            instance.onFieldUpdate(event, field, instance);
+            Assert.fail("IllegalArgumentException expected");
+        }catch(IllegalArgumentException ex) {
+            //expected
+        }
+
         //test many-to-many
+        mappedField = EntityB.class.getDeclaredField("as");
+        event = new MappedFieldUpdateEvent<>(new LinkedList<>(Arrays.asList(entityB1, entityB2)),
+                mappedField //mappedField
+        );
+            //only MappedFieldUpdateEvents are interesting
+        field = EntityA.class.getDeclaredField("bs");
         instance.onFieldUpdate(event, field, entityA1);
         assertTrue(entityA1.getBs().contains(entityB1));
         assertTrue(entityA1.getBs().contains(entityB2));
@@ -78,8 +100,9 @@ public class JPAReflectionFormBuilderTest {
         EntityD entityD1 = new EntityD(11L);
         EntityD entityD2 = new EntityD(12L);
         field = EntityC.class.getDeclaredField("ds");
-        event = new MappedFieldUpdateEvent(new LinkedList(Arrays.asList(entityD1, entityD2)),
-                EntityD.class.getDeclaredField("c") //mappedField
+        mappedField = EntityD.class.getDeclaredField("c");
+        event = new MappedFieldUpdateEvent<>(new LinkedList<>(Arrays.asList(entityD1, entityD2)),
+                mappedField //mappedField
         );
         instance.onFieldUpdate(event, field, entityC1);
         assertTrue(entityC1.getDs().contains(entityD1));
@@ -89,8 +112,9 @@ public class JPAReflectionFormBuilderTest {
         EntityE entityE1 = new EntityE(20L);
         EntityF entityF1 = new EntityF(21L);
         field = EntityE.class.getDeclaredField("f");
-        event = new MappedFieldUpdateEvent(entityF1,
-                EntityF.class.getDeclaredField("e") //mappedField
+        mappedField = EntityF.class.getDeclaredField("e");
+        event = new MappedFieldUpdateEvent<>(entityF1,
+                mappedField //mappedField
         );
         instance.onFieldUpdate(event, field, entityE1);
         assertTrue(entityE1.getF().equals(entityF1));
@@ -99,10 +123,59 @@ public class JPAReflectionFormBuilderTest {
         EntityD entityD10 = new EntityD(30L);
         EntityC entityC10 = new EntityC(31L);
         field = EntityD.class.getDeclaredField("c");
-        event = new MappedFieldUpdateEvent(entityC10,
-                EntityC.class.getDeclaredField("ds"));
+        mappedField = EntityC.class.getDeclaredField("ds");
+        event = new MappedFieldUpdateEvent<>(entityC10,
+                mappedField);
         instance.onFieldUpdate(event, field, entityD10);
         assertTrue(entityD10.getC().equals(entityC10));
         assertTrue(entityC10.getDs().contains(entityD10));
+
+        //test IllegalArgumentException on null (many-to-many)
+        field = EntityB.class.getDeclaredField("as");
+        mappedField = EntityA.class.getDeclaredField("bs");
+        event = new MappedFieldUpdateEvent<>(null, //newValue
+                mappedField //mappedField
+        );
+        try {
+            instance.onFieldUpdate(event,
+                    field,
+                    entityA1);
+            Assert.fail("IllegalArgumentException expected");
+        }catch(IllegalArgumentException ex) {
+            //expected
+        }
+        //test IllegalArgumentException on null (one-to-many)
+        field = EntityC.class.getDeclaredField("ds");
+        mappedField = EntityD.class.getDeclaredField("c");
+        event = new MappedFieldUpdateEvent<>(null, //newValue
+                mappedField);
+        try {
+            instance.onFieldUpdate(event,
+                    field,
+                    entityC1);
+            Assert.fail("IllegalArgumentException expected");
+        }catch(IllegalArgumentException ex) {
+            //expected
+        }
+        //test null in one-to-one relationship
+        entityE1.setF(entityF1);
+        field = EntityE.class.getDeclaredField("f");
+        mappedField = EntityF.class.getDeclaredField("e");
+        event = new MappedFieldUpdateEvent<>(null, //newValue
+                mappedField);
+        instance.onFieldUpdate(event,
+                field,
+                entityE1);
+        assertTrue(entityE1.getF() == null);
+        //test null in many-to-one relationship
+        entityD1.setC(entityC1);
+        field = EntityD.class.getDeclaredField("c");
+        mappedField = EntityC.class.getDeclaredField("ds");
+        event = new MappedFieldUpdateEvent<>(null, //newValue
+                mappedField);
+        instance.onFieldUpdate(event,
+                field,
+                entityD1);
+        assertTrue(!entityC1.getDs().contains(entityD1));
     }
 }
