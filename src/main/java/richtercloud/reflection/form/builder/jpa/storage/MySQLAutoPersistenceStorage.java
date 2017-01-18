@@ -28,6 +28,9 @@ import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.reflection.form.builder.jpa.sequence.MySQLSequenceManager;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
@@ -54,6 +57,7 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
     private Thread mysqldThread;
     private Process mysqldProcess;
     private final MessageHandler messageHandler;
+    private final SequenceManager<Long> sequenceManager;
 
     public MySQLAutoPersistenceStorage(MySQLAutoPersistenceStorageConf storageConf,
             String persistenceUnitName,
@@ -65,6 +69,7 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
                 parallelQueryCount,
                 fieldRetriever);
         this.messageHandler = messageHandler;
+        this.sequenceManager = new MySQLSequenceManager(this);
     }
 
     /**
@@ -326,5 +331,20 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
         Map<String, String> properties = super.getEntityManagerProperties();
         properties.put("useSSL", "false");
         return properties;
+    }
+
+    @Override
+    public boolean checkSequenceExists(String sequenceName) throws SequenceManagementException {
+        return this.sequenceManager.checkSequenceExists(sequenceName);
+    }
+
+    @Override
+    public void createSequence(String sequenceName) throws SequenceManagementException {
+        this.sequenceManager.createSequence(sequenceName);
+    }
+
+    @Override
+    public Long getNextSequenceValue(String sequenceName) throws SequenceManagementException {
+        return this.sequenceManager.getNextSequenceValue(sequenceName);
     }
 }

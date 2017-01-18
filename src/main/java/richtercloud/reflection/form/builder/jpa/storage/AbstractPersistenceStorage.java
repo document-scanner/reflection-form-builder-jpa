@@ -62,7 +62,7 @@ when having one 7-page document (with ca. 100 MB binary data) in the database
 - need to limit parallel querying in order to avoid memory leak no matter
 whether large binary data is fetched lazily or not
 */
-public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceStorageConf> extends AbstractStorage<Object, AbstractPersistenceStorageConf> implements PersistenceStorage {
+public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceStorageConf> extends AbstractStorage<Object, AbstractPersistenceStorageConf> implements PersistenceStorage<Long> {
     private final static Logger LOGGER = LoggerFactory.getLogger(AbstractPersistenceStorage.class);
     private EntityManagerFactory entityManagerFactory;
     private final C storageConf;

@@ -15,6 +15,9 @@
 package richtercloud.reflection.form.builder.jpa.storage;
 
 import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.reflection.form.builder.jpa.sequence.PostgresqlSequenceManager;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
@@ -23,6 +26,7 @@ import richtercloud.reflection.form.builder.storage.StorageCreationException;
  * @author richter
  */
 public class PostgresqlPersistenceStorage extends AbstractPersistenceStorage<PostgresqlPersistenceStorageConf> {
+    private final SequenceManager<Long> sequenceManager;
 
     public PostgresqlPersistenceStorage(PostgresqlPersistenceStorageConf storageConf,
             String persistenceUnitName,
@@ -32,10 +36,26 @@ public class PostgresqlPersistenceStorage extends AbstractPersistenceStorage<Pos
                 persistenceUnitName,
                 parallelQueryCount,
                 fieldRetriever);
+        this.sequenceManager = new PostgresqlSequenceManager(this);
     }
 
     @Override
     protected void init() {
         //do nothing
+    }
+
+    @Override
+    public boolean checkSequenceExists(String sequenceName) throws SequenceManagementException {
+        return this.sequenceManager.checkSequenceExists(sequenceName);
+    }
+
+    @Override
+    public void createSequence(String sequenceName) throws SequenceManagementException {
+        this.sequenceManager.createSequence(sequenceName);
+    }
+
+    @Override
+    public Long getNextSequenceValue(String sequenceName) throws SequenceManagementException {
+        return this.sequenceManager.getNextSequenceValue(sequenceName);
     }
 }

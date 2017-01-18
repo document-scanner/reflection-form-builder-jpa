@@ -17,6 +17,9 @@ package richtercloud.reflection.form.builder.jpa.storage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.reflection.form.builder.jpa.sequence.DerbySequenceManager;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
@@ -28,6 +31,7 @@ import richtercloud.reflection.form.builder.storage.StorageCreationException;
  */
 public class DerbyNetworkPersistenceStorage extends AbstractPersistenceStorage<DerbyNetworkPersistenceStorageConf> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DerbyNetworkPersistenceStorage.class);
+    private final SequenceManager<Long> sequenceManager;
 
     public DerbyNetworkPersistenceStorage(DerbyNetworkPersistenceStorageConf storageConf,
             String persistenceUnitName,
@@ -37,10 +41,26 @@ public class DerbyNetworkPersistenceStorage extends AbstractPersistenceStorage<D
                 persistenceUnitName,
                 parallelQueryCount,
                 fieldRetriever);
+        this.sequenceManager = new DerbySequenceManager(this);
     }
 
     @Override
     protected void init() {
         //do nothing
+    }
+
+    @Override
+    public boolean checkSequenceExists(String sequenceName) throws SequenceManagementException {
+        return this.sequenceManager.checkSequenceExists(sequenceName);
+    }
+
+    @Override
+    public void createSequence(String sequenceName) throws SequenceManagementException {
+        this.sequenceManager.createSequence(sequenceName);
+    }
+
+    @Override
+    public Long getNextSequenceValue(String sequenceName) throws SequenceManagementException {
+        return this.sequenceManager.getNextSequenceValue(sequenceName);
     }
 }

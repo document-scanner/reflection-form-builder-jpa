@@ -17,7 +17,7 @@ package richtercloud.reflection.form.builder.jpa;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
-import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
  *
@@ -27,9 +27,16 @@ public class SequentialIdGenerator implements IdGenerator<Long> {
     private final static Logger LOGGER = LoggerFactory.getLogger(SequentialIdGenerator.class);
     public final static String SEQUENCE_NAME_DEFAULT = "sequential-id";
     private final String sequenceName = SEQUENCE_NAME_DEFAULT;
-    private final SequenceManager<Long> sequenceManager;
+    private final PersistenceStorage<Long> sequenceManager;
 
-    public SequentialIdGenerator(SequenceManager<Long> sequenceManager) throws IdGenerationException {
+    /**
+     * Creates a new {@code SequentialIdGenerator}.
+     * @param sequenceManager it's recommended to use the sequence manager of
+     * the storage used in the application which can be retrieved with
+     * {@link PersistenceStorage#getSequenceManager() }
+     * @throws IdGenerationException
+     */
+    public SequentialIdGenerator(PersistenceStorage<Long> sequenceManager) throws IdGenerationException {
         this.sequenceManager = sequenceManager;
         init();
     }

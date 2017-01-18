@@ -32,9 +32,19 @@ import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
  *
  * @author richter
  */
-public class HibernateWrapperSequenceManager extends AbstractSequenceManager<Long> {
+/*
+internal implementation notes:
+- made abstract in order to ease overview and testing and eventually different
+escape methods
+*/
+public abstract class HibernateWrapperSequenceManager extends AbstractSequenceManager<Long> {
+    /**
+     * {@code true} as long as https://hibernate.atlassian.net/browse/HHH-11403
+     * is not fixed.
+     */
+    protected final static boolean HIBERNATE_NEED_TO_WORKAROUND_ESCAPE = true;
 
-    public HibernateWrapperSequenceManager(PersistenceStorage storage) {
+    public HibernateWrapperSequenceManager(PersistenceStorage<Long> storage) {
         super(storage);
     }
 
@@ -76,23 +86,16 @@ public class HibernateWrapperSequenceManager extends AbstractSequenceManager<Lon
             if ( !dialect.supportsSequences() ) {
                 throw new RuntimeException(); //@TODO
             }
-            String[] sqls = dialect.getCreateSequenceStrings(sequenceName, 0, 1);
+            String[] sqls = dialect.getCreateSequenceStrings(sequenceName,
+                    0, //initialValue
+                    1 //incrementSize
+            );
             if (sqls == null) {
                 throw new RuntimeException(); //@TODO
             }
             for(String sql : sqls) {
-                Statement statement = null;
-                ResultSet rs = null;
-                try {
-                    statement = connection.createStatement();
-                    rs = statement.executeQuery(sql);
-                } finally {
-                    if (rs!=null) {
-                        rs.close();
-                    }
-                    if (statement!=null) {
-                        statement.close();
-                    }
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute(sql);
                 }
             }
             return null;

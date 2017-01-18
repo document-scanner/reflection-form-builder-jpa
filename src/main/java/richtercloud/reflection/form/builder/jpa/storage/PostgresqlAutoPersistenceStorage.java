@@ -23,6 +23,9 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.reflection.form.builder.jpa.sequence.PostgresqlSequenceManager;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
@@ -36,6 +39,7 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
     private final static Logger LOGGER = LoggerFactory.getLogger(PostgresqlAutoPersistenceStorage.class);
     private Process postgresProcess;
     private Thread postgresThread;
+    private final SequenceManager<Long> sequenceManager;
 
     public PostgresqlAutoPersistenceStorage(PostgresqlAutoPersistenceStorageConf storageConf,
             String persistenceUnitName,
@@ -45,6 +49,7 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
                 persistenceUnitName,
                 parallelQueryCount,
                 fieldRetriever);
+        this.sequenceManager = new PostgresqlSequenceManager(this);
     }
 
     @Override
@@ -154,5 +159,20 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
         }finally{
             getShutdownLock().unlock();
         }
+    }
+
+    @Override
+    public boolean checkSequenceExists(String sequenceName) throws SequenceManagementException {
+        return this.sequenceManager.checkSequenceExists(sequenceName);
+    }
+
+    @Override
+    public void createSequence(String sequenceName) throws SequenceManagementException {
+        this.sequenceManager.createSequence(sequenceName);
+    }
+
+    @Override
+    public Long getNextSequenceValue(String sequenceName) throws SequenceManagementException {
+        return this.sequenceManager.getNextSequenceValue(sequenceName);
     }
 }

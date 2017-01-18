@@ -19,6 +19,9 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.reflection.form.builder.jpa.sequence.DerbySequenceManager;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 
@@ -28,6 +31,7 @@ import richtercloud.reflection.form.builder.storage.StorageCreationException;
  */
 public class DerbyEmbeddedPersistenceStorage extends AbstractPersistenceStorage<DerbyEmbeddedPersistenceStorageConf> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DerbyEmbeddedPersistenceStorage.class);
+    private final SequenceManager<Long> sequenceManager;
 
     public DerbyEmbeddedPersistenceStorage(DerbyEmbeddedPersistenceStorageConf storageConf,
             String persistenceUnitName,
@@ -37,6 +41,7 @@ public class DerbyEmbeddedPersistenceStorage extends AbstractPersistenceStorage<
                 persistenceUnitName,
                 parallelQueryCount,
                 fieldRetriever);
+        this.sequenceManager = new DerbySequenceManager(this);
     }
 
     @Override
@@ -61,5 +66,20 @@ public class DerbyEmbeddedPersistenceStorage extends AbstractPersistenceStorage<
         } catch (SQLException ex) {
             LOGGER.error("an exception during shutdown of the database connection occured", ex);
         }
+    }
+
+    @Override
+    public boolean checkSequenceExists(String sequenceName) throws SequenceManagementException {
+        return this.sequenceManager.checkSequenceExists(sequenceName);
+    }
+
+    @Override
+    public void createSequence(String sequenceName) throws SequenceManagementException {
+        this.sequenceManager.createSequence(sequenceName);
+    }
+
+    @Override
+    public Long getNextSequenceValue(String sequenceName) throws SequenceManagementException {
+        return this.sequenceManager.getNextSequenceValue(sequenceName);
     }
 }
