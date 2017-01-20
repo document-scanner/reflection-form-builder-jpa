@@ -16,7 +16,7 @@ package richtercloud.reflection.form.builder.jpa.storage;
 
 import java.util.List;
 import javax.persistence.EntityManager;
-import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
+import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
 import richtercloud.reflection.form.builder.storage.Storage;
 import richtercloud.reflection.form.builder.storage.StorageException;
 
@@ -43,15 +43,11 @@ way -> Then it's very easy to expose EntityManager (while this interface still
 makes sense because implementations handle a lot of workarounds as well as start
 and shutdown routines) and leave initialization to a FieldInitializer interface
 which can get the EntityManager to unwrap JPA provider specific classes.
-- Using composition-over-interitance with duplicate definition of
-checkSequenceExists(String), createSequence(String) and
-getNextSequenceValue(String) in order to be able to reuse
+- Using composition-over-interitance in order to be able to reuse
 HibernateWrapperSequenceManager and avoid cyclic dependency between
 SequenceManager and PersistenceStorage
-- A reference to SequenceManager instead of a duplicate definition of its
-methods doesn't avoid specification of type parameter of PersistenceStorage
 */
-public interface PersistenceStorage<T> extends Storage<Object, AbstractPersistenceStorageConf> {
+public interface PersistenceStorage<T> extends Storage<Object, AbstractPersistenceStorageConf>, SequenceManager<T> {
 
     <T> List<T> runQuery(String queryString,
             Class<T> clazz,
@@ -80,10 +76,4 @@ public interface PersistenceStorage<T> extends Storage<Object, AbstractPersisten
     boolean isManaged(Object object);
 
     EntityManager retrieveEntityManager();
-
-    boolean checkSequenceExists(String sequenceName) throws SequenceManagementException;
-
-    void createSequence(String sequenceName) throws SequenceManagementException;
-
-    T getNextSequenceValue(String sequenceName) throws SequenceManagementException;
 }
