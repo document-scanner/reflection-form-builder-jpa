@@ -29,6 +29,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.commons.lang3.builder.RecursiveToStringStyle;
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import richtercloud.reflection.form.builder.storage.StorageConf;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 
@@ -286,5 +289,13 @@ public abstract class AbstractPersistenceStorageConf implements StorageConf, Ser
         }
         final AbstractPersistenceStorageConf other = (AbstractPersistenceStorageConf) obj;
         return equalsTransitive(other);
+    }
+
+    @Override
+    public String toString() {
+        ToStringBuilder toStringBuilder = new ReflectionToStringBuilder(this,
+                new RecursiveToStringStyle());
+        String retValue = toStringBuilder.toString();
+        return retValue;
     }
 }
