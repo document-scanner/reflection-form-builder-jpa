@@ -68,7 +68,7 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractPersis
 
     @Override
     public void start() throws StorageCreationException {
-        init();
+        super.start();
         try {
             Thread.sleep(2000);
             //@TODO: find more elegant way to do this (check whether server

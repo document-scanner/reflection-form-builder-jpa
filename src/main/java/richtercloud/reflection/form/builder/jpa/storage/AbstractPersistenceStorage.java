@@ -77,10 +77,6 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     */
     private final Semaphore querySemaphore;
     private final FieldRetriever fieldRetriever;
-    /**
-     * A flag to improve feedback in case {@link #start() } hasn't been called.
-     */
-    private boolean started = false;
 
     public AbstractPersistenceStorage(C storageConf,
             String persistenceUnitName,
@@ -98,10 +94,10 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
 
     @Override
     public void start() throws StorageCreationException {
+        super.start();
         //storageConf already validated in constructor (and immutable)
         init();
         recreateEntityManager();
-        this.started = true;
     }
 
     protected abstract void init() throws StorageCreationException;
@@ -342,7 +338,7 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
      */
     @Override
     public EntityManager retrieveEntityManager() {
-        if(!started) {
+        if(!isStarted()) {
             throw new IllegalStateException("persistence storage hasn't been "
                     + "started");
         }
