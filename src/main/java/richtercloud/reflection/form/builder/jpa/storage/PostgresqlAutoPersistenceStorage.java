@@ -40,6 +40,15 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
     private Process postgresProcess;
     private Thread postgresThread;
     private final SequenceManager<Long> sequenceManager;
+    /**
+     * The maximum wait in ms until the server is up when initializing the
+     * server.
+     */
+    private int waitServerUpMaxMillis = 10000;
+    /**
+     * The wait time between checks whether the server is up in ms.
+     */
+    private int waitServerUpIntervalMillis = 1000;
 
     public PostgresqlAutoPersistenceStorage(PostgresqlAutoPersistenceStorageConf storageConf,
             String persistenceUnitName,
@@ -106,7 +115,13 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
                 //just assume that it needs to be created if the directory
                 //doesn't exist
                 boolean success = false;
+                int waitServerUpMillis = 0;
                 while(!success) {
+                    if(waitServerUpMillis > waitServerUpMaxMillis) {
+                        throw new StorageCreationException("createdb process "
+                                + "failed (see preceeding process output for "
+                                + "details and reasons)");
+                    }
                     ProcessBuilder createdbProcessBuilder = new ProcessBuilder(createdb,
                             String.format("--host=%s", getStorageConf().getHostname()),
                             String.format("--username=%s", getStorageConf().getUsername()),
@@ -120,8 +135,21 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
                         LOGGER.debug("createdb succeeded");
                         success = true;
                     }else {
-                        LOGGER.debug("createdb failed (server might not be up yet, trying again in 1 s");
-                        Thread.sleep(1000);
+                        waitServerUpMillis += waitServerUpIntervalMillis;
+                        if(waitServerUpMillis < waitServerUpMaxMillis) {
+                            LOGGER.debug(String.format("createdb failed "
+                                    + "(server might not be up yet, next check "
+                                    + "in %d ms",
+                                    waitServerUpIntervalMillis));
+                            Thread.sleep(waitServerUpIntervalMillis);
+                        }else {
+                            LOGGER.warn(String.format("createdb failed all "
+                                    + "connection attempts, aborting in order "
+                                    + "to avoid to wait for ever (consider "
+                                    + "adusting waitServerUpMaxMillis (was "
+                                    + "%d))",
+                                    waitServerUpMaxMillis));
+                        }
                     }
                 }
             }
