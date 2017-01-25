@@ -23,17 +23,24 @@ import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 public class DerbySequenceManager extends HibernateWrapperSequenceManager {
 
     public DerbySequenceManager(PersistenceStorage<Long> storage) {
-        super(storage);
+        super(storage,
+                0 //initialValue
+        );
     }
 
     @Override
     public void createSequence(String sequenceName) throws SequenceManagementException {
-        String sequenceName0;
-        if(!HIBERNATE_NEED_TO_WORKAROUND_ESCAPE) {
-            sequenceName0 = sequenceName;
-        }else {
-            sequenceName0 = String.format("\"%s\"", sequenceName);
-        }
+        String sequenceName0 = escapeSequenceName(sequenceName,
+                "\"",
+                "\"");
         super.createSequence(sequenceName0);
+    }
+
+    @Override
+    public Long getNextSequenceValue(String sequenceName) throws SequenceManagementException {
+        String sequenceName0 = escapeSequenceName(sequenceName,
+                "\"",
+                "\"");
+        return super.getNextSequenceValue(sequenceName0);
     }
 }

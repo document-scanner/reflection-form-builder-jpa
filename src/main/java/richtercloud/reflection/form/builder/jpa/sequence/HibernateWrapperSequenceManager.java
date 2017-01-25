@@ -43,9 +43,16 @@ public abstract class HibernateWrapperSequenceManager extends AbstractSequenceMa
      * is not fixed.
      */
     protected final static boolean HIBERNATE_NEED_TO_WORKAROUND_ESCAPE = true;
+    /**
+     * Some databases support only a certain minimum for the initial value of
+     * the sequence.
+     */
+    private final int initialValue;
 
-    public HibernateWrapperSequenceManager(PersistenceStorage<Long> storage) {
+    public HibernateWrapperSequenceManager(PersistenceStorage<Long> storage,
+            int initialValue) {
         super(storage);
+        this.initialValue = initialValue;
     }
 
     @Override
@@ -87,7 +94,7 @@ public abstract class HibernateWrapperSequenceManager extends AbstractSequenceMa
                 throw new RuntimeException(); //@TODO
             }
             String[] sqls = dialect.getCreateSequenceStrings(sequenceName,
-                    0, //initialValue
+                    initialValue, //initialValue
                     1 //incrementSize
             );
             if (sqls == null) {
@@ -120,7 +127,10 @@ public abstract class HibernateWrapperSequenceManager extends AbstractSequenceMa
                 if(!rs.next()) {
                     throw new RuntimeException();
                 }
-                return rs.getLong(sequenceName);
+                return rs.getLong(1 //columnIndex (1-based; using sequenceName
+                        //as columnName fails due to column label being unknown;
+                        //it's fine to assume that there's only one column)
+                );
             } finally {
                 if (rs!=null) {
                     rs.close();
@@ -146,5 +156,19 @@ public abstract class HibernateWrapperSequenceManager extends AbstractSequenceMa
     private interface HibernateSQLTask<T> {
 
         T run(Dialect dialect, Connection connection) throws SQLException;
+    }
+
+    protected String escapeSequenceName(String sequenceName,
+            String escapeBegin,
+            String escapeEnd) {
+        String sequenceName0;
+        if(!HIBERNATE_NEED_TO_WORKAROUND_ESCAPE) {
+            sequenceName0 = sequenceName;
+        }else {
+            sequenceName0 = String.format("%s%s%s", escapeBegin,
+                    sequenceName,
+                    escapeEnd);
+        }
+        return sequenceName0;
     }
 }

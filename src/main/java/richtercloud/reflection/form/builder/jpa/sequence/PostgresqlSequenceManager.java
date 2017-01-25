@@ -14,10 +14,6 @@
  */
 package richtercloud.reflection.form.builder.jpa.sequence;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import javax.persistence.EntityManager;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
@@ -27,26 +23,24 @@ import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 public class PostgresqlSequenceManager extends HibernateWrapperSequenceManager {
 
     public PostgresqlSequenceManager(PersistenceStorage storage) {
-        super(storage);
+        super(storage,
+                1 //avoid `ERROR: START value (0) cannot be less than MINVALUE (1)`
+        );
     }
 
     @Override
     public void createSequence(String sequenceName) throws SequenceManagementException {
-        EntityManager entityManager = getStorage().retrieveEntityManager();
-        entityManager.getTransaction().begin();
-        Connection connection = entityManager.unwrap(Connection.class);
-        try {
-            PreparedStatement preparedStatement = connection.prepareStatement(String.format("CREATE SEQUENCE IF NOT EXISTS %s", sequenceName));
-        } catch (SQLException ex) {
-            throw new SequenceManagementException(ex);
-        }finally {
-            entityManager.getTransaction().commit();
-        }
+        String sequenceName0 = escapeSequenceName(sequenceName,
+                "\"",
+                "\"");
+        super.createSequence(sequenceName0);
     }
 
     @Override
-    public Long getNextSequenceValue(String sequenceName) {
-//        fdsa
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Long getNextSequenceValue(String sequenceName) throws SequenceManagementException {
+        String sequenceName0 = escapeSequenceName(sequenceName,
+                "\"",
+                "\"");
+        return super.getNextSequenceValue(sequenceName0);
     }
 }
