@@ -251,7 +251,9 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
         //assume that if index is >= 0 that this.queryResults is != null as well
         List<Object> retValue = new LinkedList<>();
         for(int index : indeces) {
-            Object selectedValue = this.getQueryResultTable().getModel().getEntities().get(index);
+            int convertedIndex = this.getQueryResultTable().convertRowIndexToModel(index);
+                //necessary since sorting is possible
+            Object selectedValue = this.getQueryResultTable().getModel().getEntities().get(convertedIndex);
             retValue.add(selectedValue);
         }
         return retValue;

@@ -273,12 +273,14 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         List<E> eventItems = new LinkedList<>(); //a list to pass to the item
             //event ought to be maintained before adding to resultTable's model
         for(int index : indices) {
-            E queryResult = this.getQueryResultTable().getModel().getEntities().get(index);
+            int convertedIndex = this.getQueryResultTable().convertRowIndexToModel(index);
+                //necessary since sorting is possible
+            E queryResult = this.getQueryResultTable().getModel().getEntities().get(convertedIndex);
             eventItems.add(queryResult);
             for(ListPanelItemListener<E> updateListener : updateListeners) {
                 try {
                     updateListener.onItemAdded(new ListPanelItemEvent<>(ListPanelItemEvent.EVENT_TYPE_ADDED,
-                            index,
+                            convertedIndex,
                             eventItems));
                 } catch (ListPanelItemEventVetoException ex) {
                     getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
