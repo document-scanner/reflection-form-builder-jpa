@@ -153,9 +153,6 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
                     }
                 }
             }
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                shutdown0();
-            }));
             setServerRunning(true);
         }catch (IOException | InterruptedException ex) {
             throw new StorageCreationException(ex);

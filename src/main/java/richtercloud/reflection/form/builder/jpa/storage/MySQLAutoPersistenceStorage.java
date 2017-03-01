@@ -248,10 +248,6 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
                     throw new StorageCreationException(String.format("command '%s' failed with returncode %d", mysqlProcessBuilder.command(), mysqlProcess.exitValue()));
                 }
             }
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                LOGGER.debug(String.format("running shutdown hooks in %s", MySQLAutoPersistenceStorage.class));
-                shutdown0();
-            }));
             setServerRunning(true);
         }catch(IOException | InterruptedException ex) {
             throw new StorageCreationException(ex);
