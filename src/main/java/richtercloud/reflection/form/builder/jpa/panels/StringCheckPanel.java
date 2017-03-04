@@ -244,7 +244,7 @@ public class StringCheckPanel extends AbstractStringPanel {
                     StringCheckPanel.this.setEnabled(true);
                 });
             },
-                    "check-thread");
+                    "string-check-panel-check-thread");
             checkThread.start();
         }
     }

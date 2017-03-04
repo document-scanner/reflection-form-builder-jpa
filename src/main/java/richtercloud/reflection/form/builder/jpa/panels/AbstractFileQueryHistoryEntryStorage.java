@@ -50,24 +50,7 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
      * {@code null} indicates that the thread ought to shut down.
      */
     private final BlockingQueue<Map<Class<?>, List<QueryHistoryEntry>>> fileStoreThreadQueue = new LinkedBlockingQueue<>();
-    private final Thread fileStoreThread = new Thread() {
-        @Override
-        public void run() {
-            try {
-                Map<Class<?>, List<QueryHistoryEntry>> head = fileStoreThreadQueue.take();
-                while(!(head instanceof Poison)) {
-                    try {
-                        store(head);
-                    } catch (IOException ex) {
-                        messageHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
-                    }
-                    head = fileStoreThreadQueue.take();
-                }
-            } catch (InterruptedException ex) {
-                throw new RuntimeException(ex);
-            }
-        }
-    };
+    private final Thread fileStoreThread;
     /**
      * It's not sufficient to create a swallow copy of {@code cache} because it
      * only contains references to lists which remain the same and still can
@@ -94,6 +77,23 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
                 cache = new HashMap<>();
             }
         }
+        this.fileStoreThread = new Thread(() -> {
+            try {
+                Map<Class<?>, List<QueryHistoryEntry>> head = fileStoreThreadQueue.take();
+                while(!(head instanceof Poison)) {
+                    try {
+                        store(head);
+                    } catch (IOException ex) {
+                        AbstractFileQueryHistoryEntryStorage.this.messageHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                    }
+                    head = fileStoreThreadQueue.take();
+                }
+            } catch (InterruptedException ex) {
+                throw new RuntimeException(ex);
+            }
+        },
+                "query-history-entry-storage-file-store-thread"
+        );
         fileStoreThread.start();
     }
 

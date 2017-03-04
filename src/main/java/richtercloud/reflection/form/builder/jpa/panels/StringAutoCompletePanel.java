@@ -178,7 +178,8 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                         } finally {
                             queryRunning = false;
                         }
-                    });
+                    },
+                            "string-auto-complete-panel-check-thread");
                     checkThread.start();
                 }else {
                     LOGGER.trace(String.format("skipping auto-completion check for text field text '%s'", textFieldText));
