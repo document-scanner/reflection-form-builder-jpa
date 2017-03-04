@@ -18,8 +18,10 @@ import java.util.LinkedList;
 import java.util.Queue;
 import static org.junit.Assert.*;
 import org.junit.Test;
+import static org.mockito.Mockito.mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.message.handler.BugHandler;
 
 /**
  *
@@ -35,7 +37,8 @@ public class PrioritizableReentrantLockTest {
      */
     @Test
     public void testFinalize() throws Throwable {
-        PrioritizableReentrantLock instance = new PrioritizableReentrantLock();
+        BugHandler bugHandler = mock(BugHandler.class);
+        PrioritizableReentrantLock instance = new PrioritizableReentrantLock(bugHandler);
         instance.finalize();
         //nothing to assert, just checking for deadlock
     }
@@ -45,7 +48,8 @@ public class PrioritizableReentrantLockTest {
      */
     @Test
     public void testLock() {
-        PrioritizableReentrantLock instance = new PrioritizableReentrantLock();
+        BugHandler bugHandler = mock(BugHandler.class);
+        PrioritizableReentrantLock instance = new PrioritizableReentrantLock(bugHandler);
         //test IllegalArgumentException on priority == -1
         try {
             instance.lock(-1);

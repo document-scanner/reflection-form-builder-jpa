@@ -21,6 +21,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.message.handler.BugHandler;
+import richtercloud.message.handler.ExceptionMessage;
 
 /**
  * Maps priorities passed in {@link #lock(int) } to separate locks which are
@@ -46,56 +48,69 @@ public class PrioritizableReentrantLock extends ReentrantLock {
     private final PriorityBlockingQueue<ManagerQueueEntry> managerQueue = new PriorityBlockingQueue<>(100, (ManagerQueueEntry o1, ManagerQueueEntry o2) -> {
         return o2.priority.compareTo(o1.priority);
     });
-    private final Thread managerThread = new Thread(() -> {
-        //can't control shutdown with boolean since managerQueue.take somehow
-        //has to be brought to return (Poison Pill Shutdown
-        //<ref>http://stackoverflow.com/questions/812342/how-to-interrupt-a-blockingqueue-which-is-blocking-on-take</ref>)
-        while(true) {
-            ManagerQueueEntry managerQueueHead;
-            try {
-                managerQueueHead = managerQueue.take();
-            }catch(InterruptedException ex) {
-                throw new RuntimeException(ex);
-            }
-            if(managerQueueHead.condition == null) {
-                LOGGER.trace(String.format("received %s with condition null, meaning shutdown requested", ManagerQueueEntry.class));
-                break;
-            }
-            PrioritizableReentrantLock.this.conditionLock.lock();
-            try {
-                Condition managerQueueHeadCondition = managerQueueHead.condition;
-                LOGGER.trace(String.format("signaling condition with priority %d", managerQueueHead.priority));
-                managerQueueHeadCondition.signal();
-                try {
-                    PrioritizableReentrantLock.this.locked.await();
-                }catch(InterruptedException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }finally {
-                PrioritizableReentrantLock.this.conditionLock.unlock();
-            }
-        }
-    },
-            "prioritizable-reentrant-lock-manager-thread");
+    private final BugHandler bugHandler;
+    private final Thread managerThread;
     private final Lock conditionLock = new ReentrantLock();
     private final Condition locked = conditionLock.newCondition();
 
     /**
      * Creates a {@code PrioritizableReentrantLock} with unfair policy for lock
-     * requests with same priority
+     * requests with same priority.
+     *
+     * @param bugHandler the {@link BugHandler} to use for exceptions in the
+     * manager thread
      */
-    public PrioritizableReentrantLock() {
-        this(false);
+    public PrioritizableReentrantLock(BugHandler bugHandler) {
+        this(false,
+                bugHandler);
     }
 
     /**
      * Creates a {@code PrioritizableReentrantLock} with the given fairness
-     * policy for requests lock requests with the same priority
+     * policy for requests lock requests with the same priority.
+     *
      * @param fair {@code true} if this lock should use a fair ordering policy
+     * @param bugHandler the {@link BugHandler} to use for exceptions in the
+     * manager thread
      */
-    public PrioritizableReentrantLock(boolean fair) {
+    public PrioritizableReentrantLock(boolean fair,
+            BugHandler bugHandler) {
         super(fair);
-        managerThread.start();
+        this.bugHandler = bugHandler;
+        this.managerThread = new Thread(() -> {
+            //can't control shutdown with boolean since managerQueue.take somehow
+            //has to be brought to return (Poison Pill Shutdown
+            //<ref>http://stackoverflow.com/questions/812342/how-to-interrupt-a-blockingqueue-which-is-blocking-on-take</ref>)
+            while(true) {
+                ManagerQueueEntry managerQueueHead;
+                try {
+                    managerQueueHead = managerQueue.take();
+                }catch(InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+                if(managerQueueHead.condition == null) {
+                    LOGGER.trace(String.format("received %s with condition null, meaning shutdown requested", ManagerQueueEntry.class));
+                    break;
+                }
+                PrioritizableReentrantLock.this.conditionLock.lock();
+                try {
+                    Condition managerQueueHeadCondition = managerQueueHead.condition;
+                    LOGGER.trace(String.format("signaling condition with priority %d", managerQueueHead.priority));
+                    managerQueueHeadCondition.signal();
+                    try {
+                        PrioritizableReentrantLock.this.locked.await();
+                    }catch(InterruptedException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                }catch(Exception ex) {
+                    bugHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                }finally {
+                    PrioritizableReentrantLock.this.conditionLock.unlock();
+                }
+            }
+        },
+                "prioritizable-reentrant-lock-manager-thread");
+        this.managerThread.start();
     }
 
     @Override
