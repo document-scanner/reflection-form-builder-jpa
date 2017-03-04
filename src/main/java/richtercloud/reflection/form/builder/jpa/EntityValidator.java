@@ -17,7 +17,6 @@ package richtercloud.reflection.form.builder.jpa;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +34,7 @@ import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.reflection.form.builder.Tools;
 
 /**
  * Code reusage for the validation routine including handling of validation
@@ -55,17 +55,6 @@ public class EntityValidator {
     private final static Validator VALIDATOR = VALIDATOR_FACTORY.getValidator();
     private final ConfirmMessageHandler confirmMessageHandler;
     private final Map<Class<?>, WarningHandler<?>> warningHandlers;
-    private final static Comparator<Class<?>> CLASS_COMPARATOR = new Comparator<Class<?>>() {
-        @Override
-        public int compare(Class<?> o1, Class<?> o2) {
-            if(o1.equals(o2)) {
-                return 0;
-            }else if(o1.isAssignableFrom(o2)) {
-                return 1;
-            }
-            return -1;
-        }
-    };
 
     public EntityValidator(FieldRetriever fieldRetriever,
             MessageHandler messageHandler,
@@ -108,7 +97,7 @@ public class EntityValidator {
             //order or inheritance)
             List<Class<?>> warningHandlerClasses = new LinkedList<>(warningHandlers.keySet());
             warningHandlerClasses = warningHandlerClasses.stream().filter(clazz -> clazz.isAssignableFrom(instance.getClass())).collect(Collectors.toList());
-            Collections.sort(warningHandlerClasses, CLASS_COMPARATOR);
+            Collections.sort(warningHandlerClasses, Tools.CLASS_COMPARATOR_SUBCLASS_FIRST);
             if(!warningHandlerClasses.isEmpty()) {
                 warningHandler = warningHandlers.get(warningHandlerClasses.get(0));
             }
