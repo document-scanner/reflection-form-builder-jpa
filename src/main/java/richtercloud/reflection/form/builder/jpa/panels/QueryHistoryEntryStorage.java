@@ -56,4 +56,6 @@ public interface QueryHistoryEntryStorage {
      * selection doesn't matter
      */
     QueryHistoryEntry getInitialEntry(Class<?> clazz);
+
+    void shutdown();
 }

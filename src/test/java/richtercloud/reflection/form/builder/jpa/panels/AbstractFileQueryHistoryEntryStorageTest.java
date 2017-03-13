@@ -30,10 +30,10 @@ public class AbstractFileQueryHistoryEntryStorageTest {
      * Test of finalize method, of class AbstractFileQueryHistoryEntryStorage.
      */
     @Test
-    public void testFinalize() throws Exception, Throwable {
+    public void testShutdown() throws Exception {
         File file = File.createTempFile(AbstractFileQueryHistoryEntryStorageTest.class.getSimpleName(), null);
         AbstractFileQueryHistoryEntryStorage instance = new AbstractFileQueryHistoryEntryStorageImpl(file);
-        instance.finalize();
+        instance.shutdown();
     }
 
     private class AbstractFileQueryHistoryEntryStorageImpl extends AbstractFileQueryHistoryEntryStorage {

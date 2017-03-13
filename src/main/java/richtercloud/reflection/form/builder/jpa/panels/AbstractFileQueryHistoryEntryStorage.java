@@ -98,10 +98,13 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
     }
 
     @Override
-    protected void finalize() throws Throwable {
+    public void shutdown() {
         fileStoreThreadQueue.add(new Poison());
-        fileStoreThread.join();
-        super.finalize();
+        try {
+            fileStoreThread.join();
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     protected abstract void store(Map<Class<?>, List<QueryHistoryEntry>> head) throws IOException;
