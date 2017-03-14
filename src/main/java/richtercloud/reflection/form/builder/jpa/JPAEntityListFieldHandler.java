@@ -18,6 +18,7 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.AbstractListFieldHandler;
@@ -38,14 +39,14 @@ public class JPAEntityListFieldHandler extends AbstractListFieldHandler<List<Obj
     private final static Logger LOGGER = LoggerFactory.getLogger(JPAEntityListFieldHandler.class);
 
     public JPAEntityListFieldHandler(PersistenceStorage storage,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
             QueryHistoryEntryStorage entryStorage,
             FieldRetriever readOnlyFieldRetriever) {
-        super(messageHandler,
+        super(issueHandler,
                 new JPAEntityListTypeHandler(storage,
-                        messageHandler,
+                        issueHandler,
                         bidirectionalHelpDialogTitle,
                         fieldInitializer,
                         entryStorage,

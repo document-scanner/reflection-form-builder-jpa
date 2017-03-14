@@ -28,10 +28,10 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
-import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
  * Allows to run a JPQL query for a specific class while getting feedback about
@@ -110,7 +110,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
 
     public QueryPanel(PersistenceStorage storage,
             Class<E> entityClass,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             FieldRetriever fieldRetriever,
             E initialValue,
             BidirectionalControlPanel bidirectionalControlPanel,
@@ -119,7 +119,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
-                messageHandler,
+                issueHandler,
                 fieldRetriever,
                 initialValue,
                 bidirectionalControlPanel,
@@ -131,7 +131,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
 
     public QueryPanel(PersistenceStorage storage,
             Class<E> entityClass,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             FieldRetriever fieldRetriever,
             E initialValue,
             Set<Class<?>> entityClasses,
@@ -142,7 +142,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
-                messageHandler,
+                issueHandler,
                 fieldRetriever,
                 initialValue,
                 new BidirectionalControlPanel(entityClass,
@@ -160,7 +160,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
      *
      * @param entityManager
      * @param entityClass the class for which to the panel for
-     * @param messageHandler used in {@link QueryComponent}s added to this
+     * @param issueHandler used in {@link QueryComponent}s added to this
      * {@code QueryPanel}
      * @param reflectionFormBuilder
      * @param initialValue
@@ -179,7 +179,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
     */
     public QueryPanel(PersistenceStorage storage,
             Class<E> entityClass,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             FieldRetriever fieldRetriever,
             E initialValue,
             BidirectionalControlPanel bidirectionalControlPanel,
@@ -190,7 +190,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
         super(bidirectionalControlPanel,
                 new QueryComponent<>(storage,
                         entityClass,
-                        messageHandler,
+                        issueHandler,
                         true, //async
                         entryStorage
                 ),
@@ -198,7 +198,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                 entityClass,
                 storage,
                 fieldInitializer,
-                messageHandler,
+                issueHandler,
                 queryResultTableSelectionMode,
                 new LinkedList<>(Arrays.asList(initialValue)));
         this.initialValue = initialValue;

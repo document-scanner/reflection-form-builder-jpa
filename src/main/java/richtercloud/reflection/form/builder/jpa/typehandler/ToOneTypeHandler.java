@@ -23,7 +23,7 @@ import javax.swing.JComponent;
 import javax.swing.ListSelectionModel;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
@@ -47,13 +47,13 @@ import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Object>, JPAReflectionFormBuilder, QueryPanel>{
     private final PersistenceStorage storage;
     private final String bidirectionalHelpDialogTitle;
-    private final MessageHandler messageHandler;
+    private final IssueHandler issueHandler;
     private final FieldInitializer fieldInitializer;
     private final QueryHistoryEntryStorage entryStorage;
     private final FieldRetriever readOnlyFieldRetriever;
 
     public ToOneTypeHandler(PersistenceStorage storage,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
             QueryHistoryEntryStorage initialQueryTextGenerator,
@@ -62,10 +62,10 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
             throw new IllegalArgumentException("storage mustn't be null");
         }
         this.storage = storage;
-        if(messageHandler == null) {
+        if(issueHandler == null) {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
-        this.messageHandler = messageHandler;
+        this.issueHandler = issueHandler;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.fieldInitializer = fieldInitializer;
         this.entryStorage = initialQueryTextGenerator;
@@ -96,7 +96,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
                 mappedFieldCandidates);
         final QueryPanel retValue = new QueryPanel(storage,
                 entityClass,
-                messageHandler,
+                issueHandler,
                 readOnlyFieldRetriever,
                 fieldValue,
                 bidirectionalControlPanel,

@@ -17,7 +17,7 @@ package richtercloud.reflection.form.builder.jpa.typehandler.factory;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import static richtercloud.reflection.form.builder.fieldhandler.factory.MappingFieldHandlerFactory.createStringTypeToken;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
@@ -37,10 +37,10 @@ public class JPAAmountMoneyMappingTypeHandlerFactory extends MappingTypeHandlerF
 
     public JPAAmountMoneyMappingTypeHandlerFactory(PersistenceStorage storage,
             int initialQueryLimit,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             String bidirectionalHelpDialogTitle,
             FieldRetriever readOnlyFieldRetriever) {
-        super(messageHandler);
+        super(issueHandler);
         this.storage = storage;
         this.initialQueryLimit = initialQueryLimit;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;

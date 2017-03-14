@@ -31,8 +31,8 @@ import javax.swing.LayoutStyle;
 import javax.swing.ListSelectionModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.Message;
-import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.ReflectionFormBuilderHelperJPA;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
@@ -85,7 +85,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
     public QueryListPanel(PersistenceStorage storage,
             FieldRetriever fieldRetriever,
             Class<E> entityClass,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             List<E> initialValues,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
@@ -93,7 +93,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         this(storage,
                 fieldRetriever,
                 entityClass,
-                messageHandler,
+                issueHandler,
                 initialValues,
                 bidirectionalHelpDialogTitle,
                 QUERY_RESULT_TABLE_HEIGHT_DEFAULT,
@@ -106,7 +106,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
      * @param entityManager
      * @param reflectionFormBuilder
      * @param entityClass the class for which to the panel for
-     * @param messageHandler
+     * @param issueHandler
      * @param initialValues
      * @param bidirectionalHelpDialogTitle
      * @param queryResultTableHeight
@@ -116,7 +116,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
     public QueryListPanel(PersistenceStorage storage,
             FieldRetriever fieldRetriever,
             Class<E> entityClass,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             List<E> initialValues,
             String bidirectionalHelpDialogTitle,
             int queryResultTableHeight,
@@ -127,7 +127,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                 bidirectionalHelpDialogTitle),
                 new QueryComponent<>(storage,
                         entityClass,
-                        messageHandler,
+                        issueHandler,
                         true, //async
                         entryStorage
                 ),
@@ -135,7 +135,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                 entityClass,
                 storage,
                 fieldInitializer,
-                messageHandler,
+                issueHandler,
                 ListSelectionModel.MULTIPLE_INTERVAL_SELECTION,
                 initialValues);
         LOGGER.debug(String.format("creating %s for entity class %s with initial value %s", QueryListPanel.class, entityClass, initialValues));

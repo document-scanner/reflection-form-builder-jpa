@@ -21,7 +21,7 @@ import java.util.Map;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
@@ -44,13 +44,13 @@ import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormBuilder, QueryListPanel> {
     private final PersistenceStorage storage;
     private final String bidirectionalHelpDialogTitle;
-    private final MessageHandler messageHandler;
+    private final IssueHandler issueHandler;
     private final FieldInitializer fieldInitializer;
     private final QueryHistoryEntryStorage entryStorage;
     private final FieldRetriever readOnlyFieldRetriever;
 
     public ToManyTypeHandler(PersistenceStorage storage,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             Map<Type, TypeHandler<?, ?, ?, ?>> genericsTypeHandlerMapping,
             Map<Type, TypeHandler<?, ?, ?, ?>> fieldTypeHandlerMapping,
             String bidirectionalHelpDialogTitle,
@@ -63,10 +63,10 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
             throw new IllegalArgumentException("storage mustn't be null");
         }
         this.storage = storage;
-        if(messageHandler == null) {
+        if(issueHandler == null) {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
-        this.messageHandler = messageHandler;
+        this.issueHandler = issueHandler;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.fieldInitializer = fieldInitializer;
         this.entryStorage = entryStorage;
@@ -87,7 +87,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
         final QueryListPanel retValue = new QueryListPanel(storage,
                 readOnlyFieldRetriever,
                 (Class<?>) type,
-                messageHandler,
+                issueHandler,
                 fieldValue,
                 bidirectionalHelpDialogTitle,
                 fieldInitializer,

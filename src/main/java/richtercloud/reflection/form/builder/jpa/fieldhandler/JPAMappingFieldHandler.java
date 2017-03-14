@@ -30,7 +30,7 @@ import javax.persistence.OneToOne;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyCurrencyStorage;
@@ -74,13 +74,13 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
     private final Map<Type, FieldHandler<?,?,?, ?>> embeddableMapping;
     private final ToManyTypeHandler toManyTypeHandler;
     private final ToOneTypeHandler toOneTypeHandler;
-    private final MessageHandler messageHandler;
+    private final IssueHandler issueHandler;
     private final FieldRetriever fieldRetriever;
     private final IdApplier idApplier;
 
     public static JPAMappingFieldHandler create(PersistenceStorage storage,
             int initialQueryLimit,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             FieldRetriever fieldRetriever,
             AmountMoneyUsageStatisticsStorage amountMoneyUsageStatisticsStorage,
             AmountMoneyCurrencyStorage amountMoneyCurrencyStorage,
@@ -92,7 +92,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             FieldRetriever readOnlyFieldRetriever) {
         JPAAmountMoneyMappingFieldHandlerFactory jPAAmountMoneyClassMappingFactory = new JPAAmountMoneyMappingFieldHandlerFactory(storage,
                 initialQueryLimit,
-                messageHandler,
+                issueHandler,
                 amountMoneyUsageStatisticsStorage,
                 amountMoneyCurrencyStorage,
                 amountMoneyExchangeRateRetriever,
@@ -101,23 +101,23 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
         AmountMoneyMappingFieldHandlerFactory amountMoneyClassMappingFactory = new AmountMoneyMappingFieldHandlerFactory(amountMoneyUsageStatisticsStorage,
                 amountMoneyCurrencyStorage,
                 amountMoneyExchangeRateRetriever,
-                messageHandler);
+                issueHandler);
         JPAAmountMoneyMappingTypeHandlerFactory jPAAmountMoneyTypeHandlerMappingFactory = new JPAAmountMoneyMappingTypeHandlerFactory(storage,
                 initialQueryLimit,
-                messageHandler,
+                issueHandler,
                 bidirectionalHelpDialogTitle,
                 readOnlyFieldRetriever);
         AmountMoneyFieldHandler amountMoneyFieldHandler = new AmountMoneyFieldHandler(amountMoneyUsageStatisticsStorage,
                 amountMoneyExchangeRateRetriever,
                 amountMoneyCurrencyStorage,
-                messageHandler);
+                issueHandler);
         ElementCollectionTypeHandler elementCollectionTypeHandler = new ElementCollectionTypeHandler(jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
-                messageHandler,
+                issueHandler,
                 amountMoneyFieldHandler,
                 readOnlyFieldRetriever);
         ToManyTypeHandler toManyTypeHandler = new ToManyTypeHandler(storage,
-                messageHandler,
+                issueHandler,
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 jPAAmountMoneyTypeHandlerMappingFactory.generateTypeHandlerMapping(),
                 bidirectionalHelpDialogTitle,
@@ -125,7 +125,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                 entryStorage,
                 readOnlyFieldRetriever);
         ToOneTypeHandler toOneTypeHandler = new ToOneTypeHandler(storage,
-                messageHandler,
+                issueHandler,
                 bidirectionalHelpDialogTitle,
                 fieldInitializer,
                 entryStorage,
@@ -136,7 +136,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                 elementCollectionTypeHandler,
                 toManyTypeHandler,
                 toOneTypeHandler,
-                messageHandler,
+                issueHandler,
                 fieldRetriever,
                 idApplier);
     }
@@ -147,7 +147,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             ElementCollectionTypeHandler elementCollectionTypeHandler,
             ToManyTypeHandler oneToManyTypeHandler,
             ToOneTypeHandler toOneTypeHandler,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             FieldRetriever fieldRetriever,
             IdApplier idApplier) {
         super(classMapping,
@@ -156,13 +156,13 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
         this.embeddableMapping = embeddableMapping;
         this.toManyTypeHandler = oneToManyTypeHandler;
         this.toOneTypeHandler = toOneTypeHandler;
-        this.messageHandler = messageHandler;
+        this.issueHandler = issueHandler;
         this.fieldRetriever = fieldRetriever;
         this.idApplier = idApplier;
     }
 
-    public MessageHandler getMessageHandler() {
-        return messageHandler;
+    public IssueHandler getIssueHandler() {
+        return issueHandler;
     }
 
     public IdApplier getIdApplier() {
@@ -197,7 +197,7 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
                 if(fieldType.equals(Long.class)) {
                     retValue = new LongIdPanel(instance,
                             fieldValueCast, //initialValue
-                            messageHandler,
+                            issueHandler,
                             fieldRetriever,
                             false, //readOnly
                             idApplier);

@@ -23,7 +23,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
@@ -51,12 +51,12 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
     private final FieldRetriever readOnlyFieldRetriever;
 
     public JPAEntityListTypeHandler(PersistenceStorage storage,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
             QueryHistoryEntryStorage entryStorage,
             FieldRetriever readOnlyFieldRetriever) {
-        super(messageHandler);
+        super(issueHandler);
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.storage = storage;
         this.fieldInitializer = fieldInitializer;
@@ -92,7 +92,7 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
         final QueryListPanel retValue = new QueryListPanel(storage,
                 readOnlyFieldRetriever,
                 entityClass,
-                getMessageHandler(),
+                getIssueHandler(),
                 fieldValue,
                 bidirectionalHelpDialogTitle,
                 fieldInitializer,

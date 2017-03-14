@@ -40,8 +40,9 @@ import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.message.handler.ExceptionMessage;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.Message;
-import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
 
@@ -133,7 +134,7 @@ public class QueryComponent<E> extends JPanel {
     private final JTextArea queryStatusLabel;
     private final JScrollPane queryStatusLabelScrollPane;
     private final Set<QueryComponentListener<E>> listeners = new HashSet<>();
-    private final MessageHandler messageHandler;
+    private final IssueHandler issueHandler;
     /**
      * The text which is the initial query. {@code null} indicates that
      * {@link #createQueryText(java.lang.Class, boolean) } ought to be used to
@@ -143,12 +144,12 @@ public class QueryComponent<E> extends JPanel {
 
     public QueryComponent(PersistenceStorage storage,
             Class<E> entityClass,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             boolean async,
             QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
         this(storage,
                 entityClass,
-                messageHandler,
+                issueHandler,
                 INITIAL_QUERY_LIMIT_DEFAULT,
                 async,
                 entryStorage);
@@ -158,7 +159,7 @@ public class QueryComponent<E> extends JPanel {
      * Creates a {@code QueryComponent}.
      * @param entityManager
      * @param entityClass
-     * @param messageHandler
+     * @param issueHandler
      * @param initialHistory
      * @param initialSelectedQueryHistoryEntry
      * @param initialQueryLimit
@@ -172,7 +173,7 @@ public class QueryComponent<E> extends JPanel {
     */
     protected QueryComponent(PersistenceStorage storage,
             Class<E> entityClass,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             int initialQueryLimit,
             boolean async,
             QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException {
@@ -235,10 +236,10 @@ public class QueryComponent<E> extends JPanel {
             }
         }
         this.storage = storage;
-        if(messageHandler == null) {
+        if(issueHandler == null) {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
-        this.messageHandler = messageHandler;
+        this.issueHandler = issueHandler;
         this.subtypeComboBox.setSelectedItem(SUBTYPES_DEFAULT);
         this.queryLabel.setText(String.format("%s query:", entityClass.getSimpleName()));
         if(initiallySelectedEntry != null) {
@@ -438,8 +439,13 @@ public class QueryComponent<E> extends JPanel {
                     return;
                 }
                 SwingUtilities.invokeLater(() -> {
-                    executeQueryGUI(queryResult, queryText);
-                    QueryComponent.this.setEnabled(true);
+                    try {
+                        executeQueryGUI(queryResult, queryText);
+                        QueryComponent.this.setEnabled(true);
+                    }catch(Throwable ex) {
+                        LOGGER.error("an unexpected exception occured during query execution GUI callback", ex);
+                        issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                    }
                 });
             },
                     "query-thread");
@@ -481,7 +487,7 @@ public class QueryComponent<E> extends JPanel {
             assert subtypeComboBox.getSelectedItem() != null;
             if(subtypeComboBox.getSelectedItem().equals(SUBTYPES_FORBID)) {
                 if(!queryResult.getClass().equals(entityClass)) {
-                    this.messageHandler.handle(new Message("The query result "
+                    this.issueHandler.handle(new Message("The query result "
                             + "contained entities which are not of the extact "
                             + "type of this query panel (super and subclasses "
                             + "aren't allow, consider adding a "
@@ -493,7 +499,7 @@ public class QueryComponent<E> extends JPanel {
                 }
             } else {
                 if(!entityClass.isAssignableFrom(queryResult.getClass())) {
-                    this.messageHandler.handle(new Message(String.format("The query result "
+                    this.issueHandler.handle(new Message(String.format("The query result "
                             + "contained entities which are not a subtype of "
                             + "the entity class %s.", entityClass.getSimpleName()),
                             JOptionPane.ERROR_MESSAGE,
@@ -534,7 +540,7 @@ public class QueryComponent<E> extends JPanel {
                 this.entryStorage.store(this.entityClass,
                         newEntry);
             } catch (QueryHistoryEntryStorageException ex) {
-                messageHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                issueHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
             }
         }else {
             modelEntry.setUsageCount(modelEntry.getUsageCount()+1);
@@ -542,7 +548,7 @@ public class QueryComponent<E> extends JPanel {
                 this.entryStorage.store(this.entityClass,
                         modelEntry);
             } catch (QueryHistoryEntryStorageException ex) {
-                messageHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                issueHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
             }
         }
         this.queryComboBoxModel.sort();

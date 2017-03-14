@@ -26,8 +26,8 @@ import org.junit.Test;
 import static org.mockito.Mockito.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.message.handler.LoggerMessageHandler;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
+import richtercloud.message.handler.LoggerIssueHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.JPACachedFieldRetriever;
@@ -51,19 +51,19 @@ public class QueryListPanelTest {
         Class entityClass = A.class;
         List<Object> initialValues = null;
         String bidirectionalHelpDialogTitle = "test";
-        MessageHandler messageHandler = new LoggerMessageHandler(LOGGER);
+        IssueHandler issueHandler = new LoggerIssueHandler(LOGGER);
         FieldInitializer fieldInitializer = mock(FieldInitializer.class);
         File entryStorageFile = File.createTempFile(QueryListPanelTest.class.getSimpleName(), null);
         Set<Class<?>> entityClasses = new HashSet<>(Arrays.asList(A.class));
         QueryHistoryEntryStorageFactory entryStorageFactory = new XMLFileQueryHistoryEntryStorageFactory(entryStorageFile,
                 entityClasses,
                 true,
-                messageHandler);
+                issueHandler);
         QueryHistoryEntryStorage initialQueryTextGenerator = entryStorageFactory.create();
         QueryListPanel instance = new QueryListPanel(storage,
                 fieldRetriever,
                 entityClass,
-                messageHandler,
+                issueHandler,
                 initialValues,
                 bidirectionalHelpDialogTitle,
                 fieldInitializer,
