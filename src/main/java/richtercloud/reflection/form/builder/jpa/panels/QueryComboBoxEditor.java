@@ -69,9 +69,9 @@ class QueryComboBoxEditor implements ComboBoxEditor {
 
     @Override
     public void setItem(Object anObject) {
-        assert anObject instanceof QueryHistoryEntry;
-        this.item = (QueryHistoryEntry) anObject;
-        if (this.item != null) {
+        if (anObject != null) {
+            assert anObject instanceof QueryHistoryEntry;
+            this.item = (QueryHistoryEntry) anObject;
             this.editorComponent.setText(this.item.getText());
         }
     }
