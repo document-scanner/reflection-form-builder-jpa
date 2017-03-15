@@ -89,7 +89,7 @@ public class JPAAmountMoneyMappingFieldHandlerFactory extends AmountMoneyMapping
         classMapping0.put(createStringTypeToken(),
                 new JPAStringFieldHandler(storage,
                         initialQueryLimit,
-                        getMessageHandler(),
+                        getIssueHandler(),
                         bidirectionalHelpDialogTitle,
                         readOnlyFieldRetriever));
         return classMapping0;

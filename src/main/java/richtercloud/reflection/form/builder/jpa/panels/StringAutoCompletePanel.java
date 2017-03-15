@@ -34,6 +34,9 @@ import javax.swing.SwingUtilities;
 import javax.swing.text.JTextComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.message.handler.ExceptionMessage;
+import richtercloud.message.handler.IssueHandler;
+import richtercloud.message.handler.Message;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
@@ -66,6 +69,7 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
     private final DefaultEventComboBoxModel<String> comboBoxModel = new DefaultEventComboBoxModel<>(comboBoxEventList);
     private final FieldRetriever fieldRetriever;
     private List<?> lastCheckResults = new LinkedList<>();
+    private final IssueHandler issueHandler;
 
     private static Field retrieveFieldByName(FieldRetriever fieldRetriever,
             Class<?> entityClass,
@@ -99,12 +103,17 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
             Class<?> entityClass,
             String fieldName,
             int initialQueryLimit,
-            FieldRetriever fieldRetriever) {
+            FieldRetriever fieldRetriever,
+            IssueHandler issueHandler) {
         super(storage,
                 entityClass,
                 fieldName,
                 initialQueryLimit);
         this.fieldRetriever = fieldRetriever;
+        if(issueHandler == null) {
+            throw new IllegalArgumentException("issueHandler mustn't be null");
+        }
+        this.issueHandler = issueHandler;
         initComponents();
         this.comboBox.addActionListener(new ActionListener() {
             @Override
@@ -174,8 +183,12 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                                 lastCheckResults = checkResults;
                             }
                         }catch(StorageException ex) {
-                            throw new RuntimeException(ex);
-                        } finally {
+                            LOGGER.error("an exception during storage occured", ex);
+                            issueHandler.handle(new Message(ex));
+                        } catch(Throwable ex) {
+                            LOGGER.error("an unexpected exception during retrieval of auto-completion check results occured", ex);
+                            issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                        }finally {
                             queryRunning = false;
                         }
                     },

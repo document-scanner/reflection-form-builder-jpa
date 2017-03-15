@@ -18,7 +18,7 @@ import java.lang.reflect.Type;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.FieldRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
@@ -38,18 +38,18 @@ import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEvent<String>,JPAReflectionFormBuilder, StringAutoCompletePanel> {
     private final PersistenceStorage storage;
     private final int initialQueryLimit;
-    private final MessageHandler messageHandler;
+    private final IssueHandler issueHandler;
     private final String bidirectionalHelpDialogTitle;
     private final FieldRetriever fieldRetriever;
 
     public JPAStringTypeHandler(PersistenceStorage storage,
             int initialQueryLimit,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             String bidirectionalHelpDialogTitle,
             FieldRetriever fieldRetriever) {
         this.storage = storage;
         this.initialQueryLimit = initialQueryLimit;
-        this.messageHandler = messageHandler;
+        this.issueHandler = issueHandler;
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.fieldRetriever = fieldRetriever;
     }
@@ -68,7 +68,8 @@ public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEven
                 declaringClass,
                 fieldName,
                 initialQueryLimit,
-                fieldRetriever);
+                fieldRetriever,
+                issueHandler);
         retValue.addUpdateListener(new StringPanelUpdateListener() {
             @Override
             public void onUpdate(StringPanelUpdateEvent event) {

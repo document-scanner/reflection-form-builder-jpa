@@ -54,7 +54,7 @@ public class JPAAmountMoneyMappingTypeHandlerFactory extends MappingTypeHandlerF
         classMapping0.put(createStringTypeToken(),
                 new JPAStringTypeHandler(storage,
                         initialQueryLimit,
-                        getMessageHandler(),
+                        getIssueHandler(),
                         bidirectionalHelpDialogTitle,
                         readOnlyFieldRetriever));
         return classMapping0;
