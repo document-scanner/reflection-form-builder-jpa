@@ -76,8 +76,9 @@ public abstract class AbstractStringPanel extends JPanel {
     }
 
     /**
-     * Since there's no converter between text and criteria API we need to use
-     * text everywhere.
+     * Since there's no converter between text and criteria API or JPA Query
+     * instances<ref>http://stackoverflow.com/questions/6276122/can-i-get-the-sql-string-from-a-jpa-query-object</ref>
+     * we need to use text everywhere.
      *
      * @param textFieldText
      * @return
@@ -103,7 +104,9 @@ public abstract class AbstractStringPanel extends JPanel {
                 entityClassQueryIdentifier,
                 entityClassQueryIdentifier,
                 this.fieldName,
-                "%"+textFieldText.replaceAll("'", "\\'")+"%" //specify % here in order to
+                "%"+textFieldText.replaceAll("'", "''")
+                        //' is escaped with ''<ref>http://stackoverflow.com/questions/9891205/escape-character-in-jpql</ref>
+                        +"%" //specify % here in order to
                     //keep them output of the format string
         );
         return retValue;
