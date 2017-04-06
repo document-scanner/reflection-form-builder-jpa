@@ -16,7 +16,7 @@ package richtercloud.reflection.form.builder.jpa.storage;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
-import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  * Initializes lazy fields through reflection. This doesn't work in Hibernate

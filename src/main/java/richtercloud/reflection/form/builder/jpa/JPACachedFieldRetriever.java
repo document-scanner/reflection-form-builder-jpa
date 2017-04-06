@@ -21,7 +21,7 @@ import java.util.ListIterator;
 import java.util.Set;
 import javax.persistence.Id;
 import javax.persistence.Transient;
-import richtercloud.reflection.form.builder.CachedFieldRetriever;
+import richtercloud.validation.tools.CachedFieldRetriever;
 
 /**
  *

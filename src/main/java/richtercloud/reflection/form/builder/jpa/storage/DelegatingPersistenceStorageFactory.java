@@ -15,7 +15,7 @@
 package richtercloud.reflection.form.builder.jpa.storage;
 
 import richtercloud.message.handler.MessageHandler;
-import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.storage.StorageConf;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageFactory;

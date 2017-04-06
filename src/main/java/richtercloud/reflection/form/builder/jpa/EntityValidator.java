@@ -14,8 +14,6 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,8 +31,9 @@ import richtercloud.message.handler.ConfirmMessageHandler;
 import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldInfo;
-import richtercloud.reflection.form.builder.FieldRetriever;
+import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.Tools;
+import richtercloud.validation.tools.ValidationTools;
 
 /**
  * Code reusage for the validation routine including handling of validation
@@ -119,79 +118,19 @@ public class EntityValidator {
         Set violations = VALIDATOR.validate(instance,
                 groups);
         if(!violations.isEmpty()) {
-            String message = buildConstraintVioloationMessage(violations,
+            String message = ValidationTools.buildConstraintVioloationMessage(violations,
                     instance,
-                    this.fieldRetriever);
-            throw new EntityValidationException(message);
-        }
-    }
-
-    /**
-     * Builds a useful message from multiple constraint violations
-     * @param violations the detected constraint violations to build the message
-     * from
-     * @param instance the instance which causes the constaint violation(s)
-     * @param fieldRetriever the field retriever to use to enhance the message
-     * with field information
-     * @return the built message
-     */
-    public static String buildConstraintVioloationMessage(Set<ConstraintViolation<?>> violations,
-            Object instance,
-            FieldRetriever fieldRetriever) {
-        StringBuilder messageBuilder = new StringBuilder(1000);
-        messageBuilder.append("<html>");
-        messageBuilder.append("The following constraints are violated:<br/>");
-        for(ConstraintViolation<?> violation : violations) {
-            String propertyPath = violation.getPropertyPath().toString();
-            List<String> propertyPathSplit = new LinkedList<>(Arrays.asList(propertyPath.split("\\."))); //an empty string causes a list with "" to be returned by "".split("\\."") (not necessarily intuitive)
-            String fieldName = propertyPath;
-            //there's no way to retrieve information about the field or
-            //class on which the validation annotation has been specified
-            //-> retrieval of this information is done with the property
-            //path of the ConstraintViolation
-
-            //violations which occur at the class level of the root instance
-            //have an empty property path -> just display the message in a
-            //separate line
-            //note: both violations which occur at the root and at
-            //a property have a property path with 1 node (which doesn't
-            //necessarily make sense) -> there's no way to evaluate retrieve
-            //the field names if a nested violation occurs -> split
-            //propertyPath.toString() at `.`.
-            if(!propertyPath.isEmpty()) {
-                if(propertyPathSplit.size() > 1) {
-                    throw new IllegalArgumentException("Property path of violation is larger than 2 nodes. This isn't supported yet.");
-                }
-                if(!propertyPathSplit.isEmpty()) {
-                    //should be always true because it's already checked
-                    //that propertyPath.toString isn't empty, but check
-                    //nevertheless
-                    String violationFieldName = propertyPathSplit.get(0);
-                    Field violationField = null;
-                    List<Field> classFields = fieldRetriever.retrieveRelevantFields(instance.getClass());
-                    for(Field classField : classFields) {
-                        if(classField.getName().equals(violationFieldName)) {
-                            violationField = classField;
-                            break;
-                        }
-                    }
-                    if(violationField == null) {
-                        throw new IllegalArgumentException("validation violoation constraint on field which isn't part of the validated instance");
-                    }
+                    this.fieldRetriever,
+                violationField -> {
                     FieldInfo violationFieldInfo = violationField.getAnnotation(FieldInfo.class);
                     if(violationFieldInfo != null) {
-                        fieldName = violationFieldInfo.name();
+                        return violationFieldInfo.name();
                     }
-                    messageBuilder.append(fieldName);
-                    messageBuilder.append(": ");
+                    return null;
                 }
-            }
-            messageBuilder.append(violation.getMessage());
-            messageBuilder.append("<br/>");
+            ); //@TODO: fix checkstyle indentation failure, see https://github.com/checkstyle/checkstyle/issues/3342
+                //for issue report
+            throw new EntityValidationException(message);
         }
-        messageBuilder.append("Fix the corresponding values in the components.");
-        messageBuilder.append("</html>");
-        String message = messageBuilder.toString();
-        return message;
     }
 }

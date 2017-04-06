@@ -30,13 +30,14 @@ import javax.persistence.metamodel.Metamodel;
 import javax.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.reflection.form.builder.FieldRetriever;
-import richtercloud.reflection.form.builder.jpa.EntityValidator;
+import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.storage.AbstractStorage;
 import richtercloud.reflection.form.builder.storage.StorageCallback;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageException;
+import richtercloud.validation.tools.FieldRetriever;
+import richtercloud.validation.tools.ValidationTools;
 
 /**
  * {@link Storage} which uses any kind of JPA with any underlying database.
@@ -195,9 +196,18 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
         }catch(ConstraintViolationException ex) {
             //needs to be caught here because ConstraintViolationException is
             //so smart to not contain the violation text in its message
-            String message = EntityValidator.buildConstraintVioloationMessage(ex.getConstraintViolations(),
+            String message = ValidationTools.buildConstraintVioloationMessage(ex.getConstraintViolations(),
                     object,
-                    fieldRetriever);
+                    fieldRetriever,
+                violationField -> {
+                    FieldInfo violationFieldInfo = violationField.getAnnotation(FieldInfo.class);
+                    if(violationFieldInfo != null) {
+                        return violationFieldInfo.name();
+                    }
+                    return null;
+                }
+            ); //@TODO: fix checkstyle indentation failure, see https://github.com/checkstyle/checkstyle/issues/3342
+                //for issue report
             throw new StorageException(message,
                     ex);
         }catch(EntityExistsException ex) {
