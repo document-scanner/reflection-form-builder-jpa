@@ -64,8 +64,6 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
     @Override
     protected void init() throws StorageCreationException {
         try {
-            String initdb = "/usr/lib/postgresql/9.5/bin/initdb";
-            String postgres = "/usr/lib/postgresql/9.5/bin/postgres";
             String createdb = "createdb";
             boolean needToCreate = !new File(getStorageConf().getDatabaseDir()).exists();
             if(needToCreate) {
@@ -73,7 +71,7 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
                 Files.write(Paths.get(passwordFile.getAbsolutePath()),
                         getStorageConf().getPassword().getBytes(),
                         StandardOpenOption.WRITE);
-                ProcessBuilder initdbProcessBuilder = new ProcessBuilder(initdb,
+                ProcessBuilder initdbProcessBuilder = new ProcessBuilder(getStorageConf().getInitdbBinaryPath(),
                         String.format("--username=%s", getStorageConf().getUsername()),
                         String.format("--pwfile=%s", passwordFile.getAbsolutePath()),
                         getStorageConf().getDatabaseDir());
@@ -92,7 +90,7 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
             }else {
                 LOGGER.info(String.format("database directory '%s' exists, expecting valid PostgreSQL data directory which is used", getStorageConf().getDatabaseDir()));
             }
-            ProcessBuilder postgresProcessBuilder = new ProcessBuilder(postgres,
+            ProcessBuilder postgresProcessBuilder = new ProcessBuilder(getStorageConf().getPostgresBinaryPath(),
                     "-D", getStorageConf().getDatabaseDir(),
                     "-h", getStorageConf().getHostname(),
                     "-p", String.valueOf(getStorageConf().getPort()));
