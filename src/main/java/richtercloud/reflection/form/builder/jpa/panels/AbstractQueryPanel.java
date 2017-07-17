@@ -39,6 +39,7 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * The base class for {@link QueryPanel} and {@link QueryListPanel}.
@@ -90,7 +91,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
             FieldInitializer fieldInitializer,
             MessageHandler messageHandler,
             int queryResultTableSelectionMode,
-            List<E> initialValues) {
+            List<E> initialValues) throws FieldRetrievalException {
         super();
         if(storage == null) {
             throw new IllegalArgumentException("entityManager mustn't be null");
@@ -154,7 +155,7 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
                     queryResultTableModel.clear();
                     queryResultTableModel.updateColumns(queryResults);
                     queryResultTableModel.addAllEntities(queryResults);
-                } catch (IllegalArgumentException | IllegalAccessException ex) {
+                } catch (IllegalArgumentException | IllegalAccessException | FieldRetrievalException ex) {
                     throw new RuntimeException(ex);
                 }
                 for(E initialValue : AbstractQueryPanel.this.initialValues) {

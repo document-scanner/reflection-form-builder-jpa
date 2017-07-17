@@ -33,6 +33,7 @@ import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.jpa.JPACachedFieldRetriever;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  *
@@ -43,7 +44,7 @@ public class QueryListPanelTest {
 
 
     @Test
-    public void testInit() throws IllegalArgumentException, IllegalAccessException, IOException, QueryHistoryEntryStorageCreationException {
+    public void testInit() throws IllegalArgumentException, IllegalAccessException, IOException, QueryHistoryEntryStorageCreationException, FieldRetrievalException {
         PersistenceStorage storage = mock(PersistenceStorage.class);
         when(storage.isClassSupported(any())).thenReturn(true);
         ReflectionFormBuilder reflectionFormBuilder = mock(ReflectionFormBuilder.class);

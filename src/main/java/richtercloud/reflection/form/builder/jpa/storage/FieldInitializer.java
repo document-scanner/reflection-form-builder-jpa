@@ -14,6 +14,8 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
+import richtercloud.validation.tools.FieldRetrievalException;
+
 /**
  * Initializes fields in a runtime-configurable way which is interesting for
  * lazily fetched fields of JPA-managed entities.
@@ -39,5 +41,5 @@ public interface FieldInitializer {
     - not a good idea to put this in a separate interface (see class comment for
     details)
     */
-    void initialize(Object entity) throws IllegalArgumentException, IllegalAccessException;
+    void initialize(Object entity) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException;
 }

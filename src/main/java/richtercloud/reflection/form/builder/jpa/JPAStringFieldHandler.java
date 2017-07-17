@@ -28,6 +28,7 @@ import richtercloud.reflection.form.builder.fieldhandler.ResettableFieldHandler;
 import richtercloud.reflection.form.builder.jpa.panels.StringAutoCompletePanel;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.typehandler.JPAStringTypeHandler;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  *
@@ -56,7 +57,7 @@ public class JPAStringFieldHandler extends ResettableFieldHandler<String, FieldU
     public Pair<JComponent, ComponentHandler<?>> handle0(Field field,
             Object instance,
             final FieldUpdateListener<FieldUpdateEvent<String>> updateListener,
-            JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException, IllegalAccessException, FieldHandlingException {
+            JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException, IllegalAccessException, FieldHandlingException, FieldRetrievalException {
         Type fieldType = field.getType();
         String fieldValue = (String) field.get(instance);
         return this.jPAStringTypeHandler.handle(fieldType,

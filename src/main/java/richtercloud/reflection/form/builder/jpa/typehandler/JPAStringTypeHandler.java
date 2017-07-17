@@ -30,6 +30,7 @@ import richtercloud.reflection.form.builder.jpa.panels.StringPanelUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.StringPanelUpdateListener;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  *
@@ -62,7 +63,8 @@ public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEven
             final FieldUpdateListener<FieldUpdateEvent<String>> updateListener,
             JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException,
             IllegalAccessException,
-            FieldHandlingException {
+            FieldHandlingException,
+            FieldRetrievalException {
         StringAutoCompletePanel retValue = new StringAutoCompletePanel(storage,
                 fieldValue, //initialValue
                 declaringClass,

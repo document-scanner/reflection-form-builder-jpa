@@ -40,6 +40,7 @@ import richtercloud.message.handler.Message;
 import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * Displays existing values in the database in a popup menu in order to inform
@@ -73,7 +74,7 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
 
     private static Field retrieveFieldByName(FieldRetriever fieldRetriever,
             Class<?> entityClass,
-            String fieldName) {
+            String fieldName) throws FieldRetrievalException {
         Field retValue = null;
         List<Field> entityClassFields = fieldRetriever.retrieveRelevantFields(entityClass);
         for(Field entityClassField : entityClassFields) {
@@ -104,7 +105,7 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
             String fieldName,
             int initialQueryLimit,
             FieldRetriever fieldRetriever,
-            IssueHandler issueHandler) {
+            IssueHandler issueHandler) throws FieldRetrievalException {
         super(storage,
                 entityClass,
                 fieldName,

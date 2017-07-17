@@ -37,6 +37,7 @@ import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.typehandler.AbstractListTypeHandler;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  *
@@ -68,7 +69,7 @@ public class JPAEntityListTypeHandler extends AbstractListTypeHandler<List<Objec
     public Pair<JComponent, ComponentHandler<?>> handle0(Type type,
             List<Object> fieldValue,
             final FieldUpdateListener<FieldUpdateEvent<List<Object>>> updateListener,
-            ReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException, IllegalAccessException {
+            ReflectionFormBuilder reflectionFormBuilder) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
         LOGGER.debug("handling type {}", type);
         //don't assert that type is instanceof ParameterizedType because a
         //simple List can be treated as List<Object>

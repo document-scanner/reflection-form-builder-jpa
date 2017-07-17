@@ -32,6 +32,7 @@ import richtercloud.message.handler.IssueHandler;
 import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * Allows to run a JPQL query for a specific class while getting feedback about
@@ -116,7 +117,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             BidirectionalControlPanel bidirectionalControlPanel,
             int queryResultTableSelectionMode,
             FieldInitializer fieldInitializer,
-            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
         this(storage,
                 entityClass,
                 issueHandler,
@@ -139,7 +140,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             String bidirectionalHelpDialogTitle,
             int queryResultTableSelectionMode,
             FieldInitializer fieldInitializer,
-            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
         this(storage,
                 entityClass,
                 issueHandler,
@@ -186,7 +187,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             int queryResultTableHeight,
             int queryResultTableSelectionMode,
             FieldInitializer fieldInitializer,
-            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
         super(bidirectionalControlPanel,
                 new QueryComponent<>(storage,
                         entityClass,
@@ -259,11 +260,11 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
         return retValue;
     }
 
-    public void reset() {
+    public void reset() throws FieldRetrievalException {
         reset0();
     }
 
-    private void reset0() {
+    private void reset0() throws FieldRetrievalException {
         this.getQueryResultTableModel().clear();
             //no need to update columns (with EntityTableModel.updateColumns)
             //because that will only happen if the next query is run (which is

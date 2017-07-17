@@ -33,6 +33,7 @@ import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.typehandler.GenericListTypeHandler;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * First checks a {@code fieldTypeHandlerMapping} first for a match of the field
@@ -84,7 +85,7 @@ public class ElementCollectionTypeHandler extends GenericListTypeHandler<JPARefl
             String fieldName,
             Class<?> declaringClass,
             final FieldUpdateListener<FieldUpdateEvent<List<Object>>> updateListener,
-            JPAReflectionFormBuilder reflectionFormBuilder) {
+            JPAReflectionFormBuilder reflectionFormBuilder) throws FieldRetrievalException {
         Type genericType = retrieveTypeGenericType(type);
         if(genericType.equals(String.class)
                 || genericType.equals(Byte.class)

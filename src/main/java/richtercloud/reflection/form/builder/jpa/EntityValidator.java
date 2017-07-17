@@ -33,6 +33,7 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.Tools;
+import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.ValidationTools;
 
 /**
@@ -114,7 +115,7 @@ public class EntityValidator {
      * @param instance
      * @param groups
      */
-    public void validate(Object instance, Class<?>... groups) throws EntityValidationException {
+    public void validate(Object instance, Class<?>... groups) throws EntityValidationException, FieldRetrievalException {
         Set violations = VALIDATOR.validate(instance,
                 groups);
         if(!violations.isEmpty()) {
@@ -127,7 +128,8 @@ public class EntityValidator {
                         return violationFieldInfo.name();
                     }
                     return null;
-                }
+                },
+                    true //html
             ); //@TODO: fix checkstyle indentation failure, see https://github.com/checkstyle/checkstyle/issues/3342
                 //for issue report
             throw new EntityValidationException(message);

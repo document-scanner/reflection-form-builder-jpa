@@ -22,6 +22,7 @@ import java.util.List;
 import javax.swing.table.DefaultTableModel;
 import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.panels.ListPanelTableModel;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * Doesn't initialize column names which has to be done in caller.
@@ -42,7 +43,7 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
      * retrieval of this constructor with {@link Class#getDeclaredConstructor(java.lang.Class...) }
      */
     public EmbeddableListPanelTableModel(Class<?> embeddableClass,
-            FieldRetriever fieldRetriever) {
+            FieldRetriever fieldRetriever) throws FieldRetrievalException {
         super(0, //rowCount
                 fieldRetriever.retrieveRelevantFields(embeddableClass).size() //columnCount
         );

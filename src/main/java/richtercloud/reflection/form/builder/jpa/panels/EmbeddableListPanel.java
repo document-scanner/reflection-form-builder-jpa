@@ -32,6 +32,7 @@ import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.panels.RightHeightTableHeader;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  *
@@ -45,7 +46,7 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
     - no need to pass renderers because editing takes place in dialog
      */
     private static DefaultTableColumnModel createMainListColumnModel(Class<?> embeddableClass,
-            FieldRetriever fieldRetriever) {
+            FieldRetriever fieldRetriever) throws FieldRetrievalException {
         DefaultTableColumnModel mainListColumnModel = new DefaultTableColumnModel();
         List<Field> embeddableClassFields = fieldRetriever.retrieveRelevantFields(embeddableClass);
         int i=0;
@@ -72,7 +73,7 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
             List<Object> initialValues,
             MessageHandler messageHandler,
             FieldHandler embeddableFieldHandler,
-            FieldRetriever fieldRetriever) {
+            FieldRetriever fieldRetriever) throws FieldRetrievalException {
         super(reflectionFormBuilder,
                 new EmbeddableListPanelCellEditor(),
                 new EmbeddableListPanelCellRenderer(),
@@ -106,7 +107,7 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
     }
 
     @Override
-    protected void editRow() throws TransformationException {
+    protected void editRow() throws TransformationException, FieldRetrievalException {
         ReflectionFormPanel reflectionFormPanel = this.getReflectionFormBuilder().transformEmbeddable(
                 embeddableClass, //entityClass
                 this.getMainListModel().getData().get(this.getMainList().getSelectedRow()), //entityToUpdate

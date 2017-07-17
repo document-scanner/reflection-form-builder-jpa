@@ -16,6 +16,7 @@ package richtercloud.reflection.form.builder.jpa;
 
 import java.lang.reflect.Field;
 import java.util.Set;
+import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -29,5 +30,5 @@ public interface JPAFieldRetriever extends FieldRetriever {
      * @param entityClass
      * @return the ID fields
      */
-    Set<Field> getIdFields(Class<?> entityClass);
+    Set<Field> getIdFields(Class<?> entityClass) throws FieldRetrievalException;
 }

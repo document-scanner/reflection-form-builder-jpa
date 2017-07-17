@@ -24,7 +24,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import static org.mockito.Mockito.mock;
 import richtercloud.message.handler.ConfirmMessageHandler;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.entities.EntityA;
@@ -60,13 +60,13 @@ public class JPAReflectionFormBuilderTest {
             //only MappedFieldUpdateEvents are interesting
         Field field = EntityA.class.getDeclaredField("bs");
         PersistenceStorage storage = mock(PersistenceStorage.class);
-        MessageHandler messageHandler = mock(MessageHandler.class);
+        IssueHandler issueHandler = mock(IssueHandler.class);
         ConfirmMessageHandler confirmMesserHandler = mock(ConfirmMessageHandler.class);
         JPAFieldRetriever fieldRetriever = new JPACachedFieldRetriever();
         IdApplier<?> idApplier = mock(IdApplier.class);
         IdGenerator<?> idGenerator = new MemorySequentialIdGenerator();
         JPAReflectionFormBuilder instance = new JPAReflectionFormBuilder(storage, "title", //fieldDescriptionDialogTitle
-                messageHandler,
+                issueHandler,
                 confirmMesserHandler,
                 fieldRetriever,
                 idApplier,

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.swing.table.DefaultTableModel;
 import richtercloud.reflection.form.builder.FieldInfo;
+import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -55,7 +56,7 @@ public class EntityTableModel<E> extends DefaultTableModel {
      */
     private Set<Class<?>> entityClasses = new HashSet<>();
 
-    public EntityTableModel(FieldRetriever fieldRetriever) throws IllegalArgumentException, IllegalAccessException {
+    public EntityTableModel(FieldRetriever fieldRetriever) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
         this(new LinkedList<E>(),
                 fieldRetriever);
     }
@@ -84,7 +85,7 @@ public class EntityTableModel<E> extends DefaultTableModel {
     - recreation of table model is tolerable effort and support KISS pattern
     */
     public EntityTableModel(List<E> initialEntities,
-            FieldRetriever fieldRetriever) throws IllegalArgumentException, IllegalAccessException {
+            FieldRetriever fieldRetriever) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
         this.fieldRetriever = fieldRetriever;
 
         for(Object entity: initialEntities) {
@@ -109,7 +110,7 @@ public class EntityTableModel<E> extends DefaultTableModel {
      *
      * @param entities the entities which ought to be used to update the model
      */
-    public void updateColumns(List<E> entities) throws IllegalArgumentException, IllegalAccessException {
+    public void updateColumns(List<E> entities) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
         Set<Class<?>> entityClassesNew = new HashSet<>();
         for(E entity : entities) {
             entityClassesNew.add(entity.getClass());
@@ -170,7 +171,8 @@ public class EntityTableModel<E> extends DefaultTableModel {
      * @throws IllegalAccessException
      */
     public void addEntity(E entity) throws IllegalArgumentException,
-            IllegalAccessException {
+            IllegalAccessException,
+            FieldRetrievalException {
         List<Class<?>> entityClassesHierarchy = new LinkedList<>(this.entityClasses);
         Collections.sort(entityClassesHierarchy, new Comparator<Class<?>>() {
             @Override
@@ -212,7 +214,7 @@ public class EntityTableModel<E> extends DefaultTableModel {
         entities.add(entity);
     }
 
-    public void addAllEntities(Collection<E> entities) throws IllegalArgumentException, IllegalAccessException {
+    public void addAllEntities(Collection<E> entities) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
         for(E entity : entities) {
             addEntity(entity);
         }

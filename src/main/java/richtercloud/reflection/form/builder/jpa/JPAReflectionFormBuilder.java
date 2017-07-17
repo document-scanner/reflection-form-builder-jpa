@@ -35,8 +35,8 @@ import javax.persistence.OneToOne;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import richtercloud.message.handler.ConfirmMessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.Message;
-import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
 import richtercloud.reflection.form.builder.TransformationException;
@@ -49,6 +49,7 @@ import richtercloud.reflection.form.builder.jpa.idapplier.IdApplicationException
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * Handles generation of {@link JPAReflectionFormPanel} from root entity class
@@ -74,14 +75,14 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
 
     public JPAReflectionFormBuilder(PersistenceStorage storage,
             String fieldDescriptionDialogTitle,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             ConfirmMessageHandler confirmMessageHandler,
             JPAFieldRetriever fieldRetriever,
             IdApplier idApplier,
             IdGenerator idGenerator,
             Map<Class<?>, WarningHandler<?>> warningHandlers) {
         super(fieldDescriptionDialogTitle,
-                messageHandler,
+                issueHandler,
                 fieldRetriever);
         if(storage == null) {
             throw new IllegalArgumentException("entityManager mustn't be null");
@@ -106,14 +107,14 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
     public ReflectionFormPanel transformEntityClass(Class<?> entityClass,
             Object entityToUpdate,
             boolean editingMode,
-            FieldHandler fieldHandler) throws TransformationException {
+            FieldHandler fieldHandler) throws TransformationException, FieldRetrievalException {
         final Map<Field, JComponent> fieldMapping = new HashMap<>();
         Object instance = prepareInstance(entityClass, entityToUpdate);
         ReflectionFormPanel retValue = new EntityReflectionFormPanel(storage,
                 instance,
                 entityClass,
                 fieldMapping,
-                this.getMessageHandler(),
+                this.getIssueHandler(),
                 confirmMessageHandler,
                 editingMode,
                 this.getFieldRetriever(),
@@ -140,7 +141,7 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
     @Override
     public ReflectionFormPanel transformEntityClass(Class<?> entityClass,
             Object entityToUpdate,
-            FieldHandler fieldHandler) throws TransformationException {
+            FieldHandler fieldHandler) throws TransformationException, FieldRetrievalException {
         return transformEntityClass(entityClass,
                 entityToUpdate,
                 false, //editingMode
@@ -149,7 +150,7 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
 
     public EmbeddableReflectionFormPanel<?> transformEmbeddable(Class<?> embeddableClass,
             Object instance,
-            FieldHandler fieldHandler) throws TransformationException {
+            FieldHandler fieldHandler) throws TransformationException, FieldRetrievalException {
         final Map<Field, JComponent> fieldMapping = new HashMap<>();
         Object instance0 = prepareInstance(embeddableClass, instance);
         EmbeddableReflectionFormPanel<Object> retValue = new EmbeddableReflectionFormPanel<>(storage,
@@ -243,11 +244,11 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                         try {
                             storage.update(eventNewValue);
                         } catch (StorageException ex) {
-                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                            getIssueHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                         }
                     });
                 } catch (StorageException ex) {
-                    getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                    getIssueHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                 }
             }
         } //eventNewValue != null
@@ -279,11 +280,11 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                                 try {
                                     storage.update(eventNewValue);
                                 } catch (StorageException ex) {
-                                    getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                                    getIssueHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                                 }
                             });
                         } catch (StorageException ex) {
-                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                            getIssueHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                         }
                     }else {
                         //eventNewValue == null
@@ -294,11 +295,11 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                                 try {
                                     storage.update(fieldCurrentValue);
                                 } catch (StorageException ex) {
-                                    getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                                    getIssueHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                                 }
                             });
                         } catch (StorageException ex) {
-                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                            getIssueHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                         }
                     }
                 }else if(field.getAnnotation(ManyToOne.class) != null) {
@@ -322,11 +323,11 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                                 try {
                                     storage.update(eventNewValue);
                                 } catch (StorageException ex) {
-                                    getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                                    getIssueHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                                 }
                             });
                         } catch (StorageException ex) {
-                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                            getIssueHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                         }
                     }else {
                         mappedFieldValue.remove(instance);
@@ -335,11 +336,11 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                                 try {
                                     storage.update(fieldCurrentValue);
                                 } catch (StorageException ex) {
-                                    getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                                    getIssueHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                                 }
                             });
                         } catch (StorageException ex) {
-                            getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                            getIssueHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                         }
                     }
                 }else if(field.getAnnotation(OneToMany.class) != null
@@ -382,12 +383,12 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                                     try {
                                         storage.update(newValue);
                                     } catch (StorageException ex) {
-                                        getMessageHandler().handle(new Message(ex,
+                                        getIssueHandler().handle(new Message(ex,
                                                 JOptionPane.ERROR_MESSAGE));
                                     }
                                 });
                             } catch (StorageException ex) {
-                                getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                                getIssueHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                             }
                         }
                     }else {
@@ -413,12 +414,12 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                                     try {
                                         storage.update(newValue);
                                     } catch (StorageException ex) {
-                                        getMessageHandler().handle(new Message(ex,
+                                        getIssueHandler().handle(new Message(ex,
                                                 JOptionPane.ERROR_MESSAGE));
                                     }
                                 });
                             } catch (StorageException ex) {
-                                getMessageHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                                getIssueHandler().handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                             }
                         }
                     }
@@ -453,7 +454,8 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
             IllegalArgumentException,
             InvocationTargetException,
             NoSuchMethodException,
-            InstantiationException {
+            InstantiationException,
+            FieldRetrievalException {
         JComponent retValue = super.getClassComponent(field,
                 entityClass,
                 instance,

@@ -39,6 +39,7 @@ import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  *
@@ -82,7 +83,8 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
             IllegalAccessException,
             FieldHandlingException,
             InstantiationException,
-            InvocationTargetException {
+            InvocationTargetException,
+            FieldRetrievalException {
         if(!(type instanceof Class)) {
             throw new IllegalArgumentException("the generic type of type has to be instanceof Class");
         }
@@ -115,7 +117,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
     }
 
     @Override
-    public void reset(QueryPanel component) {
+    public void reset(QueryPanel component) throws FieldRetrievalException {
         component.reset();
     }
 }

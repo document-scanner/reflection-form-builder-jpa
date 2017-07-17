@@ -57,6 +57,7 @@ import richtercloud.reflection.form.builder.jpa.typehandler.factory.JPAAmountMon
 import richtercloud.reflection.form.builder.panels.NumberPanel;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateEvent;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateListener;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * Handles entities and embeddables differently based on two type component-{@link FieldHandler} mappings.
@@ -178,7 +179,8 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             FieldHandlingException,
             InvocationTargetException,
             NoSuchMethodException,
-            InstantiationException {
+            InstantiationException,
+            FieldRetrievalException {
         if(field == null) {
             throw new IllegalArgumentException("fieldClass mustn't be null");
         }

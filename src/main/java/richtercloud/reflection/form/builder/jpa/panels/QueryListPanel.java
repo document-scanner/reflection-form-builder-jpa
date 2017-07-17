@@ -41,6 +41,7 @@ import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEventVetoException;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * Provides a {@link QueryComponent} and controls to add and remove stored
@@ -59,7 +60,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
 
     private static BidirectionalControlPanel generateBidirectionalControlPanel(Class<?> entityClass,
             FieldRetriever fieldRetriever,
-            String bidirectionalHelpDialogTitle) {
+            String bidirectionalHelpDialogTitle) throws FieldRetrievalException {
         List<Field> entityClassFields = fieldRetriever.retrieveRelevantFields(entityClass);
         Set<Field> mappedFieldCandidates = ReflectionFormBuilderHelperJPA.retrieveMappedFieldCandidates(entityClass,
                 entityClassFields,
@@ -89,7 +90,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             List<E> initialValues,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
-            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
         this(storage,
                 fieldRetriever,
                 entityClass,
@@ -121,7 +122,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             String bidirectionalHelpDialogTitle,
             int queryResultTableHeight,
             FieldInitializer fieldInitializer,
-            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
         super(generateBidirectionalControlPanel(entityClass,
                 fieldRetriever,
                 bidirectionalHelpDialogTitle),
@@ -165,7 +166,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             public void onQueryExecuted(QueryComponentEvent<E> event) {
                 try {
                     resultTable.getModel().updateColumns(event.getQueryResults());
-                }catch(IllegalAccessException ex) {
+                }catch(IllegalAccessException | FieldRetrievalException ex) {
                     throw new RuntimeException(ex);
                 }
             }
@@ -289,7 +290,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             }
             try {
                 this.resultTable.getModel().addEntity(queryResult);
-            } catch (IllegalArgumentException | IllegalAccessException ex) {
+            } catch (IllegalArgumentException | IllegalAccessException | FieldRetrievalException ex) {
                 LOGGER.info("an exception occured while executing the query", ex);
                 this.getQueryComponent().getQueryStatusLabel().setText(String.format("<html>%s</html>", ex.getMessage()));
             }
@@ -322,11 +323,11 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         }
     }
 
-    public void reset() {
+    public void reset() throws FieldRetrievalException {
         reset0();
     }
 
-    private void reset0() {
+    private void reset0() throws FieldRetrievalException {
         this.resultTable.getModel().clear();
         this.resultTableModel.clear();
         if(initialValues != null) {

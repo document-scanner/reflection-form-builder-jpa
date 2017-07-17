@@ -36,6 +36,7 @@ import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.typehandler.GenericListTypeHandler;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  *
@@ -79,7 +80,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
             String fieldName,
             Class<?> declaringClass,
             final FieldUpdateListener<FieldUpdateEvent<List<Object>>> updateListener,
-            JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalAccessException {
+            JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalAccessException, FieldRetrievalException {
         Type genericType = retrieveTypeGenericType(type);
         if(!(genericType instanceof Class)) {
             throw new IllegalArgumentException("the generic type of type has to be instanceof Class");
@@ -109,7 +110,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
     }
 
     @Override
-    public void reset(QueryListPanel component) {
+    public void reset(QueryListPanel component) throws FieldRetrievalException {
         component.reset();
     }
 

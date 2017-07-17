@@ -33,14 +33,16 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.ConfirmMessageHandler;
+import richtercloud.message.handler.ExceptionMessage;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.Message;
-import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplicationException;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
+import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * A {@link JPAReflectionFormPanel} with an implementation to save and delete
@@ -76,7 +78,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
     private final JButton saveButton = new JButton("Save");
     private final JButton deleteButton = new JButton("Delete");
     private final JButton resetButton = new JButton("Reset");
-    private final MessageHandler messageHandler;
+    private final IssueHandler issueHandler;
     private final boolean editingMode;
     private final EntityValidator entityValidator;
     /*
@@ -97,7 +99,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
      * @param instance
      * @param entityClass
      * @param fieldMapping
-     * @param messageHandler
+     * @param issueHandler
      * @param editingMode if {@code true} the save button with update an exiting entity and a delete button will be provided, otherwise it will persist a new entity and no delete button will be provided
      * @param fieldRetriever
      * @param fieldHandler the {@link FieldHandler} to perform reset actions
@@ -113,7 +115,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
             Object instance,
             Class<?> entityClass,
             Map<Field, JComponent> fieldMapping,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             ConfirmMessageHandler confirmMessageHandler,
             boolean editingMode,
             JPAFieldRetriever fieldRetriever,
@@ -125,10 +127,10 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                 entityClass,
                 fieldMapping,
                 fieldHandler);
-        if(messageHandler == null) {
+        if(issueHandler == null) {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
-        this.messageHandler = messageHandler;
+        this.issueHandler = issueHandler;
         if(fieldRetriever == null) {
             throw new IllegalArgumentException("fieldRetriever mustn't be null");
         }
@@ -144,7 +146,13 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         saveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent evt) {
-                saveButtonActionPerformed(evt);
+                try {
+                    saveButtonActionPerformed(evt);
+                } catch (FieldRetrievalException ex) {
+                    LOGGER.error("unexpected exception during field retrieval",
+                            ex);
+                    issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                }
             }
         });
         resetButton.addActionListener(new ActionListener() {
@@ -177,7 +185,13 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         resetButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                reset();
+                try {
+                    reset();
+                } catch (FieldRetrievalException ex) {
+                    LOGGER.error("unexpected exception during field retrieval",
+                            ex);
+                    issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                }
             }
         });
         buttonGroupHorizontal.addComponent(resetButton);
@@ -187,7 +201,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         getLayout().setHorizontalGroup(horizontalEntityControlsGroup);
         getLayout().setVerticalGroup(verticalEntityControlsGroup);
         this.entityValidator = new EntityValidator(fieldRetriever,
-                messageHandler,
+                issueHandler,
                 confirmMessageHandler,
                 warningHandlers);
     }
@@ -205,7 +219,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         //check getEntityManager.contains is unnecessary because a instances should be managed
         try {
             getStorage().store(instance);
-            this.messageHandler.handle(new Message(String.format("<html>removed entity of type '%s' successfully</html>", this.getEntityClass()),
+            this.issueHandler.handle(new Message(String.format("<html>removed entity of type '%s' successfully</html>", this.getEntityClass()),
                     JOptionPane.INFORMATION_MESSAGE,
                     "Removal succeeded"));
         }catch(StorageException ex) {
@@ -234,7 +248,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
     JPA module and validation is legitimate no matter which Storage backend is
     used.
     */
-    protected void saveButtonActionPerformed(ActionEvent evt) {
+    protected void saveButtonActionPerformed(ActionEvent evt) throws FieldRetrievalException {
         Object instance = this.retrieveInstance();
             //might be in all sorts of JPA states (attached, detached, etc.)
 
@@ -246,14 +260,14 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                 idApplier.applyId(instance,
                         idFieldComponents);
             } catch (IdApplicationException ex) {
-                messageHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                issueHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
             }
         }
 
         try {
             this.entityValidator.validate(instance, Default.class);
-        }catch(EntityValidationException ex) {
-            messageHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+        }catch(EntityValidationException | FieldRetrievalException ex) {
+            issueHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
             return;
         }
         if(!this.entityValidator.handleWarnings(instance)) {
@@ -322,7 +336,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                     Object existingInstance = getStorage().retrieve(primaryKey,
                             getEntityClass());
                     if(existingInstance != null) {
-                        this.messageHandler.handle(new Message(String.format("An instance of type '%s' with ID '%s' has already been persisted. Change the ID or edit the existing instance in editing mode.",
+                        this.issueHandler.handle(new Message(String.format("An instance of type '%s' with ID '%s' has already been persisted. Change the ID or edit the existing instance in editing mode.",
                                         getEntityClass(),
                                         primaryKey),
                                 JOptionPane.ERROR_MESSAGE,
@@ -333,7 +347,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
 
                 //persist
                 getStorage().store(instance);
-                this.messageHandler.handle(new Message(String.format("<html>persisted entity of type '%s' successfully</html>", this.getEntityClass()),
+                this.issueHandler.handle(new Message(String.format("<html>persisted entity of type '%s' successfully</html>", this.getEntityClass()),
                         JOptionPane.INFORMATION_MESSAGE,
                         "Instance persisted successfully"));
             }catch(StorageException ex) {
@@ -342,7 +356,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         } else {
             try {
                 getStorage().update(instance);
-                this.messageHandler.handle(new Message(String.format("<html>Updated entity of type '%s' successfully.</html>", this.getEntityClass()),
+                this.issueHandler.handle(new Message(String.format("<html>Updated entity of type '%s' successfully.</html>", this.getEntityClass()),
                         JOptionPane.INFORMATION_MESSAGE,
                         "Instance updated successfully"));
             }catch(StorageException ex) {
@@ -357,7 +371,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                 ExceptionUtils.getRootCauseMessage(ex) //since ExceptionUtils.getRootCause returns null if ex doesn't have a cause use ExceptionUtils.getRootCauseMessage (which always works)
         );
         LOGGER.debug(message, ex);
-        this.messageHandler.handle(new Message(message,
+        this.issueHandler.handle(new Message(message,
                 JOptionPane.ERROR_MESSAGE,
                 "Exception occured"));
     }

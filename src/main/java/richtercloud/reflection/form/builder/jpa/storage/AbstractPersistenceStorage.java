@@ -36,6 +36,7 @@ import richtercloud.reflection.form.builder.storage.StorageCallback;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageException;
+import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.validation.tools.ValidationTools;
 
@@ -196,17 +197,23 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
         }catch(ConstraintViolationException ex) {
             //needs to be caught here because ConstraintViolationException is
             //so smart to not contain the violation text in its message
-            String message = ValidationTools.buildConstraintVioloationMessage(ex.getConstraintViolations(),
-                    object,
-                    fieldRetriever,
-                violationField -> {
-                    FieldInfo violationFieldInfo = violationField.getAnnotation(FieldInfo.class);
-                    if(violationFieldInfo != null) {
-                        return violationFieldInfo.name();
-                    }
-                    return null;
-                }
-            ); //@TODO: fix checkstyle indentation failure, see https://github.com/checkstyle/checkstyle/issues/3342
+            String message;
+            try {
+                message = ValidationTools.buildConstraintVioloationMessage(ex.getConstraintViolations(),
+                        object,
+                        fieldRetriever,
+                    violationField -> {
+                        FieldInfo violationFieldInfo = violationField.getAnnotation(FieldInfo.class);
+                        if(violationFieldInfo != null) {
+                            return violationFieldInfo.name();
+                        }
+                        return null;
+                    },
+                        true //html
+                ); //@TODO: fix checkstyle indentation failure, see https://github.com/checkstyle/checkstyle/issues/3342
+            } catch (FieldRetrievalException ex1) {
+                throw new StorageException(ex1);
+            }
                 //for issue report
             throw new StorageException(message,
                     ex);
