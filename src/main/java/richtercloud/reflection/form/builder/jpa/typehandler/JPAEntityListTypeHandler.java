@@ -25,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
-import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -38,6 +37,7 @@ import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.typehandler.AbstractListTypeHandler;
 import richtercloud.validation.tools.FieldRetrievalException;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  *

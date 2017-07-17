@@ -32,7 +32,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
-import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyCurrencyStorage;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyExchangeRateRetriever;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyUsageStatisticsStorage;
@@ -58,6 +57,7 @@ import richtercloud.reflection.form.builder.panels.NumberPanel;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateEvent;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateListener;
 import richtercloud.validation.tools.FieldRetrievalException;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  * Handles entities and embeddables differently based on two type component-{@link FieldHandler} mappings.

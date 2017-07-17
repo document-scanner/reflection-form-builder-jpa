@@ -14,11 +14,11 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
-import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.storage.Storage;
 import richtercloud.reflection.form.builder.storage.StorageConf;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageFactory;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  *

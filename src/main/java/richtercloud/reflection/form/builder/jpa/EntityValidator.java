@@ -31,9 +31,9 @@ import richtercloud.message.handler.ConfirmMessageHandler;
 import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldInfo;
-import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.Tools;
 import richtercloud.validation.tools.FieldRetrievalException;
+import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.validation.tools.ValidationTools;
 
 /**

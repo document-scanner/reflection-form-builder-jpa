@@ -24,7 +24,6 @@ import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldInfo;
-import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
 import richtercloud.reflection.form.builder.TransformationException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
@@ -33,6 +32,7 @@ import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.panels.RightHeightTableHeader;
 import richtercloud.validation.tools.FieldRetrievalException;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  *

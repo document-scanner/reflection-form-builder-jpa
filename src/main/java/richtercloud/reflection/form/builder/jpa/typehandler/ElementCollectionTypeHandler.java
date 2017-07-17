@@ -23,7 +23,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
-import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -34,6 +33,7 @@ import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.typehandler.GenericListTypeHandler;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
 import richtercloud.validation.tools.FieldRetrievalException;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  * First checks a {@code fieldTypeHandlerMapping} first for a match of the field

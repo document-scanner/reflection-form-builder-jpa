@@ -36,10 +36,10 @@ import javax.swing.table.TableRowSorter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.MessageHandler;
-import richtercloud.validation.tools.FieldRetriever;
-import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.validation.tools.FieldRetrievalException;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  * The base class for {@link QueryPanel} and {@link QueryListPanel}.

@@ -22,11 +22,11 @@ import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.IssueHandler;
-import richtercloud.validation.tools.FieldRetriever;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.validation.tools.FieldRetrievalException;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  * A panel to include an automatic check for existing entites with the value

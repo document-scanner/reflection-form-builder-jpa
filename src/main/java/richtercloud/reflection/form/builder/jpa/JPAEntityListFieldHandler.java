@@ -20,16 +20,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.MessageHandler;
-import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.AbstractListFieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.jpa.panels.QueryHistoryEntryStorage;
+import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
+import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.jpa.typehandler.JPAEntityListTypeHandler;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
-import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
-import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  *

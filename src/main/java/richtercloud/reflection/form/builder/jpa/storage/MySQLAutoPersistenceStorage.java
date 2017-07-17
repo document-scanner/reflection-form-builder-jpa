@@ -27,12 +27,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.Message;
 import richtercloud.message.handler.MessageHandler;
-import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.sequence.MySQLSequenceManager;
 import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
 import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  * Using {@link MySQLAutoPersistenceStorageConf#getPassword() } for MySQL

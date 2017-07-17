@@ -18,12 +18,12 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.jpa.sequence.DerbySequenceManager;
 import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
 import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  *

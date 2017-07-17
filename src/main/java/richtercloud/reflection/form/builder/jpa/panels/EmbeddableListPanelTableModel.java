@@ -20,9 +20,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
-import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.panels.ListPanelTableModel;
 import richtercloud.validation.tools.FieldRetrievalException;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  * Doesn't initialize column names which has to be done in caller.

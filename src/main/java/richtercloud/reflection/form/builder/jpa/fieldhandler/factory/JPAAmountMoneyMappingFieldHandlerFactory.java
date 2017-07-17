@@ -18,7 +18,6 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import richtercloud.message.handler.IssueHandler;
-import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyCurrencyStorage;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyExchangeRateRetriever;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyUsageStatisticsStorage;
@@ -26,6 +25,7 @@ import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.factory.AmountMoneyMappingFieldHandlerFactory;
 import richtercloud.reflection.form.builder.jpa.JPAStringFieldHandler;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.validation.tools.FieldRetriever;
 
 /**
  *
