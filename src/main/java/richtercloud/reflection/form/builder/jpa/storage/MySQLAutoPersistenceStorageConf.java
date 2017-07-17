@@ -116,7 +116,11 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
 
     @Override
     public String getConnectionURL() {
-        String retValue = String.format("jdbc:mysql://%s:%d/%s",
+        String retValue = String.format("jdbc:mysql://%s:%d/%s?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC",
+                    //additional properties necessary in order to avoid
+                    //`java.sql.SQLException: The server time zone value 'CEST' is unrecognized or represents more than one time zone. You must configure either the server or JDBC driver (via the serverTimezone configuration property) to use a more specifc time zone value if you want to utilize time zone support.`
+                    //see https://stackoverflow.com/questions/26515700/mysql-jdbc-driver-5-1-33-time-zone-issue
+                    //for details
                 getHostname(),
                 getPort(),
                 getDatabaseName());
