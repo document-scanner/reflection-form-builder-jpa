@@ -50,14 +50,17 @@ import richtercloud.validation.tools.FieldRetriever;
  * and the right priority since {@code comboBox} queries for every key-pressed
  * event.
  *
+ * Uses glazedLists under the hood which sets a
+ * {@link javax.swing.text.DocumentFilter} on the editor component of the
+ * central combo box of this component which might be relevant when working with
+ * document filters in callers.
+ *
  * @author richter
  */
 /*
 internal implementation notes:
 - SwingX's AutoCompleteDecorator only allows entering values which are in the
 model and thus can't be used for suggestions
-- glazedlists not checked for far because installation is fairly uncomfortable
-(i.e. more complicated than implementing auto-completion)
 - A previous undocumented implementation added entities.toString in the popup
 instead of the field values. Adding field values makes more sense.
 - removed parameter T because it didn't seem to have any use, document well when
