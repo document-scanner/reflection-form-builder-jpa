@@ -20,6 +20,8 @@ import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementExcep
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
 /**
+ * An ID generator which delegates sequence retrieval to a
+ * {@link PersistenceStorage}.
  *
  * @author richter
  */
@@ -27,24 +29,22 @@ public class SequentialIdGenerator implements IdGenerator<Long> {
     private final static Logger LOGGER = LoggerFactory.getLogger(SequentialIdGenerator.class);
     public final static String SEQUENCE_NAME_DEFAULT = "sequential-id";
     private final String sequenceName = SEQUENCE_NAME_DEFAULT;
-    private final PersistenceStorage<Long> sequenceManager;
+    private final PersistenceStorage<Long> storage;
 
     /**
      * Creates a new {@code SequentialIdGenerator}.
-     * @param sequenceManager it's recommended to use the sequence manager of
-     * the storage used in the application which can be retrieved with
-     * {@link PersistenceStorage#getSequenceManager() }
+     * @param storage the persistence storage providing the sequence
      * @throws IdGenerationException
      */
-    public SequentialIdGenerator(PersistenceStorage<Long> sequenceManager) throws IdGenerationException {
-        this.sequenceManager = sequenceManager;
+    public SequentialIdGenerator(PersistenceStorage<Long> storage) throws IdGenerationException {
+        this.storage = storage;
         init();
     }
 
     private void init() throws IdGenerationException {
         try {
-            if(!sequenceManager.checkSequenceExists(sequenceName)) {
-                sequenceManager.createSequence(sequenceName);
+            if(!storage.checkSequenceExists(sequenceName)) {
+                storage.createSequence(sequenceName);
             }
         } catch (SequenceManagementException ex) {
             throw new IdGenerationException(ex);
@@ -54,7 +54,7 @@ public class SequentialIdGenerator implements IdGenerator<Long> {
     @Override
     public Long getNextId(Object instance) throws IdGenerationException {
         try {
-            return sequenceManager.getNextSequenceValue(sequenceName);
+            return storage.getNextSequenceValue(sequenceName);
         } catch (SequenceManagementException ex) {
             throw new IdGenerationException(ex);
         }

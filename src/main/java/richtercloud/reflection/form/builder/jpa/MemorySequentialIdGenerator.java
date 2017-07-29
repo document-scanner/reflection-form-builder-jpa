@@ -19,6 +19,9 @@ package richtercloud.reflection.form.builder.jpa;
  * for testing purposes only which involve entities which are deleted after the
  * test(s) end.
  *
+ * This class is a singleton and a reference ought to be retrieved through
+ * {@link #getInstance() }.
+ *
  * @author richter
  */
 public class MemorySequentialIdGenerator implements IdGenerator<Long> {

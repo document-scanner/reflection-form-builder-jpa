@@ -18,6 +18,13 @@ import java.util.Set;
 import javax.swing.JComponent;
 
 /**
+ * Manages evaluation of values of components which compose an entity ID and
+ * decides whether an ID ought to be assigned or changed or not (because the ID
+ * isn't already set, already taken, etc. - that's up to implementations).
+ *
+ * The source for IDs is most likely an
+ * {@link richtercloud.reflection.form.builder.jpa.IdGenerator} which you can
+ * also use to assign IDs in a situation which doesn't involve GUI components.
  *
  * @author richter
  * @param <C> allows to enforce an interface or component type in order to
