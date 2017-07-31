@@ -75,6 +75,7 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
                 PORT_DEFAULT,
                 entityClasses,
                 username,
+                null, //password
                 DATABASE_NAME_DEFAULT,
                 schemeChecksumFile);
         this.databaseDir = databaseDir;

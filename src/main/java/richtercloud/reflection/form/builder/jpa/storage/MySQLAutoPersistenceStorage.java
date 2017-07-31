@@ -300,6 +300,10 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
             try {
                 LOGGER.info("waiting for mysqld process to terminate");
                 mysqldProcess.waitFor();
+                    //never waited forever in integration tests; if that ever
+                    //happens, call Process.exitValue and catch
+                    //IllegalThreadStateException in a loop method in
+                    //PostgresqlAutoPersistenceStorage.shutdown0
             } catch (InterruptedException ex) {
                 LOGGER.error("waiting for termination of mysqld process failed, see nested exception for details", ex);
             }

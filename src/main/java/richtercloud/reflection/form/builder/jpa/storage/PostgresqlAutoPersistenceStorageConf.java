@@ -17,10 +17,13 @@ package richtercloud.reflection.form.builder.jpa.storage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import richtercloud.jhbuild.java.wrapper.BinaryTools;
+import richtercloud.jhbuild.java.wrapper.BinaryValidationException;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 
 /**
@@ -86,20 +89,26 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
     private String databaseDir;
     private String initdbBinaryPath;
     private String postgresBinaryPath;
-
+    private String createdbBinaryPath;
 
     public PostgresqlAutoPersistenceStorageConf(Set<Class<?>> entityClasses,
             String username,
+            String password,
+            String databaseName,
             File schemeChecksumFile,
             String databaseDir,
             String initdbBinaryPath,
-            String postgresBinaryPath) throws FileNotFoundException, IOException {
+            String postgresBinaryPath,
+            String createdbBinaryPath) throws FileNotFoundException, IOException {
         super(entityClasses,
                 username,
+                password,
+                databaseName,
                 schemeChecksumFile);
-        this.databaseDir = databaseDir;
-        this.initdbBinaryPath = initdbBinaryPath;
-        this.postgresBinaryPath = postgresBinaryPath;
+        init0(databaseDir,
+                initdbBinaryPath,
+                postgresBinaryPath,
+                createdbBinaryPath);
     }
 
     /**
@@ -115,26 +124,38 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
      * @throws FileNotFoundException
      * @throws IOException
      */
-    public PostgresqlAutoPersistenceStorageConf(String databaseDir,
-            int port,
-            String databaseDriver,
-            Set<Class<?>> entityClasses,
+    public PostgresqlAutoPersistenceStorageConf(Set<Class<?>> entityClasses,
             String username,
             String password,
             String databaseName,
             File schemeChecksumFile,
+            String databaseDir,
             String initdbBinaryPath,
-            String postgresBinaryPath) throws FileNotFoundException, IOException {
-        super(port,
-                databaseDriver,
-                entityClasses,
+            String postgresBinaryPath,
+            String createdbBinaryPath,
+            int port,
+            String databaseDriver) throws FileNotFoundException, IOException {
+        super(entityClasses,
                 username,
                 password,
                 databaseName,
-                schemeChecksumFile);
+                schemeChecksumFile,
+                port,
+                databaseDriver);
+        init0(databaseDir,
+                initdbBinaryPath,
+                postgresBinaryPath,
+                createdbBinaryPath);
+    }
+
+    private void init0(String databaseDir,
+            String initdbBinaryPath,
+            String postgresBinaryPath,
+            String createdbBinaryPath) {
         this.databaseDir = databaseDir;
         this.initdbBinaryPath = initdbBinaryPath;
         this.postgresBinaryPath = postgresBinaryPath;
+        this.createdbBinaryPath = createdbBinaryPath;
     }
 
     public String getDatabaseDir() {
@@ -161,6 +182,14 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
         this.postgresBinaryPath = postgresBinaryPath;
     }
 
+    public String getCreatedbBinaryPath() {
+        return createdbBinaryPath;
+    }
+
+    public void setCreatedbBinaryPath(String createdbBinaryPath) {
+        this.createdbBinaryPath = createdbBinaryPath;
+    }
+
     /**
      * Requires {@code postgresBinaryPath} and {@code initdbBinaryPath} to be
      * not {@code null} and an existing file.
@@ -171,17 +200,15 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
     @Override
     public void validate() throws StorageConfValidationException {
         super.validate();
-        if(this.postgresBinaryPath == null) {
-            throw new StorageConfValidationException("postgres binary path is null");
-        }
-        if(this.initdbBinaryPath == null) {
-            throw new StorageConfValidationException("initdb binary path is null");
-        }
-        if(!new File(this.postgresBinaryPath).exists()) {
-            throw new StorageConfValidationException("postgres binary path points to an inexisting location");
-        }
-        if(!new File(this.initdbBinaryPath).exists()) {
-            throw new StorageConfValidationException("initdb binary path points to an inexisting location");
+        for(Pair<String, String> binaryPair : Arrays.asList(new ImmutablePair<>(postgresBinaryPath, "postgres"),
+            new ImmutablePair<>(initdbBinaryPath, "initdb"),
+            new ImmutablePair<>(createdbBinaryPath, "createdb"))) {
+            try {
+                BinaryTools.validateBinary(binaryPair.getKey(),
+                    binaryPair.getValue());
+            }catch(BinaryValidationException ex) {
+                throw new StorageConfValidationException(ex);
+            }
         }
     }
 

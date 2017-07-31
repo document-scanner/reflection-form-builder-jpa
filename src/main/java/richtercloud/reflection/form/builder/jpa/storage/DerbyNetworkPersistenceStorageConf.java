@@ -25,11 +25,16 @@ import org.apache.derby.jdbc.ClientDriver;
  * Derby connection types, like embedded or memory instances). Uses the
  * {@code databaseDir} property to specify the database name or path (both are
  * valid) which is expected to exist in the database server the connection is
- * established to. The initial value is {@code null} in order to enforce
- * specification by user.
+ * established to.
  *
  * @author richter
  */
+/*
+internal implementation notes:
+- There's no reason to set initial values to null in the internal constructor
+call hierachy in order to enforce setting by user because callers can explicitly
+set values to null at initialization and reaction on validation failures.
+*/
 public class DerbyNetworkPersistenceStorageConf extends AbstractNetworkPersistenceStorageConf {
     private static final long serialVersionUID = 1L;
     private final static String DRIVER_NAME = ClientDriver.class.getName();
@@ -44,6 +49,17 @@ public class DerbyNetworkPersistenceStorageConf extends AbstractNetworkPersisten
         }
     }
 
+    /**
+     * Constructs a new {@link DerbyNetworkPersistenceStorageConf} with
+     * {@code password} and {@code databaseName} set to {@code null} in order to
+     * enforce them being set by callers/users.
+     *
+     * @param entityClasses
+     * @param hostname
+     * @param schemeChecksumFile
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     public DerbyNetworkPersistenceStorageConf(Set<Class<?>> entityClasses,
             String hostname,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
@@ -51,7 +67,8 @@ public class DerbyNetworkPersistenceStorageConf extends AbstractNetworkPersisten
                 PORT_DEFAULT,
                 entityClasses,
                 USERNAME_DEFAULT,
-                null, //databaseDir (see class comment)
+                null, //password (see constructor comment)
+                null, //databaseDir (see constructor comment)
                 schemeChecksumFile);
     }
 

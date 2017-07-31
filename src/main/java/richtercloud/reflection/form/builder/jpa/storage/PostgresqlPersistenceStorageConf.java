@@ -41,13 +41,17 @@ public class PostgresqlPersistenceStorageConf extends AbstractNetworkPersistence
 
     public PostgresqlPersistenceStorageConf(Set<Class<?>> entityClasses,
             String username,
+            String password,
+            String databaseName,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
-        super(DRIVER_NAME,
-                PORT_DEFAULT,
-                entityClasses,
-                USERNAME_DEFAULT,
-                null,
-                schemeChecksumFile);
+        super(DRIVER_NAME, //databaseDriver
+                PORT_DEFAULT, //port
+                entityClasses, //entityClasses
+                username, //username
+                password,
+                databaseName, //databaseName
+                schemeChecksumFile //schemeChecksumFile
+        );
     }
 
     /**
@@ -62,20 +66,21 @@ public class PostgresqlPersistenceStorageConf extends AbstractNetworkPersistence
      * @throws FileNotFoundException
      * @throws IOException
      */
-    public PostgresqlPersistenceStorageConf(int port,
-            String databaseDriver,
-            Set<Class<?>> entityClasses,
+    public PostgresqlPersistenceStorageConf(Set<Class<?>> entityClasses,
             String username,
             String password,
             String databaseName,
-            File schemeChecksumFile) throws FileNotFoundException, IOException {
-        super(port,
-                databaseDriver,
-                entityClasses,
-                username,
-                password,
-                databaseName,
-                schemeChecksumFile);
+            File schemeChecksumFile,
+            int port,
+            String databaseDriver) throws FileNotFoundException, IOException {
+        super(port, //port
+                databaseDriver, //databaseDriver
+                entityClasses, //entityClasses
+                username, //username
+                password, //password
+                databaseName, //databaseName
+                schemeChecksumFile //schemeChecksumFile
+        );
     }
 
     @Override

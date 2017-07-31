@@ -35,11 +35,13 @@ public abstract class AbstractNetworkPersistenceStorageConf extends AbstractPers
             int port,
             Set<Class<?>> entityClasses,
             String username,
+            String password,
             String databaseName,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
         super(databaseDriver,
                 entityClasses,
                 username,
+                password,
                 databaseName,
                 schemeChecksumFile);
         this.port = port;

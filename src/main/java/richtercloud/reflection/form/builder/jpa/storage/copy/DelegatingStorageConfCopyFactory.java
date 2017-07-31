@@ -76,29 +76,31 @@ public class DelegatingStorageConfCopyFactory implements StorageConfCopyFactory<
         }else if(storageConf instanceof PostgresqlAutoPersistenceStorageConf) {
             PostgresqlAutoPersistenceStorageConf storageConfCast = (PostgresqlAutoPersistenceStorageConf) storageConf;
             try {
-                retValue = new PostgresqlAutoPersistenceStorageConf(storageConfCast.getDatabaseDir(),
-                        storageConfCast.getPort(),
-                        storageConfCast.getDatabaseDriver(),
+                retValue = new PostgresqlAutoPersistenceStorageConf(
                         storageConfCast.getEntityClasses(),
                         storageConfCast.getUsername(),
                         storageConfCast.getPassword(),
                         storageConfCast.getDatabaseName(),
                         storageConfCast.getSchemeChecksumFile(),
+                        storageConfCast.getDatabaseDir(),
                         storageConfCast.getInitdbBinaryPath(),
-                        storageConfCast.getPostgresBinaryPath());
+                        storageConfCast.getPostgresBinaryPath(),
+                        storageConfCast.getCreatedbBinaryPath(),
+                        storageConfCast.getPort(),
+                        storageConfCast.getDatabaseDriver());
             } catch (IOException ex) {
                 throw new StorageConfCopyException(ex);
             }
         }else if(storageConf instanceof PostgresqlPersistenceStorageConf) {
             PostgresqlPersistenceStorageConf storageConfCast = (PostgresqlPersistenceStorageConf) storageConf;
             try {
-                retValue = new PostgresqlPersistenceStorageConf(storageConfCast.getPort(),
-                        storageConfCast.getDatabaseDriver(),
-                        storageConfCast.getEntityClasses(),
+                retValue = new PostgresqlPersistenceStorageConf(storageConfCast.getEntityClasses(),
                         storageConfCast.getUsername(),
                         storageConfCast.getPassword(),
                         storageConfCast.getDatabaseName(),
-                        storageConfCast.getSchemeChecksumFile());
+                        storageConfCast.getSchemeChecksumFile(),
+                        storageConfCast.getPort(),
+                        storageConfCast.getDatabaseDriver());
             } catch (IOException ex) {
                 throw new StorageConfCopyException(ex);
             }
