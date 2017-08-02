@@ -64,6 +64,7 @@ public class DerbyNetworkPersistenceStorageConf extends AbstractNetworkPersisten
             String hostname,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
         super("org.apache.derby.jdbc.ClientDriver", //databaseDriver
+                hostname,
                 PORT_DEFAULT,
                 entityClasses,
                 USERNAME_DEFAULT,
@@ -84,14 +85,16 @@ public class DerbyNetworkPersistenceStorageConf extends AbstractNetworkPersisten
      * @throws FileNotFoundException
      * @throws IOException
      */
-    public DerbyNetworkPersistenceStorageConf(int port,
+    public DerbyNetworkPersistenceStorageConf(String hostname,
+            int port,
             String databaseDriver,
             Set<Class<?>> entityClasses,
             String username,
             String password,
             String databaseName,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
-        super(port,
+        super(hostname,
+                port,
                 databaseDriver,
                 entityClasses,
                 username,

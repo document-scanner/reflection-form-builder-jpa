@@ -19,8 +19,6 @@ import java.util.List;
 import javax.swing.GroupLayout;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
@@ -48,7 +46,6 @@ import richtercloud.validation.tools.FieldRetriever;
  */
 public class StringCheckPanel extends AbstractStringPanel {
     private static final long serialVersionUID = 1L;
-    private final static Logger LOGGER = LoggerFactory.getLogger(StringCheckPanel.class);
     private QueryPanel<?> queryPanel;
     private final String initialValue;
 
@@ -59,7 +56,6 @@ public class StringCheckPanel extends AbstractStringPanel {
             String initialValue,
             String fieldName,
             int initialQueryLimit,
-            String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
             boolean async,
             QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
@@ -191,6 +187,7 @@ public class StringCheckPanel extends AbstractStringPanel {
         );
     }// </editor-fold>//GEN-END:initComponents
 
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private void checkButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkButtonActionPerformed
         try {
             updateStatusLabel(false //async
@@ -200,6 +197,7 @@ public class StringCheckPanel extends AbstractStringPanel {
         }
     }//GEN-LAST:event_checkButtonActionPerformed
 
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private void showButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showButtonActionPerformed
         this.queryPanel.getQueryComponent().getQueryComboBoxModel().addElement(new QueryHistoryEntry(generateQueryText(this.textField.getText()),
                 1, //usageCount
@@ -208,6 +206,7 @@ public class StringCheckPanel extends AbstractStringPanel {
         this.queryPanelDialog.setVisible(true);
     }//GEN-LAST:event_showButtonActionPerformed
 
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private void textFieldKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_textFieldKeyReleased
         //has to be key released because otherwise the text of the text field isn't up-to-date
         this.checkButton.setEnabled(!this.textField.getText().isEmpty());

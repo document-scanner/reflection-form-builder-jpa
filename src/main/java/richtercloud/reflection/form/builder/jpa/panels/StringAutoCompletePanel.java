@@ -71,9 +71,7 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
     private final static Logger LOGGER = LoggerFactory.getLogger(StringAutoCompletePanel.class);
     private final EventList<String> comboBoxEventList = new BasicEventList<>();
     private final DefaultEventComboBoxModel<String> comboBoxModel = new DefaultEventComboBoxModel<>(comboBoxEventList);
-    private final FieldRetriever fieldRetriever;
     private List<?> lastCheckResults = new LinkedList<>();
-    private final IssueHandler issueHandler;
 
     private static Field retrieveFieldByName(FieldRetriever fieldRetriever,
             Class<?> entityClass,
@@ -113,11 +111,6 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                 entityClass,
                 fieldName,
                 initialQueryLimit);
-        this.fieldRetriever = fieldRetriever;
-        if(issueHandler == null) {
-            throw new IllegalArgumentException("issueHandler mustn't be null");
-        }
-        this.issueHandler = issueHandler;
         initComponents();
         this.comboBox.addActionListener(new ActionListener() {
             @Override

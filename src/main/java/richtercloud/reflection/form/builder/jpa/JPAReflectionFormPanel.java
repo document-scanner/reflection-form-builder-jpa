@@ -17,8 +17,6 @@ package richtercloud.reflection.form.builder.jpa;
 import java.lang.reflect.Field;
 import java.util.Map;
 import javax.swing.JComponent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
 import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
@@ -30,7 +28,6 @@ import richtercloud.reflection.form.builder.storage.Storage;
  */
 public abstract class JPAReflectionFormPanel<T, U extends ReflectionFormPanelUpdateListener> extends ReflectionFormPanel<U> {
     private static final long serialVersionUID = 1L;
-    private final static Logger LOGGER = LoggerFactory.getLogger(JPAReflectionFormPanel.class);
     private Storage storage;
 
     /**

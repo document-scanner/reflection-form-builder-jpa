@@ -135,7 +135,6 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             IssueHandler issueHandler,
             FieldRetriever fieldRetriever,
             E initialValue,
-            Set<Class<?>> entityClasses,
             int queryResultTableHeight,
             String bidirectionalHelpDialogTitle,
             int queryResultTableSelectionMode,

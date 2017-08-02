@@ -68,10 +68,12 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
     private String myCnfFilePath = null;
 
     public MySQLAutoPersistenceStorageConf(Set<Class<?>> entityClasses,
+            String hostname,
             String username,
             String databaseDir,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
         super(DATABASE_DRIVER,
+                hostname,
                 PORT_DEFAULT,
                 entityClasses,
                 username,
@@ -97,6 +99,7 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
      */
     public MySQLAutoPersistenceStorageConf(String databaseDir,
             String baseDir,
+            String hostname,
             int port,
             String databaseDriver,
             Set<Class<?>> entityClasses,
@@ -104,7 +107,8 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
             String password,
             String databaseName,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
-        super(port,
+        super(hostname,
+                port,
                 databaseDriver,
                 entityClasses,
                 username,

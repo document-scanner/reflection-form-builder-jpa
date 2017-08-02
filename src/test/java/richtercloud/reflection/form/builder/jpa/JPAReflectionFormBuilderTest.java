@@ -64,13 +64,11 @@ public class JPAReflectionFormBuilderTest {
         ConfirmMessageHandler confirmMesserHandler = mock(ConfirmMessageHandler.class);
         JPAFieldRetriever fieldRetriever = new JPACachedFieldRetriever();
         IdApplier<?> idApplier = mock(IdApplier.class);
-        IdGenerator<?> idGenerator = new MemorySequentialIdGenerator();
         JPAReflectionFormBuilder instance = new JPAReflectionFormBuilder(storage, "title", //fieldDescriptionDialogTitle
                 issueHandler,
                 confirmMesserHandler,
                 fieldRetriever,
                 idApplier,
-                idGenerator,
                 new HashMap<>() //warningHandlers
         );
 

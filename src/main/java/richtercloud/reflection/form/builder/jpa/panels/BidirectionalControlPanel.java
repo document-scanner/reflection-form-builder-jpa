@@ -233,6 +233,7 @@ public class BidirectionalControlPanel extends javax.swing.JPanel {
         );
     }// </editor-fold>//GEN-END:initComponents
 
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private void bidirectionalHelpButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bidirectionalHelpButtonActionPerformed
         JOptionPane.showMessageDialog(this,
             bidirectionalHelpDialogText,
@@ -240,6 +241,7 @@ public class BidirectionalControlPanel extends javax.swing.JPanel {
             JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_bidirectionalHelpButtonActionPerformed
 
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private void bidirectionalCheckBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bidirectionalCheckBoxActionPerformed
         updateMappedFieldComponents();
     }//GEN-LAST:event_bidirectionalCheckBoxActionPerformed

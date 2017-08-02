@@ -201,7 +201,6 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         getLayout().setHorizontalGroup(horizontalEntityControlsGroup);
         getLayout().setVerticalGroup(verticalEntityControlsGroup);
         this.entityValidator = new EntityValidator(fieldRetriever,
-                issueHandler,
                 confirmMessageHandler,
                 warningHandlers);
     }

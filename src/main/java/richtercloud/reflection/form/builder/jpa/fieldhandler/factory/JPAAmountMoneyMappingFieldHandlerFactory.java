@@ -20,7 +20,6 @@ import java.util.Map;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyCurrencyStorage;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyExchangeRateRetriever;
-import richtercloud.reflection.form.builder.components.money.AmountMoneyUsageStatisticsStorage;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.factory.AmountMoneyMappingFieldHandlerFactory;
 import richtercloud.reflection.form.builder.jpa.JPAStringFieldHandler;
@@ -35,40 +34,31 @@ public class JPAAmountMoneyMappingFieldHandlerFactory extends AmountMoneyMapping
     public static JPAAmountMoneyMappingFieldHandlerFactory create(PersistenceStorage storage,
             int initialQueryLimit,
             IssueHandler issueHandler,
-            AmountMoneyUsageStatisticsStorage amountMoneyUsageStatisticsStorage,
             AmountMoneyCurrencyStorage amountMoneyCurrencyStorage,
             AmountMoneyExchangeRateRetriever amountMoneyConversionRateRetriever,
-            String bidirectionalHelpDialogTitle,
             FieldRetriever readOnlyFieldRetriever) {
         return new JPAAmountMoneyMappingFieldHandlerFactory(storage,
                 initialQueryLimit,
                 issueHandler,
-                amountMoneyUsageStatisticsStorage,
                 amountMoneyCurrencyStorage,
                 amountMoneyConversionRateRetriever,
-                bidirectionalHelpDialogTitle,
                 readOnlyFieldRetriever);
     }
     private final PersistenceStorage storage;
     private final int initialQueryLimit;
-    private final String bidirectionalHelpDialogTitle;
     private final FieldRetriever readOnlyFieldRetriever;
 
     public JPAAmountMoneyMappingFieldHandlerFactory(PersistenceStorage storage,
             int initialQueryLimit,
             IssueHandler issueHandler,
-            AmountMoneyUsageStatisticsStorage amountMoneyUsageStatisticsStorage,
             AmountMoneyCurrencyStorage amountMoneyCurrencyStorage,
             AmountMoneyExchangeRateRetriever amountMoneyConversionRateRetriever,
-            String bidirectionalHelpDialogTitle,
             FieldRetriever readOnlyFieldRetriever) {
-        super(amountMoneyUsageStatisticsStorage,
-                amountMoneyCurrencyStorage,
+        super(amountMoneyCurrencyStorage,
                 amountMoneyConversionRateRetriever,
                 issueHandler);
         this.storage = storage;
         this.initialQueryLimit = initialQueryLimit;
-        this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.readOnlyFieldRetriever = readOnlyFieldRetriever;
     }
 
@@ -90,7 +80,6 @@ public class JPAAmountMoneyMappingFieldHandlerFactory extends AmountMoneyMapping
                 new JPAStringFieldHandler(storage,
                         initialQueryLimit,
                         getIssueHandler(),
-                        bidirectionalHelpDialogTitle,
                         readOnlyFieldRetriever));
         return classMapping0;
     }

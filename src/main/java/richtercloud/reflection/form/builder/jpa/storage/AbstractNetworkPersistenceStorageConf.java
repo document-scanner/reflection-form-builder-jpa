@@ -22,6 +22,8 @@ import java.util.Set;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 
 /**
+ * Allows specification of a hostname and port which is relevant for all network
+ * communication based storages.
  *
  * @author richter
  */
@@ -32,6 +34,7 @@ public abstract class AbstractNetworkPersistenceStorageConf extends AbstractPers
     private int port;
 
     public AbstractNetworkPersistenceStorageConf(String databaseDriver,
+            String hostname,
             int port,
             Set<Class<?>> entityClasses,
             String username,
@@ -44,6 +47,7 @@ public abstract class AbstractNetworkPersistenceStorageConf extends AbstractPers
                 password,
                 databaseName,
                 schemeChecksumFile);
+        this.hostname = hostname;
         this.port = port;
     }
 
@@ -59,7 +63,8 @@ public abstract class AbstractNetworkPersistenceStorageConf extends AbstractPers
      * @throws FileNotFoundException
      * @throws IOException
      */
-    public AbstractNetworkPersistenceStorageConf(int port,
+    public AbstractNetworkPersistenceStorageConf(String hostname,
+            int port,
             String databaseDriver,
             Set<Class<?>> entityClasses,
             String username,
@@ -72,6 +77,7 @@ public abstract class AbstractNetworkPersistenceStorageConf extends AbstractPers
                 password,
                 databaseName,
                 schemeChecksumFile);
+        this.hostname = hostname;
         this.port = port;
     }
 

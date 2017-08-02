@@ -83,12 +83,6 @@ public class QueryComponent<E> extends JPanel {
                 //make highest usage count appear at the top
         }
     };
-    private final static Comparator<QueryHistoryEntry> QUERY_HISTORY_COMPARATOR_DATE = new Comparator<QueryHistoryEntry>() {
-        @Override
-        public int compare(QueryHistoryEntry o1, QueryHistoryEntry o2) {
-            return o1.getLastUsage().compareTo(o2.getLastUsage());
-        }
-    };
     private static final long serialVersionUID = 1L;
     public final static String SUBTYPES_ALLOW = "Allow subtypes";
     public final static String SUBTYPES_FILTER = "Filter subtypes";
@@ -195,7 +189,7 @@ public class QueryComponent<E> extends JPanel {
         List<QueryHistoryEntry> initialHistory = entryStorage.retrieve(entityClass);
         this.queryComboBoxModel = new SortedComboBoxModel<>(QUERY_HISTORY_COMPARATOR_USAGE,
                 new LinkedList<>(initialHistory));
-        this.queryComboBoxEditor = new QueryComboBoxEditor(entityClass);
+        this.queryComboBoxEditor = new QueryComboBoxEditor();
                 //before initComponents because it's used there (yet sets item
                 //of editor to null, so statement after initComponent is
                 //necessary
@@ -389,6 +383,7 @@ public class QueryComponent<E> extends JPanel {
         );
     }
 
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private void queryButtonActionPerformed(java.awt.event.ActionEvent evt) {
         runQuery(false //async
         );

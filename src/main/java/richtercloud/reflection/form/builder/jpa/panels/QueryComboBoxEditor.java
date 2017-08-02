@@ -46,7 +46,7 @@ class QueryComboBoxEditor implements ComboBoxEditor {
     - requires entityClass argument in order to create initial QueryHistoryEntry
     -> remove if that causes trouble
      */
-    QueryComboBoxEditor(Class<?> entityClass) {
+    QueryComboBoxEditor() {
         this.editorComponent.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {

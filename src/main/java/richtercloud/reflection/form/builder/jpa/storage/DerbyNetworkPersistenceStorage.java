@@ -14,8 +14,6 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.jpa.sequence.DerbySequenceManager;
 import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
 import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
@@ -30,7 +28,6 @@ import richtercloud.validation.tools.FieldRetriever;
  * @author richter
  */
 public class DerbyNetworkPersistenceStorage extends AbstractPersistenceStorage<DerbyNetworkPersistenceStorageConf> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DerbyNetworkPersistenceStorage.class);
     private final SequenceManager<Long> sequenceManager;
 
     public DerbyNetworkPersistenceStorage(DerbyNetworkPersistenceStorageConf storageConf,

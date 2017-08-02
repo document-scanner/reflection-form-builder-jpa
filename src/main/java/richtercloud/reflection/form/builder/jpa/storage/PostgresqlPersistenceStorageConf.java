@@ -28,7 +28,6 @@ public class PostgresqlPersistenceStorageConf extends AbstractNetworkPersistence
     private static final long serialVersionUID = 1L;
     private final static String DRIVER_NAME = Driver.class.getName();
     public final static String USERNAME_DEFAULT = "sa";
-    public final static String HOSTNAME_DEFAULT = "localhost";
     public final static int PORT_DEFAULT = 5432;
     static {
         try {
@@ -40,11 +39,13 @@ public class PostgresqlPersistenceStorageConf extends AbstractNetworkPersistence
     }
 
     public PostgresqlPersistenceStorageConf(Set<Class<?>> entityClasses,
+            String hostname,
             String username,
             String password,
             String databaseName,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
         super(DRIVER_NAME, //databaseDriver
+                hostname,
                 PORT_DEFAULT, //port
                 entityClasses, //entityClasses
                 username, //username
@@ -67,13 +68,15 @@ public class PostgresqlPersistenceStorageConf extends AbstractNetworkPersistence
      * @throws IOException
      */
     public PostgresqlPersistenceStorageConf(Set<Class<?>> entityClasses,
+            String hostname,
             String username,
             String password,
             String databaseName,
             File schemeChecksumFile,
             int port,
             String databaseDriver) throws FileNotFoundException, IOException {
-        super(port, //port
+        super(hostname,
+                port, //port
                 databaseDriver, //databaseDriver
                 entityClasses, //entityClasses
                 username, //username

@@ -25,7 +25,6 @@ import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplicationException;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.panels.NumberPanel;
-import richtercloud.validation.tools.FieldRetriever;
 
 /**
  *
@@ -37,22 +36,16 @@ public class LongIdPanel extends NumberPanel<Long> {
     private final MessageHandler messageHandler;
     private JButton nextIdButton = new JButton();
     private final IdApplier idApplier;
-    private final FieldRetriever fieldRetriever;
 
     public LongIdPanel(Object entity,
             Long initialValue,
             MessageHandler messageHandler,
-            FieldRetriever fieldRetriever,
             boolean readOnly,
             IdApplier idApplier) {
         super(initialValue,
                 readOnly);
         this.entity = entity;
         this.messageHandler = messageHandler;
-        if(fieldRetriever == null) {
-            throw new IllegalArgumentException("fieldRetriever mustn't be null");
-        }
-        this.fieldRetriever = fieldRetriever;
         if(idApplier == null) {
             throw new IllegalArgumentException("idApplier mustn't be null");
         }
@@ -77,6 +70,7 @@ public class LongIdPanel extends NumberPanel<Long> {
         );
     }
 
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private void nextIdButtonActionPerformed(java.awt.event.ActionEvent evt) {
         try {
             idApplier.applyId(entity, new HashSet<>(Arrays.asList(this)));

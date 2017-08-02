@@ -14,8 +14,6 @@
  */
 package richtercloud.reflection.form.builder.jpa;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 
@@ -26,7 +24,6 @@ import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
  * @author richter
  */
 public class SequentialIdGenerator implements IdGenerator<Long> {
-    private final static Logger LOGGER = LoggerFactory.getLogger(SequentialIdGenerator.class);
     public final static String SEQUENCE_NAME_DEFAULT = "sequential-id";
     private final String sequenceName = SEQUENCE_NAME_DEFAULT;
     private final PersistenceStorage<Long> storage;

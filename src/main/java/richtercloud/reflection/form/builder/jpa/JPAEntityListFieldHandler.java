@@ -15,9 +15,6 @@
 package richtercloud.reflection.form.builder.jpa;
 
 import java.util.List;
-import javax.persistence.EntityManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.fieldhandler.AbstractListFieldHandler;
@@ -36,7 +33,6 @@ import richtercloud.validation.tools.FieldRetriever;
  * @author richter
  */
 public class JPAEntityListFieldHandler extends AbstractListFieldHandler<List<Object>, FieldUpdateEvent<List<Object>>, JPAReflectionFormBuilder> implements FieldHandler<List<Object>,FieldUpdateEvent<List<Object>>, JPAReflectionFormBuilder, AbstractListPanel> {
-    private final static Logger LOGGER = LoggerFactory.getLogger(JPAEntityListFieldHandler.class);
 
     public JPAEntityListFieldHandler(PersistenceStorage storage,
             IssueHandler issueHandler,
@@ -53,8 +49,7 @@ public class JPAEntityListFieldHandler extends AbstractListFieldHandler<List<Obj
                         readOnlyFieldRetriever));
     }
 
-    public JPAEntityListFieldHandler(EntityManager entityManager,
-            MessageHandler messageHandler,
+    public JPAEntityListFieldHandler(MessageHandler messageHandler,
             TypeHandler<List<Object>, FieldUpdateEvent<List<Object>>,JPAReflectionFormBuilder, AbstractListPanel> typeHandler) {
         super(messageHandler, typeHandler);
     }

@@ -269,6 +269,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         this.updateListeners.remove(updateListener);
     }
 
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private void addButtonActionPerformed(java.awt.event.ActionEvent evt) {
         int[] indices = this.getQueryResultTable().getSelectedRows();
         List<E> eventItems = new LinkedList<>(); //a list to pass to the item
@@ -297,6 +298,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         }
     }
 
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private void removeButtonActionPerformed(java.awt.event.ActionEvent evt) {
         int[] selectedRows = this.resultTable.getSelectedRows();
         if(selectedRows.length == 0) {

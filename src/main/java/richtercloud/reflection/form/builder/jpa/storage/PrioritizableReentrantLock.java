@@ -48,7 +48,6 @@ public class PrioritizableReentrantLock extends ReentrantLock {
     private final PriorityBlockingQueue<ManagerQueueEntry> managerQueue = new PriorityBlockingQueue<>(100, (ManagerQueueEntry o1, ManagerQueueEntry o2) -> {
         return o2.priority.compareTo(o1.priority);
     });
-    private final BugHandler bugHandler;
     private final Thread managerThread;
     private final Lock conditionLock = new ReentrantLock();
     private final Condition locked = conditionLock.newCondition();
@@ -76,7 +75,6 @@ public class PrioritizableReentrantLock extends ReentrantLock {
     public PrioritizableReentrantLock(boolean fair,
             BugHandler bugHandler) {
         super(fair);
-        this.bugHandler = bugHandler;
         this.managerThread = new Thread(() -> {
             //can't control shutdown with boolean since managerQueue.take somehow
             //has to be brought to return (Poison Pill Shutdown
@@ -86,7 +84,8 @@ public class PrioritizableReentrantLock extends ReentrantLock {
                 try {
                     managerQueueHead = managerQueue.take();
                 }catch(InterruptedException ex) {
-                    throw new RuntimeException(ex);
+                    bugHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                    return;
                 }
                 if(managerQueueHead.condition == null) {
                     LOGGER.trace(String.format("received %s with condition null, meaning shutdown requested", ManagerQueueEntry.class));
@@ -100,7 +99,8 @@ public class PrioritizableReentrantLock extends ReentrantLock {
                     try {
                         PrioritizableReentrantLock.this.locked.await();
                     }catch(InterruptedException ex) {
-                        throw new RuntimeException(ex);
+                        bugHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                        return;
                     }
                 }catch(Exception ex) {
                     bugHandler.handleUnexpectedException(new ExceptionMessage(ex));

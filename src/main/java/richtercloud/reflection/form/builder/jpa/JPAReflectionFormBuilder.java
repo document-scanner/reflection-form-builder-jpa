@@ -70,7 +70,6 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
     private final IdApplier idApplier;
     private final ConfirmMessageHandler confirmMessageHandler;
     private final Map<Class<?>, WarningHandler<?>> warningHandlers;
-    private final IdGenerator idGenerator;
     private final Map<Object, Set<Component>> idFieldComponentMap = new HashMap<>();
 
     public JPAReflectionFormBuilder(PersistenceStorage storage,
@@ -79,7 +78,6 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
             ConfirmMessageHandler confirmMessageHandler,
             JPAFieldRetriever fieldRetriever,
             IdApplier idApplier,
-            IdGenerator idGenerator,
             Map<Class<?>, WarningHandler<?>> warningHandlers) {
         super(fieldDescriptionDialogTitle,
                 issueHandler,
@@ -92,10 +90,6 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
             throw new IllegalArgumentException("idApplier mustn't be null");
         }
         this.idApplier = idApplier;
-        if(idGenerator == null) {
-            throw new IllegalArgumentException("idGenerator mustn't be null");
-        }
-        this.idGenerator = idGenerator;
         this.confirmMessageHandler = confirmMessageHandler;
         this.warningHandlers = warningHandlers;
     }

@@ -40,18 +40,15 @@ public class JPAStringTypeHandler implements TypeHandler<String, FieldUpdateEven
     private final PersistenceStorage storage;
     private final int initialQueryLimit;
     private final IssueHandler issueHandler;
-    private final String bidirectionalHelpDialogTitle;
     private final FieldRetriever fieldRetriever;
 
     public JPAStringTypeHandler(PersistenceStorage storage,
             int initialQueryLimit,
             IssueHandler issueHandler,
-            String bidirectionalHelpDialogTitle,
             FieldRetriever fieldRetriever) {
         this.storage = storage;
         this.initialQueryLimit = initialQueryLimit;
         this.issueHandler = issueHandler;
-        this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.fieldRetriever = fieldRetriever;
     }
 

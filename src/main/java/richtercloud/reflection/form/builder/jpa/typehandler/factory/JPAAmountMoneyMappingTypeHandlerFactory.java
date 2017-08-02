@@ -32,18 +32,15 @@ import richtercloud.validation.tools.FieldRetriever;
 public class JPAAmountMoneyMappingTypeHandlerFactory extends MappingTypeHandlerFactory {
     private final PersistenceStorage storage;
     private final int initialQueryLimit;
-    private final String bidirectionalHelpDialogTitle;
     private final FieldRetriever readOnlyFieldRetriever;
 
     public JPAAmountMoneyMappingTypeHandlerFactory(PersistenceStorage storage,
             int initialQueryLimit,
             IssueHandler issueHandler,
-            String bidirectionalHelpDialogTitle,
             FieldRetriever readOnlyFieldRetriever) {
         super(issueHandler);
         this.storage = storage;
         this.initialQueryLimit = initialQueryLimit;
-        this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.readOnlyFieldRetriever = readOnlyFieldRetriever;
     }
 
@@ -55,7 +52,6 @@ public class JPAAmountMoneyMappingTypeHandlerFactory extends MappingTypeHandlerF
                 new JPAStringTypeHandler(storage,
                         initialQueryLimit,
                         getIssueHandler(),
-                        bidirectionalHelpDialogTitle,
                         readOnlyFieldRetriever));
         return classMapping0;
     }

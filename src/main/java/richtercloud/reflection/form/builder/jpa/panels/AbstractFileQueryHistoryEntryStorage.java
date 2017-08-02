@@ -37,6 +37,7 @@ import richtercloud.message.handler.MessageHandler;
  * @author richter
  */
 public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHistoryEntryStorage {
+    private final static String NOT_SUPPORTED = "Not supported yet.";
     private final File file;
     private final Map<Class<?>, List<QueryHistoryEntry>> cache;
     /**
@@ -192,62 +193,62 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
 
         @Override
         public int size() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException(NOT_SUPPORTED);
         }
 
         @Override
         public boolean isEmpty() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException(NOT_SUPPORTED);
         }
 
         @Override
         public boolean containsKey(Object key) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException(NOT_SUPPORTED);
         }
 
         @Override
         public boolean containsValue(Object value) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException(NOT_SUPPORTED);
         }
 
         @Override
         public List<QueryHistoryEntry> get(Object key) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException(NOT_SUPPORTED);
         }
 
         @Override
         public List<QueryHistoryEntry> put(Class<?> key, List<QueryHistoryEntry> value) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException(NOT_SUPPORTED);
         }
 
         @Override
         public List<QueryHistoryEntry> remove(Object key) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException(NOT_SUPPORTED);
         }
 
         @Override
         public void putAll(Map<? extends Class<?>, ? extends List<QueryHistoryEntry>> m) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException(NOT_SUPPORTED);
         }
 
         @Override
         public void clear() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException(NOT_SUPPORTED);
         }
 
         @Override
         public Set<Class<?>> keySet() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException(NOT_SUPPORTED);
         }
 
         @Override
         public Collection<List<QueryHistoryEntry>> values() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException(NOT_SUPPORTED);
         }
 
         @Override
         public Set<Entry<Class<?>, List<QueryHistoryEntry>>> entrySet() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            throw new UnsupportedOperationException(NOT_SUPPORTED);
         }
     }
 }

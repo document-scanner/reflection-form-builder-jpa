@@ -54,6 +54,10 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
      * specifying {@code bind-address} in {@code my.cnf}.
      */
     private final static String SOCKET = "/tmp/mysql.document-scanner.socket";
+    private final static String RUNNING_COMMAND_TEMPLATE = "running command '%s'";
+    private final static String COMMAND_FAILED_TEMPLATE = "command '%s' failed with returncode %d";
+    private final static String SOCKET_TEMPLATE = "--socket=%s";
+    private final static String USER_TEMPLATE = "--user=root";
     private Thread mysqldThread;
     private Process mysqldProcess;
     private final MessageHandler messageHandler;
@@ -131,13 +135,15 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
                             //retrieve the random password for root
                             //from the logs
                 );
-                LOGGER.debug(String.format("running command '%s'", mysqldInitProcessBuilder.command().toString()));
+                LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
+                        mysqldInitProcessBuilder.command().toString()));
                 Process mysqldInitProcess = mysqldInitProcessBuilder.start();
                 mysqldInitProcess.waitFor();
                 IOUtils.copy(mysqldInitProcess.getInputStream(), System.out);
                 IOUtils.copy(mysqldInitProcess.getErrorStream(), System.err);
                 if(mysqldInitProcess.exitValue() != 0) {
-                    throw new StorageCreationException(String.format("command '%s' failed with returncode %d", mysqldInitProcessBuilder.command(), mysqldInitProcess.exitValue()));
+                    throw new StorageCreationException(String.format(COMMAND_FAILED_TEMPLATE,
+                            mysqldInitProcessBuilder.command(), mysqldInitProcess.exitValue()));
                 }
             }
             //if mysqld is already running (because shutdown in the last run of
@@ -146,7 +152,8 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
             //fail in mysqldThread without the failure being noticed -> @TODO
             ProcessBuilder mysqldProcessBuilder = new ProcessBuilder(getStorageConf().getMysqld(),
                     String.format("--defaults-file=%s", myCnfFile.getAbsolutePath()));
-            LOGGER.debug(String.format("running command '%s'", mysqldProcessBuilder.command().toString()));
+            LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
+                    mysqldProcessBuilder.command().toString()));
             mysqldProcess = mysqldProcessBuilder.start();
             mysqldThread = new Thread(() -> {
                 try {
@@ -174,8 +181,8 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
             if(needToCreate) {
                 //set password for root user
                 ProcessBuilder mysqladminProcessBuilder = new ProcessBuilder(getStorageConf().getMysqladmin(),
-                        String.format("--socket=%s", SOCKET),
-                        "--user=root",
+                        String.format(SOCKET_TEMPLATE, SOCKET),
+                        USER_TEMPLATE,
                         "password", getStorageConf().getPassword());
                     //don't need to specify password here because it
                     //isn't set yet
@@ -184,7 +191,8 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
                 Process mysqladminProcess = null;
                 int mysqladminTries = 0, mysqladminTriesMax = 5;
                 while(mysqladminTries < mysqladminTriesMax) {
-                    LOGGER.debug(String.format("running command '%s'", mysqladminProcessBuilder.command().toString()));
+                    LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
+                            mysqladminProcessBuilder.command().toString()));
                     mysqladminProcess = mysqladminProcessBuilder.start();
                     mysqladminProcess.waitFor();
                     IOUtils.copy(mysqladminProcess.getInputStream(), System.out);
@@ -201,27 +209,30 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
                 }
                 //create database
                 mysqladminProcessBuilder = new ProcessBuilder(getStorageConf().getMysqladmin(),
-                        String.format("--socket=%s", SOCKET),
+                        String.format(SOCKET_TEMPLATE, SOCKET),
                         String.format("--host=%s", getStorageConf().getHostname()),
-                        "--user=root",
+                        USER_TEMPLATE,
                         String.format("--password=%s", getStorageConf().getPassword()),
                         "create", getStorageConf().getDatabaseName());
-                LOGGER.debug(String.format("running command '%s'", mysqladminProcessBuilder.command().toString()));
+                LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
+                        mysqladminProcessBuilder.command().toString()));
                 mysqladminProcess = mysqladminProcessBuilder.start();
                 mysqladminProcess.waitFor();
                 IOUtils.copy(mysqladminProcess.getInputStream(), System.out);
                 IOUtils.copy(mysqladminProcess.getErrorStream(), System.err);
                 if(mysqladminProcess.exitValue() != 0) {
-                    throw new StorageCreationException(String.format("command '%s' failed with returncode %d", mysqladminProcessBuilder.command(), mysqladminProcess.exitValue()));
+                    throw new StorageCreationException(String.format(COMMAND_FAILED_TEMPLATE,
+                            mysqladminProcessBuilder.command(), mysqladminProcess.exitValue()));
                 }
                 //create user document-scanner
                 ProcessBuilder mysqlProcessBuilder = new ProcessBuilder(getStorageConf().getMysql(),
-                        String.format("--socket=%s", SOCKET),
+                        String.format(SOCKET_TEMPLATE, SOCKET),
                         String.format("--host=%s", getStorageConf().getHostname()),
-                        "--user=root",
+                        USER_TEMPLATE,
                         String.format("--password=%s", getStorageConf().getPassword()),
                         getStorageConf().getDatabaseName());
-                LOGGER.debug(String.format("running command '%s'", mysqlProcessBuilder.command().toString()));
+                LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
+                        mysqlProcessBuilder.command().toString()));
                 Process mysqlProcess = mysqlProcessBuilder.start();
                 String mysqlCommand = String.format("create user '%s'@'%s' identified by '%s';\n"
                         + "flush privileges;\n",
@@ -245,7 +256,8 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
                 IOUtils.copy(mysqlProcess.getInputStream(), System.out);
                 IOUtils.copy(mysqlProcess.getErrorStream(), System.err);
                 if(mysqlProcess.exitValue() != 0) {
-                    throw new StorageCreationException(String.format("command '%s' failed with returncode %d", mysqlProcessBuilder.command(), mysqlProcess.exitValue()));
+                    throw new StorageCreationException(String.format(COMMAND_FAILED_TEMPLATE,
+                            mysqlProcessBuilder.command(), mysqlProcess.exitValue()));
                 }
             }
             setServerRunning(true);
@@ -269,14 +281,15 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
             //Don't kill the mysqld_safe process because that might
             //corrupt the database -> use `mysqladmin shutdown`
             ProcessBuilder mysqladminProcessBuilder = new ProcessBuilder(getStorageConf().getMysqladmin(),
-                    String.format("--socket=%s", SOCKET),
+                    String.format(SOCKET_TEMPLATE, SOCKET),
                     String.format("--host=%s", getStorageConf().getHostname()),
-                    "--user=root",
+                    USER_TEMPLATE,
                     String.format("--password=%s", getStorageConf().getPassword()),
                     "shutdown");
                 //don't need to specify password here because it
                 //isn't set yet
-            LOGGER.debug(String.format("running command '%s'", mysqladminProcessBuilder.command().toString()));
+            LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
+                    mysqladminProcessBuilder.command().toString()));
             Process mysqladminProcess;
             try {
                 mysqladminProcess = mysqladminProcessBuilder.start();
@@ -292,7 +305,8 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
                     LOGGER.error("writing output of mysqladmin shutdown process to stdout and stderr failed, see nested exception for details", ex);
                 }
                 if(mysqladminProcess.exitValue() != 0) {
-                    LOGGER.error(String.format("command '%s' failed with returncode %d", mysqladminProcessBuilder.command(), mysqladminProcess.exitValue()));
+                    LOGGER.error(String.format(COMMAND_FAILED_TEMPLATE,
+                            mysqladminProcessBuilder.command(), mysqladminProcess.exitValue()));
                 }
             } catch (IOException ex) {
                 LOGGER.error("starting mysqladmin shutdown process failed, see nested exception for details", ex);

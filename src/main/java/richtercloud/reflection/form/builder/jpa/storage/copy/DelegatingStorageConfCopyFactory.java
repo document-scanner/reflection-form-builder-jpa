@@ -48,7 +48,8 @@ public class DelegatingStorageConfCopyFactory implements StorageConfCopyFactory<
         }else if(storageConf instanceof DerbyNetworkPersistenceStorageConf) {
             DerbyNetworkPersistenceStorageConf storageConfCast = (DerbyNetworkPersistenceStorageConf) storageConf;
             try {
-                retValue = new DerbyNetworkPersistenceStorageConf(storageConfCast.getPort(),
+                retValue = new DerbyNetworkPersistenceStorageConf(storageConfCast.getHostname(),
+                        storageConfCast.getPort(),
                         storageConfCast.getDatabaseDriver(),
                         storageConfCast.getEntityClasses(),
                         storageConfCast.getUsername(),
@@ -63,6 +64,7 @@ public class DelegatingStorageConfCopyFactory implements StorageConfCopyFactory<
             try {
                 retValue = new MySQLAutoPersistenceStorageConf(storageConfCast.getDatabaseDir(),
                         storageConfCast.getBaseDir(),
+                        storageConfCast.getHostname(),
                         storageConfCast.getPort(),
                         storageConfCast.getDatabaseDriver(),
                         storageConfCast.getEntityClasses(),
@@ -76,8 +78,8 @@ public class DelegatingStorageConfCopyFactory implements StorageConfCopyFactory<
         }else if(storageConf instanceof PostgresqlAutoPersistenceStorageConf) {
             PostgresqlAutoPersistenceStorageConf storageConfCast = (PostgresqlAutoPersistenceStorageConf) storageConf;
             try {
-                retValue = new PostgresqlAutoPersistenceStorageConf(
-                        storageConfCast.getEntityClasses(),
+                retValue = new PostgresqlAutoPersistenceStorageConf(storageConfCast.getEntityClasses(),
+                        storageConfCast.getHostname(),
                         storageConfCast.getUsername(),
                         storageConfCast.getPassword(),
                         storageConfCast.getDatabaseName(),
@@ -95,6 +97,7 @@ public class DelegatingStorageConfCopyFactory implements StorageConfCopyFactory<
             PostgresqlPersistenceStorageConf storageConfCast = (PostgresqlPersistenceStorageConf) storageConf;
             try {
                 retValue = new PostgresqlPersistenceStorageConf(storageConfCast.getEntityClasses(),
+                        storageConfCast.getHostname(),
                         storageConfCast.getUsername(),
                         storageConfCast.getPassword(),
                         storageConfCast.getDatabaseName(),

@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.ConfirmMessageHandler;
 import richtercloud.message.handler.Message;
-import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.Tools;
 import richtercloud.validation.tools.FieldRetrievalException;
@@ -38,7 +37,7 @@ import richtercloud.validation.tools.ValidationTools;
 
 /**
  * Code reusage for the validation routine including handling of validation
- * violations messages with a {@link MessageHandler}.
+ * violations messages with a {@link ConfirmMessageHandler}.
  *
  * @author richter
  */
@@ -50,18 +49,15 @@ part of the framework -> use WarningHandler
 public class EntityValidator {
     private final static Logger LOGGER = LoggerFactory.getLogger(EntityValidator.class);
     private final FieldRetriever fieldRetriever;
-    private final MessageHandler messageHandler;
     private final static ValidatorFactory VALIDATOR_FACTORY = Validation.buildDefaultValidatorFactory();
     private final static Validator VALIDATOR = VALIDATOR_FACTORY.getValidator();
     private final ConfirmMessageHandler confirmMessageHandler;
     private final Map<Class<?>, WarningHandler<?>> warningHandlers;
 
     public EntityValidator(FieldRetriever fieldRetriever,
-            MessageHandler messageHandler,
             ConfirmMessageHandler confirmMessageHandler,
             Map<Class<?>, WarningHandler<?>> warningHandlers) {
         this.fieldRetriever = fieldRetriever;
-        this.messageHandler = messageHandler;
         this.confirmMessageHandler = confirmMessageHandler;
         this.warningHandlers = warningHandlers;
     }

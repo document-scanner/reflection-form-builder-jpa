@@ -32,6 +32,7 @@ import richtercloud.reflection.form.builder.storage.StorageConfValidationExcepti
  */
 public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceStorageConf {
     private static final long serialVersionUID = 1L;
+    private final static String BIN_TEMPLATE = "bin";
 
     /**
      * Searches {@code /usr/lib/postgresql} which is the typical PostgreSQL
@@ -56,10 +57,10 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
             if(!postgresqlVersionDir.getName().matches("[0-9]\\.[0-9]")) {
                 continue;
             }
-            if(!new File(postgresqlVersionDir, String.join(File.separator, "bin", "initdb")).exists()) {
+            if(!new File(postgresqlVersionDir, String.join(File.separator, BIN_TEMPLATE, "initdb")).exists()) {
                 continue;
             }
-            if(!new File(postgresqlVersionDir, String.join(File.separator, "bin", "postgres")).exists()) {
+            if(!new File(postgresqlVersionDir, String.join(File.separator, BIN_TEMPLATE, "postgres")).exists()) {
                 continue;
             }
             String[] versionSplit = postgresqlVersionDir.getName().split("\\.");
@@ -77,8 +78,8 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
         if(highestVersionDir == null) {
             return null;
         }
-        Pair<String, String> retValue = new ImmutablePair<>(new File(highestVersionDir, String.join(File.separator, "bin", "initdb")).getAbsolutePath(),
-                new File(highestVersionDir, String.join(File.separator, "bin", "postgres")).getAbsolutePath());
+        Pair<String, String> retValue = new ImmutablePair<>(new File(highestVersionDir, String.join(File.separator, BIN_TEMPLATE, "initdb")).getAbsolutePath(),
+                new File(highestVersionDir, String.join(File.separator, BIN_TEMPLATE, "postgres")).getAbsolutePath());
         return retValue;
     }
 
@@ -92,6 +93,7 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
     private String createdbBinaryPath;
 
     public PostgresqlAutoPersistenceStorageConf(Set<Class<?>> entityClasses,
+            String hostname,
             String username,
             String password,
             String databaseName,
@@ -101,6 +103,7 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
             String postgresBinaryPath,
             String createdbBinaryPath) throws FileNotFoundException, IOException {
         super(entityClasses,
+                hostname,
                 username,
                 password,
                 databaseName,
@@ -125,6 +128,7 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
      * @throws IOException
      */
     public PostgresqlAutoPersistenceStorageConf(Set<Class<?>> entityClasses,
+            String hostname,
             String username,
             String password,
             String databaseName,
@@ -136,6 +140,7 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
             int port,
             String databaseDriver) throws FileNotFoundException, IOException {
         super(entityClasses,
+                hostname,
                 username,
                 password,
                 databaseName,

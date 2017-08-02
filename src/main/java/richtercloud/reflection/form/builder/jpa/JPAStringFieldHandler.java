@@ -40,12 +40,10 @@ public class JPAStringFieldHandler extends ResettableFieldHandler<String, FieldU
     public JPAStringFieldHandler(PersistenceStorage storage,
             int initialQueryLimit,
             IssueHandler issueHandler,
-            String bidirectionalHelpDialogTitle,
             FieldRetriever readOnlyFieldRetriever) {
         this.jPAStringTypeHandler = new JPAStringTypeHandler(storage,
                 initialQueryLimit,
                 issueHandler,
-                bidirectionalHelpDialogTitle,
                 readOnlyFieldRetriever);
     }
 
