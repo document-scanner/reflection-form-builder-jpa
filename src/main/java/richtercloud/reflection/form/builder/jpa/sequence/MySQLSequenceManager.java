@@ -138,7 +138,7 @@ public class MySQLSequenceManager extends AbstractSequenceManager<Long> {
                         query1));
                 resultSet = statement.executeQuery();
                 if(!resultSet.next()) {
-                    throw new RuntimeException(); //@TODO:
+                    throw new SequenceManagementException("sequence query result is empty");
                 }
                 Long retValue = resultSet.getLong("@next");
                 return retValue;

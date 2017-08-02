@@ -32,6 +32,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
+import richtercloud.reflection.form.builder.ResetException;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyCurrencyStorage;
 import richtercloud.reflection.form.builder.components.money.AmountMoneyExchangeRateRetriever;
 import richtercloud.reflection.form.builder.fieldhandler.AmountMoneyFieldHandler;
@@ -55,7 +56,6 @@ import richtercloud.reflection.form.builder.jpa.typehandler.factory.JPAAmountMon
 import richtercloud.reflection.form.builder.panels.NumberPanel;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateEvent;
 import richtercloud.reflection.form.builder.panels.NumberPanelUpdateListener;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -142,7 +142,8 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             IssueHandler issueHandler,
             IdApplier idApplier) {
         super(classMapping,
-                primitiveMapping);
+                primitiveMapping,
+                issueHandler);
         this.elementCollectionTypeHandler = elementCollectionTypeHandler;
         this.embeddableMapping = embeddableMapping;
         this.toManyTypeHandler = oneToManyTypeHandler;
@@ -169,7 +170,8 @@ public class JPAMappingFieldHandler<T, E extends FieldUpdateEvent<T>> extends Ma
             InvocationTargetException,
             NoSuchMethodException,
             InstantiationException,
-            FieldRetrievalException {
+            NoSuchFieldException,
+            ResetException {
         if(field == null) {
             throw new IllegalArgumentException("fieldClass mustn't be null");
         }

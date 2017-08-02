@@ -23,6 +23,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
+import richtercloud.reflection.form.builder.ResetException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
 import richtercloud.reflection.form.builder.fieldhandler.MappedFieldUpdateEvent;
@@ -35,7 +36,6 @@ import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.typehandler.GenericListTypeHandler;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -80,7 +80,9 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
             String fieldName,
             Class<?> declaringClass,
             final FieldUpdateListener<FieldUpdateEvent<List<Object>>> updateListener,
-            JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalAccessException, FieldRetrievalException {
+            JPAReflectionFormBuilder reflectionFormBuilder) throws IllegalAccessException,
+            NoSuchFieldException,
+            ResetException {
         Type genericType = retrieveTypeGenericType(type);
         if(!(genericType instanceof Class)) {
             throw new IllegalArgumentException("the generic type of type has to be instanceof Class");
@@ -110,7 +112,7 @@ public class ToManyTypeHandler extends GenericListTypeHandler<JPAReflectionFormB
     }
 
     @Override
-    public void reset(QueryListPanel component) throws FieldRetrievalException {
+    public void reset(QueryListPanel component) throws ResetException {
         component.reset();
     }
 

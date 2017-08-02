@@ -29,8 +29,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.swing.JOptionPane;
 import org.apache.commons.io.FileUtils;
+import richtercloud.message.handler.ExceptionMessage;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.Message;
-import richtercloud.message.handler.MessageHandler;
 
 /**
  *
@@ -44,7 +45,7 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
      * The maximum of entries per class.
      */
     private int entryMax = 20;
-    private final MessageHandler messageHandler;
+    private final IssueHandler issueHandler;
     /**
      * Accepts pointers to {@code cache} which trigger the synchronization to
      * {@code file} asynchronously in {@code fileStoreThread}. Sending
@@ -61,12 +62,12 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
     private final Lock cacheCopyLock = new ReentrantLock();
 
     public AbstractFileQueryHistoryEntryStorage(File file,
-            MessageHandler messageHandler) throws ClassNotFoundException, IOException {
+            IssueHandler issueHandler) throws ClassNotFoundException, IOException {
         if(file == null) {
             throw new IllegalArgumentException("file mustn't be null");
         }
         this.file = file;
-        this.messageHandler = messageHandler;
+        this.issueHandler = issueHandler;
         if(!file.exists()) {
             FileUtils.touch(file);
             this.cache = new HashMap<>();
@@ -85,12 +86,12 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
                     try {
                         store(head);
                     } catch (IOException ex) {
-                        AbstractFileQueryHistoryEntryStorage.this.messageHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
+                        AbstractFileQueryHistoryEntryStorage.this.issueHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
                     }
                     head = fileStoreThreadQueue.take();
                 }
             } catch (InterruptedException ex) {
-                throw new RuntimeException(ex);
+                issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
             }
         },
                 "query-history-entry-storage-file-store-thread"
@@ -104,7 +105,7 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
         try {
             fileStoreThread.join();
         } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
+            issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
         }
     }
 

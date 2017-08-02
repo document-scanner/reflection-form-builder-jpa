@@ -19,11 +19,12 @@ import java.util.List;
 import javax.swing.GroupLayout;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
+import richtercloud.message.handler.ExceptionMessage;
 import richtercloud.message.handler.IssueHandler;
+import richtercloud.reflection.form.builder.ResetException;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -48,6 +49,7 @@ public class StringCheckPanel extends AbstractStringPanel {
     private static final long serialVersionUID = 1L;
     private QueryPanel<?> queryPanel;
     private final String initialValue;
+    private final IssueHandler issueHander;
 
     public StringCheckPanel(PersistenceStorage storage,
             Class<?> entityClass,
@@ -58,7 +60,9 @@ public class StringCheckPanel extends AbstractStringPanel {
             int initialQueryLimit,
             FieldInitializer fieldInitializer,
             boolean async,
-            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException,
+            IllegalAccessException,
+            ResetException {
         super(storage,
                 entityClass,
                 fieldName,
@@ -74,6 +78,10 @@ public class StringCheckPanel extends AbstractStringPanel {
                 fieldInitializer,
                 entryStorage
         ); //will be reused by manipulating the queryComboBoxModel
+        if(issueHandler == null) {
+            throw new IllegalArgumentException("issueHandler mustn't be null");
+        }
+        this.issueHander = issueHandler;
         GroupLayout queryPanelDialogLayout = new GroupLayout(queryPanelDialog.getContentPane());
         queryPanelDialog.getContentPane().setLayout(queryPanelDialogLayout);
         queryPanelDialogLayout.setHorizontalGroup(
@@ -193,7 +201,7 @@ public class StringCheckPanel extends AbstractStringPanel {
             updateStatusLabel(false //async
             );
         } catch (StorageException ex) {
-            throw new RuntimeException(ex);
+            issueHander.handle(new ExceptionMessage(ex));
         }
     }//GEN-LAST:event_checkButtonActionPerformed
 
@@ -214,7 +222,7 @@ public class StringCheckPanel extends AbstractStringPanel {
             updateStatusLabel(false //async
             );
         } catch (StorageException ex) {
-            throw new RuntimeException(ex);
+            issueHander.handle(new ExceptionMessage(ex));
         }
         for(StringPanelUpdateListener updateListener : this.getUpdateListeners()) {
             updateListener.onUpdate(new StringPanelUpdateEvent(this.textField.getText()));
@@ -237,7 +245,8 @@ public class StringCheckPanel extends AbstractStringPanel {
                 try {
                     checkResult = check(textField.getText());
                 } catch (StorageException ex) {
-                    throw new RuntimeException(ex);
+                    issueHander.handle(new ExceptionMessage(ex));
+                    return;
                 }
                 SwingUtilities.invokeLater(() -> {
                     updateStatusLabelPostQuery(checkResult);
@@ -276,7 +285,7 @@ public class StringCheckPanel extends AbstractStringPanel {
         try {
             updateStatusLabel(async);
         } catch (StorageException ex) {
-            throw new RuntimeException(ex);
+            issueHander.handle(new ExceptionMessage(ex));
         }
     }
 

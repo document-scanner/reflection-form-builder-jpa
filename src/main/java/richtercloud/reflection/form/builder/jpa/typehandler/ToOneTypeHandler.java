@@ -25,6 +25,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
+import richtercloud.reflection.form.builder.ResetException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateListener;
@@ -38,7 +39,6 @@ import richtercloud.reflection.form.builder.jpa.panels.QueryPanelUpdateListener;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -84,7 +84,8 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
             FieldHandlingException,
             InstantiationException,
             InvocationTargetException,
-            FieldRetrievalException {
+            NoSuchFieldException,
+            ResetException {
         if(!(type instanceof Class)) {
             throw new IllegalArgumentException("the generic type of type has to be instanceof Class");
         }
@@ -117,7 +118,7 @@ public class ToOneTypeHandler implements TypeHandler<Object, FieldUpdateEvent<Ob
     }
 
     @Override
-    public void reset(QueryPanel component) throws FieldRetrievalException {
+    public void reset(QueryPanel component) throws ResetException {
         component.reset();
     }
 }

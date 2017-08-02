@@ -31,8 +31,10 @@ import javax.swing.LayoutStyle;
 import javax.swing.ListSelectionModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.message.handler.ExceptionMessage;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.Message;
+import richtercloud.reflection.form.builder.ResetException;
 import richtercloud.reflection.form.builder.jpa.ReflectionFormBuilderHelperJPA;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
@@ -40,7 +42,6 @@ import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemEventVetoException;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -60,7 +61,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
 
     private static BidirectionalControlPanel generateBidirectionalControlPanel(Class<?> entityClass,
             FieldRetriever fieldRetriever,
-            String bidirectionalHelpDialogTitle) throws FieldRetrievalException {
+            String bidirectionalHelpDialogTitle) throws NoSuchFieldException {
         List<Field> entityClassFields = fieldRetriever.retrieveRelevantFields(entityClass);
         Set<Field> mappedFieldCandidates = ReflectionFormBuilderHelperJPA.retrieveMappedFieldCandidates(entityClass,
                 entityClassFields,
@@ -90,7 +91,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             List<E> initialValues,
             String bidirectionalHelpDialogTitle,
             FieldInitializer fieldInitializer,
-            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, ResetException {
         this(storage,
                 fieldRetriever,
                 entityClass,
@@ -122,7 +123,10 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             String bidirectionalHelpDialogTitle,
             int queryResultTableHeight,
             FieldInitializer fieldInitializer,
-            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException,
+            IllegalAccessException,
+            NoSuchFieldException,
+            ResetException {
         super(generateBidirectionalControlPanel(entityClass,
                 fieldRetriever,
                 bidirectionalHelpDialogTitle),
@@ -166,8 +170,8 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             public void onQueryExecuted(QueryComponentEvent<E> event) {
                 try {
                     resultTable.getModel().updateColumns(event.getQueryResults());
-                }catch(IllegalAccessException | FieldRetrievalException ex) {
-                    throw new RuntimeException(ex);
+                }catch(IllegalAccessException ex) {
+                    issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                 }
             }
         });
@@ -291,7 +295,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
             }
             try {
                 this.resultTable.getModel().addEntity(queryResult);
-            } catch (IllegalArgumentException | IllegalAccessException | FieldRetrievalException ex) {
+            } catch (IllegalArgumentException | IllegalAccessException ex) {
                 LOGGER.info("an exception occured while executing the query", ex);
                 this.getQueryComponent().getQueryStatusLabel().setText(String.format("<html>%s</html>", ex.getMessage()));
             }
@@ -325,11 +329,11 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
         }
     }
 
-    public void reset() throws FieldRetrievalException {
+    public void reset() throws ResetException {
         reset0();
     }
 
-    private void reset0() throws FieldRetrievalException {
+    private void reset0() throws ResetException {
         this.resultTable.getModel().clear();
         this.resultTableModel.clear();
         if(initialValues != null) {
@@ -337,7 +341,7 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                 this.resultTableModel.updateColumns(initialValues);
                 this.resultTable.getModel().addAllEntities(initialValues); //before initComponents (simply use resultList for initialization)
             } catch (IllegalArgumentException | IllegalAccessException ex) {
-                throw new RuntimeException(ex);
+                throw new ResetException(ex);
             }
             for(E initialValue : initialValues) {
                 if(!this.getStorage().isManaged(initialValue)) {

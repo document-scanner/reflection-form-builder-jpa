@@ -23,7 +23,6 @@ import java.util.Set;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -51,7 +50,7 @@ public class ReflectionFormBuilderHelperJPA {
      */
     public static Set<Field> retrieveMappedFieldCandidates(Class<?> entityClass,
             List<Field> entityClassFields,
-            FieldRetriever fieldRetriever) throws FieldRetrievalException {
+            FieldRetriever fieldRetriever) {
         Set<Field> retValue = new HashSet<>();
         for(Field entityClassField : entityClassFields) {
             OneToMany entityClassFieldOneToMany = entityClassField.getAnnotation(OneToMany.class);

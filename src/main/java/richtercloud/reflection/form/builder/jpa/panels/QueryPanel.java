@@ -29,9 +29,9 @@ import javax.swing.event.ListSelectionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.IssueHandler;
+import richtercloud.reflection.form.builder.ResetException;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -117,7 +117,9 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             BidirectionalControlPanel bidirectionalControlPanel,
             int queryResultTableSelectionMode,
             FieldInitializer fieldInitializer,
-            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException,
+            IllegalAccessException,
+            ResetException {
         this(storage,
                 entityClass,
                 issueHandler,
@@ -139,7 +141,10 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             String bidirectionalHelpDialogTitle,
             int queryResultTableSelectionMode,
             FieldInitializer fieldInitializer,
-            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException,
+            IllegalAccessException,
+            NoSuchFieldException,
+            ResetException {
         this(storage,
                 entityClass,
                 issueHandler,
@@ -186,7 +191,9 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
             int queryResultTableHeight,
             int queryResultTableSelectionMode,
             FieldInitializer fieldInitializer,
-            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
+            QueryHistoryEntryStorage entryStorage) throws IllegalArgumentException,
+            IllegalAccessException,
+            ResetException {
         super(bidirectionalControlPanel,
                 new QueryComponent<>(storage,
                         entityClass,
@@ -259,11 +266,11 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
         return retValue;
     }
 
-    public void reset() throws FieldRetrievalException {
+    public void reset() throws ResetException {
         reset0();
     }
 
-    private void reset0() throws FieldRetrievalException {
+    private void reset0() throws ResetException {
         this.getQueryResultTableModel().clear();
             //no need to update columns (with EntityTableModel.updateColumns)
             //because that will only happen if the next query is run (which is
@@ -276,7 +283,7 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                 try {
                     this.getQueryResultTable().getModel().addEntity(initialValue); // ok to add initially (will be overwritten with the next query where the user has to specify a query which retrieves the initial value or not
                 } catch (IllegalArgumentException | IllegalAccessException ex) {
-                    throw new RuntimeException(ex);
+                    throw new ResetException(ex);
                 }
             }
             int initialValueIndex = this.getQueryResultTable().getModel().getEntities().indexOf(initialValue);

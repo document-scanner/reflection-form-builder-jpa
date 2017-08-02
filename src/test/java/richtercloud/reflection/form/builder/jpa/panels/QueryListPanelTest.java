@@ -29,10 +29,10 @@ import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.LoggerIssueHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
+import richtercloud.reflection.form.builder.ResetException;
 import richtercloud.reflection.form.builder.jpa.JPACachedFieldRetriever;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -44,7 +44,10 @@ public class QueryListPanelTest {
 
 
     @Test
-    public void testInit() throws IllegalArgumentException, IllegalAccessException, IOException, QueryHistoryEntryStorageCreationException, FieldRetrievalException {
+    public void testInit() throws IllegalArgumentException, IllegalAccessException,
+            IOException,
+            QueryHistoryEntryStorageCreationException,
+            NoSuchFieldException, ResetException {
         PersistenceStorage storage = mock(PersistenceStorage.class);
         when(storage.isClassSupported(any())).thenReturn(true);
         ReflectionFormBuilder reflectionFormBuilder = mock(ReflectionFormBuilder.class);

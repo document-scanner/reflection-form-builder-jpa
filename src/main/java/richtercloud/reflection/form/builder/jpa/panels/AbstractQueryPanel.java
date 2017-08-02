@@ -33,10 +33,11 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
+import richtercloud.message.handler.ExceptionMessage;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.MessageHandler;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -74,11 +75,15 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
      * @param reflectionFormBuilder
      * @param entityClass
      * @param entityManager
-     * @param messageHandler
+     * @param issueHandler
      * @param queryResultTableSelectionMode
      * @param initialValues the initial values (to be selected in the query
      * result if they're present) (subclasses which only support one selected
      * value should pass this item in a list - KISS)
+     * @throws java.lang.IllegalAccessException if one occurs during creation of
+     * {@link EntityTableModel}
+     * @throws IllegalArgumentException if one occurs during creation of
+     * {@link EntityTableModel}
      */
     public AbstractQueryPanel(BidirectionalControlPanel bidirectionalControlPanel,
             QueryComponent<E> queryComponent,
@@ -86,9 +91,9 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
             final Class<?> entityClass,
             PersistenceStorage storage,
             FieldInitializer fieldInitializer,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             int queryResultTableSelectionMode,
-            List<E> initialValues) throws FieldRetrievalException {
+            List<E> initialValues) throws IllegalArgumentException, IllegalAccessException {
         super();
         if(storage == null) {
             throw new IllegalArgumentException("entityManager mustn't be null");
@@ -103,20 +108,16 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
         this.fieldRetriever = fieldRetriever;
         this.entityClass = entityClass;
         this.storage = storage;
-        if(messageHandler == null) {
+        if(issueHandler == null) {
             throw new IllegalArgumentException("messageHandler mustn't be null");
         }
-        this.messageHandler = messageHandler;
+        this.messageHandler = issueHandler;
         this.initialValues = initialValues;
         this.bidirectionalControlPanelSeparator = new JSeparator();
         this.separator = new JSeparator();
         queryResultLabel = new JLabel();
         queryResultTableScrollPane = new JScrollPane();
-        try {
-            this.queryResultTableModel = new EntityTableModel<>(fieldRetriever);
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
-            throw new RuntimeException(ex);
-        }
+        this.queryResultTableModel = new EntityTableModel<>(fieldRetriever);
         queryResultTable = new EntityTable<E>(this.queryResultTableModel) {
             private static final long serialVersionUID = 1L;
             @Override
@@ -152,8 +153,9 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
                     queryResultTableModel.clear();
                     queryResultTableModel.updateColumns(queryResults);
                     queryResultTableModel.addAllEntities(queryResults);
-                } catch (IllegalArgumentException | IllegalAccessException | FieldRetrievalException ex) {
-                    throw new RuntimeException(ex);
+                } catch (IllegalArgumentException | IllegalAccessException ex) {
+                    issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                    return;
                 }
                 for(E initialValue : AbstractQueryPanel.this.initialValues) {
                     int initialValueIndex = queryResultTableModel.getEntities().indexOf(initialValue);

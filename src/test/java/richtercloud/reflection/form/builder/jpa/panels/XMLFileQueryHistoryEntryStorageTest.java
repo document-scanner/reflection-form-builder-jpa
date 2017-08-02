@@ -25,7 +25,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import static org.mockito.Mockito.mock;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.jpa.entities.EntityA;
 import richtercloud.reflection.form.builder.jpa.entities.EntityB;
 
@@ -46,8 +46,9 @@ public class XMLFileQueryHistoryEntryStorageTest {
         QueryHistoryEntry entry0 = new QueryHistoryEntry(entryText0);
         QueryHistoryEntry entry1 = new QueryHistoryEntry(entryText1);
         File file = File.createTempFile(XMLFileQueryHistoryEntryStorageTest.class.getSimpleName(), null);
-        MessageHandler messageHandler = mock(MessageHandler.class);
-        XMLFileQueryHistoryEntryStorage instance = new XMLFileQueryHistoryEntryStorage(file, messageHandler);
+        IssueHandler issueHandler = mock(IssueHandler.class);
+        XMLFileQueryHistoryEntryStorage instance = new XMLFileQueryHistoryEntryStorage(file,
+                issueHandler);
         instance.store(clazz0,
                 entry0);
         List<QueryHistoryEntry> result = instance.retrieve(clazz0);
@@ -70,14 +71,15 @@ public class XMLFileQueryHistoryEntryStorageTest {
     @Test
     public void testInit() throws Exception {
         File file = File.createTempFile(XMLFileQueryHistoryEntryStorageTest.class.getSimpleName(), null);
-        MessageHandler messageHandler = mock(MessageHandler.class);
+        IssueHandler issueHandler = mock(IssueHandler.class);
         Class<?> clazz = EntityA.class;
         QueryHistoryEntry entry0 = new QueryHistoryEntry("a");
         Map<Class<?>, List<QueryHistoryEntry>> expResult = new HashMap<>();
         expResult.put(clazz, new LinkedList<>(Arrays.asList(entry0)));
         XStream xStream = new XStream();
         xStream.toXML(expResult, new FileOutputStream(file));
-        XMLFileQueryHistoryEntryStorage instance = new XMLFileQueryHistoryEntryStorage(file, messageHandler);
+        XMLFileQueryHistoryEntryStorage instance = new XMLFileQueryHistoryEntryStorage(file,
+                issueHandler);
         Map<Class<?>, List<QueryHistoryEntry>> result = instance.init();
         assertEquals(expResult, result);
     }
@@ -93,8 +95,9 @@ public class XMLFileQueryHistoryEntryStorageTest {
         QueryHistoryEntry entry0 = new QueryHistoryEntry(entryText0);
         QueryHistoryEntry entry1 = new QueryHistoryEntry(entryText1);
         File file = File.createTempFile(XMLFileQueryHistoryEntryStorageTest.class.getSimpleName(), null);
-        MessageHandler messageHandler = mock(MessageHandler.class);
-        XMLFileQueryHistoryEntryStorage instance = new XMLFileQueryHistoryEntryStorage(file, messageHandler);
+        IssueHandler issueHandler = mock(IssueHandler.class);
+        XMLFileQueryHistoryEntryStorage instance = new XMLFileQueryHistoryEntryStorage(file,
+                issueHandler);
         instance.store(clazz0,
                 entry0);
         List<QueryHistoryEntry> result = instance.retrieve(clazz0);

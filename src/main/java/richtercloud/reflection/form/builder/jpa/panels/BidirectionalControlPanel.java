@@ -104,7 +104,7 @@ public class BidirectionalControlPanel extends javax.swing.JPanel {
     public BidirectionalControlPanel(Class<?> entityClass,
             String bidirectionalHelpDialogTitle,
             Field mappedByField,
-            Set<Field> mappedFieldCandidates) {
+            Set<Field> mappedFieldCandidates) throws NoSuchFieldException {
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.entityClass = entityClass;
         this.mappedByField = mappedByField;
@@ -151,11 +151,7 @@ public class BidirectionalControlPanel extends javax.swing.JPanel {
                         throw new IllegalArgumentException("field annotated with replationship annotation and mappedBy attribute offers no way to figure out the target entity class"); //this shouldn't happen with a working JPA provider
                     }
                     Field mappedByTargetField;
-                    try {
-                        mappedByTargetField = mappedByTargetClass.getDeclaredField(mappedByTargetName);
-                    } catch (NoSuchFieldException | SecurityException ex) {
-                        throw new RuntimeException(ex); //this should never happen
-                    }
+                    mappedByTargetField = mappedByTargetClass.getDeclaredField(mappedByTargetName);
                     this.mappedFieldComboBoxModel.addElement(mappedByTargetField);
                     this.mappedFieldComboBox.setEnabled(false);
                     this.bidirectionalCheckBox.setEnabled(false);

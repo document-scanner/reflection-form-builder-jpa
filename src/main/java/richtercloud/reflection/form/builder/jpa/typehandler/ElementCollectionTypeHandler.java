@@ -21,7 +21,7 @@ import java.util.Map;
 import javax.swing.JComponent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.ComponentHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldUpdateEvent;
@@ -32,7 +32,6 @@ import richtercloud.reflection.form.builder.panels.ListPanelItemEvent;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.typehandler.GenericListTypeHandler;
 import richtercloud.reflection.form.builder.typehandler.TypeHandler;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -47,17 +46,17 @@ import richtercloud.validation.tools.FieldRetriever;
  * @author richter
  */
 public class ElementCollectionTypeHandler extends GenericListTypeHandler<JPAReflectionFormBuilder, EmbeddableListPanel> {
-    private final MessageHandler messageHandler;
+    private final IssueHandler issueHandler;
     private final FieldHandler embeddableFieldHandler;
     private final FieldRetriever readOnlyFieldRetriever;
 
     public ElementCollectionTypeHandler(Map<Type, TypeHandler<?, ?,?, ?>> genericsTypeHandlerMapping,
             Map<Type, TypeHandler<?,?,?, ?>> fieldTypeHandlerMapping,
-            MessageHandler messageHandler,
+            IssueHandler messageHandler,
             FieldHandler embeddableFieldHandler,
             FieldRetriever readOnlyFieldRetriever) {
         super(genericsTypeHandlerMapping, fieldTypeHandlerMapping);
-        this.messageHandler = messageHandler;
+        this.issueHandler = messageHandler;
         this.embeddableFieldHandler = embeddableFieldHandler;
         this.readOnlyFieldRetriever = readOnlyFieldRetriever;
     }
@@ -85,7 +84,7 @@ public class ElementCollectionTypeHandler extends GenericListTypeHandler<JPARefl
             String fieldName,
             Class<?> declaringClass,
             final FieldUpdateListener<FieldUpdateEvent<List<Object>>> updateListener,
-            JPAReflectionFormBuilder reflectionFormBuilder) throws FieldRetrievalException {
+            JPAReflectionFormBuilder reflectionFormBuilder) {
         Type genericType = retrieveTypeGenericType(type);
         if(genericType.equals(String.class)
                 || genericType.equals(Byte.class)
@@ -101,7 +100,7 @@ public class ElementCollectionTypeHandler extends GenericListTypeHandler<JPARefl
         EmbeddableListPanel retValue = new EmbeddableListPanel(reflectionFormBuilder,
                 (Class<?>) genericType,
                 fieldValue,
-                messageHandler,
+                issueHandler,
                 embeddableFieldHandler,
                 readOnlyFieldRetriever
         );

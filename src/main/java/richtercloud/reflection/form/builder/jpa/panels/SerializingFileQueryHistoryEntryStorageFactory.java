@@ -17,7 +17,7 @@ package richtercloud.reflection.form.builder.jpa.panels;
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 
 /**
  * Creates a {@link FileQueryHistoryEntryStorage} with default queries.
@@ -27,10 +27,12 @@ public class SerializingFileQueryHistoryEntryStorageFactory extends AbstractQuer
     private final File file;
 
     public SerializingFileQueryHistoryEntryStorageFactory(File file,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             Set<Class<?>> entityClasses,
             boolean forbidSubtypes) {
-        super(entityClasses, forbidSubtypes, messageHandler);
+        super(entityClasses,
+                forbidSubtypes,
+                issueHandler);
         this.file = file;
     }
 
@@ -39,7 +41,7 @@ public class SerializingFileQueryHistoryEntryStorageFactory extends AbstractQuer
         SerializingFileQueryHistoryEntryStorage entryStorage;
         try {
             entryStorage = new SerializingFileQueryHistoryEntryStorage(file,
-                    getMessageHandler());
+                    getIssueHandler());
         } catch (ClassNotFoundException | IOException ex) {
             throw new QueryHistoryEntryStorageCreationException(ex);
         }

@@ -22,7 +22,6 @@ import java.util.Set;
 import javax.persistence.Id;
 import javax.persistence.Transient;
 import richtercloud.validation.tools.CachedFieldRetriever;
-import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  *
@@ -38,7 +37,7 @@ public class JPACachedFieldRetriever extends CachedFieldRetriever implements JPA
      * @return the list of relevant fields
      */
     @Override
-    public List<Field> retrieveRelevantFields(Class<?> entityClass) throws FieldRetrievalException {
+    public List<Field> retrieveRelevantFields(Class<?> entityClass) {
         if(entityClass == null) {
             throw new IllegalArgumentException("entityClass mustn't be null");
         }
@@ -72,7 +71,7 @@ public class JPACachedFieldRetriever extends CachedFieldRetriever implements JPA
      * @return the ID fields
      */
     @Override
-    public Set<Field> getIdFields(Class<?> entityClass) throws FieldRetrievalException {
+    public Set<Field> getIdFields(Class<?> entityClass) {
         Set<Field> retValue = new HashSet<>();
         List<Field> fields = retrieveRelevantFields(entityClass);
         for(Field field : fields) {

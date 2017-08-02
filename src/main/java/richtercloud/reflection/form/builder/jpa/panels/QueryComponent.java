@@ -409,6 +409,7 @@ public class QueryComponent<E> extends JPanel {
     the text of the query because there's no way to retrieve text from Criteria
     objects
     */
+    @SuppressWarnings("PMD.AvoidCatchingThrowable")
     private void executeQuery(int queryLimit,
             String queryText,
             boolean async) {

@@ -14,7 +14,6 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
-import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * Initializes fields in a runtime-configurable way which is interesting for
@@ -41,5 +40,6 @@ public interface FieldInitializer {
     - not a good idea to put this in a separate interface (see class comment for
     details)
     */
-    void initialize(Object entity) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException;
+    void initialize(Object entity) throws IllegalArgumentException,
+            IllegalAccessException;
 }

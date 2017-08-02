@@ -51,6 +51,7 @@ public class PrioritizableReentrantLock extends ReentrantLock {
     private final Thread managerThread;
     private final Lock conditionLock = new ReentrantLock();
     private final Condition locked = conditionLock.newCondition();
+    private final BugHandler bugHandler;
 
     /**
      * Creates a {@code PrioritizableReentrantLock} with unfair policy for lock
@@ -72,9 +73,11 @@ public class PrioritizableReentrantLock extends ReentrantLock {
      * @param bugHandler the {@link BugHandler} to use for exceptions in the
      * manager thread
      */
+    @SuppressWarnings("PMD.AvoidCatchingThrowable")
     public PrioritizableReentrantLock(boolean fair,
             BugHandler bugHandler) {
         super(fair);
+        this.bugHandler = bugHandler;
         this.managerThread = new Thread(() -> {
             //can't control shutdown with boolean since managerQueue.take somehow
             //has to be brought to return (Poison Pill Shutdown
@@ -86,6 +89,9 @@ public class PrioritizableReentrantLock extends ReentrantLock {
                 }catch(InterruptedException ex) {
                     bugHandler.handleUnexpectedException(new ExceptionMessage(ex));
                     return;
+                        //It's fine to return if the thread has been interrupted
+                        //which is an unexpected condition anyway and can't be
+                        //handled better than reporting an unexpected exception
                 }
                 if(managerQueueHead.condition == null) {
                     LOGGER.trace(String.format("received %s with condition null, meaning shutdown requested", ManagerQueueEntry.class));
@@ -102,7 +108,7 @@ public class PrioritizableReentrantLock extends ReentrantLock {
                         bugHandler.handleUnexpectedException(new ExceptionMessage(ex));
                         return;
                     }
-                }catch(Exception ex) {
+                }catch(Throwable ex) {
                     bugHandler.handleUnexpectedException(new ExceptionMessage(ex));
                 }finally {
                     PrioritizableReentrantLock.this.conditionLock.unlock();
@@ -155,7 +161,11 @@ public class PrioritizableReentrantLock extends ReentrantLock {
                 LOGGER.trace(String.format("waiting for condition with priority %d", priority));
                 entry.condition.await();
             } catch (InterruptedException ex) {
-                throw new RuntimeException(ex);
+                bugHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                return;
+                    //It's fine to return if the thread has been interrupted
+                    //which is an unexpected condition anyway and can't be
+                    //handled better than reporting an unexpected exception
             }
             LOGGER.trace(String.format("locking with priority %d", priority));
             LOGGER.trace("locking thread");

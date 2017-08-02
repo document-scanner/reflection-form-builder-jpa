@@ -37,12 +37,12 @@ import richtercloud.message.handler.ExceptionMessage;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.Message;
 import richtercloud.reflection.form.builder.ReflectionFormPanelUpdateEvent;
+import richtercloud.reflection.form.builder.ResetException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplicationException;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
-import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * A {@link JPAReflectionFormPanel} with an implementation to save and delete
@@ -146,13 +146,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
         saveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent evt) {
-                try {
-                    saveButtonActionPerformed(evt);
-                } catch (FieldRetrievalException ex) {
-                    LOGGER.error("unexpected exception during field retrieval",
-                            ex);
-                    issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
-                }
+                saveButtonActionPerformed(evt);
             }
         });
         resetButton.addActionListener(new ActionListener() {
@@ -187,9 +181,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
             public void actionPerformed(ActionEvent e) {
                 try {
                     reset();
-                } catch (FieldRetrievalException ex) {
-                    LOGGER.error("unexpected exception during field retrieval",
-                            ex);
+                } catch (ResetException ex) {
                     issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                 }
             }
@@ -247,7 +239,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
     JPA module and validation is legitimate no matter which Storage backend is
     used.
     */
-    protected void saveButtonActionPerformed(ActionEvent evt) throws FieldRetrievalException {
+    protected void saveButtonActionPerformed(ActionEvent evt) {
         Object instance = this.retrieveInstance();
             //might be in all sorts of JPA states (attached, detached, etc.)
 
@@ -265,7 +257,7 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
 
         try {
             this.entityValidator.validate(instance, Default.class);
-        }catch(EntityValidationException | FieldRetrievalException ex) {
+        }catch(EntityValidationException ex) {
             issueHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
             return;
         }
@@ -292,7 +284,8 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                             keySet = true;
                         }
                     } catch (IllegalArgumentException | IllegalAccessException ex) {
-                        throw new RuntimeException(ex);
+                        issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                        return;
                     }
                 }else {
                     IdClass idClass = getEntityClass().getDeclaredAnnotation(IdClass.class);
@@ -316,7 +309,8 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                             try {
                                 primaryKeyIdField = primaryKeyClass.getDeclaredField(idField.getName());
                             } catch (NoSuchFieldException | SecurityException ex) {
-                                throw new RuntimeException(ex);
+                                issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                                return;
                             }
                             Object primaryKeyIdFieldValue = idField.get(instance);
                             if(primaryKeyIdFieldValue != null) {
@@ -326,7 +320,8 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                                     primaryKeyIdFieldValue);
                         }
                     } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-                        throw new RuntimeException(ex);
+                        issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                        return;
                     }
                 }
                 if(keySet) {

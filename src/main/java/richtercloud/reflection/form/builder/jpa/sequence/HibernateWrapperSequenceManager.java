@@ -59,11 +59,11 @@ public abstract class HibernateWrapperSequenceManager extends AbstractSequenceMa
     public boolean checkSequenceExists(String sequenceName) throws SequenceManagementException {
         return doHibernateSQLTask((dialect, connection) -> {
             if ( !dialect.supportsSequences() ) {
-                throw new RuntimeException();
+                throw new SequenceManagementException("The dialect of the current database doesn't support sequences");
             }
             String sql = dialect.getQuerySequencesString();
             if (sql == null) {
-                throw new RuntimeException(); //@TODO
+                throw new SequenceManagementException("Hibernate failed to generate a query string");
             }
             Statement statement = null;
             ResultSet rs = null;
@@ -91,14 +91,14 @@ public abstract class HibernateWrapperSequenceManager extends AbstractSequenceMa
     public void createSequence(String sequenceName) throws SequenceManagementException {
         doHibernateSQLTask((dialect, connection) -> {
             if ( !dialect.supportsSequences() ) {
-                throw new RuntimeException(); //@TODO
+                throw new SequenceManagementException("The dialect of the current database doesn't support sequences");
             }
             String[] sqls = dialect.getCreateSequenceStrings(sequenceName,
                     initialValue, //initialValue
                     1 //incrementSize
             );
             if (sqls == null) {
-                throw new RuntimeException(); //@TODO
+                throw new SequenceManagementException("Hibernate failed to generate a query string");
             }
             for(String sql : sqls) {
                 try (Statement statement = connection.createStatement()) {
@@ -113,11 +113,11 @@ public abstract class HibernateWrapperSequenceManager extends AbstractSequenceMa
     public Long getNextSequenceValue(String sequenceName) throws SequenceManagementException {
         return doHibernateSQLTask((dialect, connection) -> {
             if ( !dialect.supportsSequences() ) {
-                throw new RuntimeException(); //@TODO
+                throw new SequenceManagementException("The dialect of the current database doesn't support sequences");
             }
             String sql = dialect.getSequenceNextValString(sequenceName);
             if (sql == null) {
-                throw new RuntimeException(); //@TODO
+                throw new SequenceManagementException("Hibernate failed to generate a query string");
             }
             Statement statement = null;
             ResultSet rs = null;
@@ -125,7 +125,7 @@ public abstract class HibernateWrapperSequenceManager extends AbstractSequenceMa
                 statement = connection.createStatement();
                 rs = statement.executeQuery(sql);
                 if(!rs.next()) {
-                    throw new RuntimeException();
+                    throw new SequenceManagementException("sequence query result is empty");
                 }
                 return rs.getLong(1 //columnIndex (1-based; using sequenceName
                         //as columnName fails due to column label being unknown;
@@ -155,7 +155,8 @@ public abstract class HibernateWrapperSequenceManager extends AbstractSequenceMa
     @FunctionalInterface
     private interface HibernateSQLTask<T> {
 
-        T run(Dialect dialect, Connection connection) throws SQLException;
+        T run(Dialect dialect, Connection connection) throws SQLException,
+                SequenceManagementException;
     }
 
     protected String escapeSequenceName(String sequenceName,

@@ -31,7 +31,6 @@ import richtercloud.message.handler.ConfirmMessageHandler;
 import richtercloud.message.handler.Message;
 import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.Tools;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.validation.tools.ValidationTools;
 
@@ -111,7 +110,7 @@ public class EntityValidator {
      * @param instance
      * @param groups
      */
-    public void validate(Object instance, Class<?>... groups) throws EntityValidationException, FieldRetrievalException {
+    public void validate(Object instance, Class<?>... groups) throws EntityValidationException {
         Set violations = VALIDATOR.validate(instance,
                 groups);
         if(!violations.isEmpty()) {

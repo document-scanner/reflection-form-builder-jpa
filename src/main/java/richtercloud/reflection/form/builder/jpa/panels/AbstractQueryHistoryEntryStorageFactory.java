@@ -18,7 +18,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 
 /**
  *
@@ -28,14 +28,14 @@ import richtercloud.message.handler.MessageHandler;
 public abstract class AbstractQueryHistoryEntryStorageFactory<S extends QueryHistoryEntryStorage> implements QueryHistoryEntryStorageFactory<S>{
     private final Set<Class<?>> entityClasses;
     private final boolean forbidSubtypes;
-    private final MessageHandler messageHandler;
+    private final IssueHandler issueHandler;
 
     public AbstractQueryHistoryEntryStorageFactory(Set<Class<?>> entityClasses,
             boolean forbidSubtypes,
-            MessageHandler messageHandler) {
+            IssueHandler issueHandler) {
         this.entityClasses = entityClasses;
         this.forbidSubtypes = forbidSubtypes;
-        this.messageHandler = messageHandler;
+        this.issueHandler = issueHandler;
     }
 
     public boolean isForbidSubtypes() {
@@ -46,8 +46,8 @@ public abstract class AbstractQueryHistoryEntryStorageFactory<S extends QueryHis
         return entityClasses;
     }
 
-    public MessageHandler getMessageHandler() {
-        return messageHandler;
+    public IssueHandler getIssueHandler() {
+        return issueHandler;
     }
 
     /**

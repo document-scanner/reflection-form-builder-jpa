@@ -24,7 +24,7 @@ import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 
 /**
  * Storage implemented through map serialization to file using Java
@@ -36,18 +36,16 @@ import richtercloud.message.handler.MessageHandler;
 public class SerializingFileQueryHistoryEntryStorage extends AbstractFileQueryHistoryEntryStorage {
 
     public SerializingFileQueryHistoryEntryStorage(File file,
-            MessageHandler messageHandler) throws ClassNotFoundException, IOException {
+            IssueHandler issueHandler) throws ClassNotFoundException, IOException {
         super(file,
-                messageHandler);
+                issueHandler);
     }
 
     @Override
-    protected void store(Map<Class<?>, List<QueryHistoryEntry>> head) {
+    protected void store(Map<Class<?>, List<QueryHistoryEntry>> head) throws IOException {
         try(ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(getFile()))) {
             objectOutputStream.writeObject(head);
             objectOutputStream.flush();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
         }
     }
 

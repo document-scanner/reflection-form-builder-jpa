@@ -39,7 +39,6 @@ import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.Message;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -75,7 +74,7 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
 
     private static Field retrieveFieldByName(FieldRetriever fieldRetriever,
             Class<?> entityClass,
-            String fieldName) throws FieldRetrievalException {
+            String fieldName) {
         Field retValue = null;
         List<Field> entityClassFields = fieldRetriever.retrieveRelevantFields(entityClass);
         for(Field entityClassField : entityClassFields) {
@@ -106,7 +105,7 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
             String fieldName,
             int initialQueryLimit,
             FieldRetriever fieldRetriever,
-            IssueHandler issueHandler) throws FieldRetrievalException {
+            IssueHandler issueHandler) {
         super(storage,
                 entityClass,
                 fieldName,
@@ -142,7 +141,11 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                     }
                 });
             } catch (InterruptedException | InvocationTargetException ex) {
-                throw new RuntimeException(ex);
+                issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                return;
+                    //It's fine to return if the thread has been interrupted
+                    //which is an unexpected condition anyway and can't be
+                    //handled better than reporting an unexpected exception
             }
         }
 
@@ -150,6 +153,7 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
         this.comboBox.getEditor().getEditorComponent().addKeyListener(new KeyAdapter() {
             private boolean queryRunning = false;
             @Override
+            @SuppressWarnings("PMD.AvoidCatchingThrowable")
             public void keyReleased(KeyEvent e) {
                 //Listen to keyReleased rather than keyPressed in order to avoid
                 //listening to Ctrl being pressed when using Ctrl+V or else.
@@ -175,7 +179,11 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                                         }
                                     });
                                 } catch (InterruptedException | InvocationTargetException ex) {
-                                    throw new RuntimeException(ex);
+                                    issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                                    return;
+                                        //It's fine to return if the thread has been interrupted
+                                        //which is an unexpected condition anyway and can't be
+                                        //handled better than reporting an unexpected exception
                                 }
                                 lastCheckResults = checkResults;
                             }
@@ -185,6 +193,7 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                         } catch(Throwable ex) {
                             LOGGER.error("an unexpected exception during retrieval of auto-completion check results occured", ex);
                             issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                            throw ex;
                         }finally {
                             queryRunning = false;
                         }

@@ -17,7 +17,7 @@ package richtercloud.reflection.form.builder.jpa.panels;
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 
 /**
  *
@@ -29,10 +29,10 @@ public class XMLFileQueryHistoryEntryStorageFactory extends AbstractQueryHistory
     public XMLFileQueryHistoryEntryStorageFactory(File file,
             Set<Class<?>> entityClasses,
             boolean forbidSubtypes,
-            MessageHandler messageHandler) {
+            IssueHandler issueHandler) {
         super(entityClasses,
                 forbidSubtypes,
-                messageHandler);
+                issueHandler);
         this.file = file;
     }
 
@@ -40,7 +40,7 @@ public class XMLFileQueryHistoryEntryStorageFactory extends AbstractQueryHistory
     protected XMLFileQueryHistoryEntryStorage create0() throws QueryHistoryEntryStorageCreationException {
         XMLFileQueryHistoryEntryStorage retValue;
         try {
-            retValue = new XMLFileQueryHistoryEntryStorage(file, getMessageHandler());
+            retValue = new XMLFileQueryHistoryEntryStorage(file, getIssueHandler());
         } catch (ClassNotFoundException | IOException ex) {
             throw new QueryHistoryEntryStorageCreationException(ex);
         }

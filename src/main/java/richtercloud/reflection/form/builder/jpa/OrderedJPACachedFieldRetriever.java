@@ -17,7 +17,6 @@ package richtercloud.reflection.form.builder.jpa;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
-import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * A {@link FieldRetriever} which allows callers to pass a reference to a
@@ -35,7 +34,7 @@ public class OrderedJPACachedFieldRetriever extends JPACachedFieldRetriever {
     }
 
     @Override
-    public List<Field> retrieveRelevantFields(Class<?> entityClass) throws FieldRetrievalException {
+    public List<Field> retrieveRelevantFields(Class<?> entityClass) {
         List<Field> retValue = fieldOrderMap.get(entityClass);
         if(retValue == null) {
             retValue = super.retrieveRelevantFields(entityClass);

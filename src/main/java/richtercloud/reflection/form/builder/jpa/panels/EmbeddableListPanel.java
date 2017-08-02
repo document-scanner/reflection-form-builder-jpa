@@ -22,16 +22,16 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.FieldInfo;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
+import richtercloud.reflection.form.builder.ResetException;
 import richtercloud.reflection.form.builder.TransformationException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.jpa.JPAReflectionFormBuilder;
 import richtercloud.reflection.form.builder.panels.AbstractListPanel;
 import richtercloud.reflection.form.builder.panels.ListPanelItemListener;
 import richtercloud.reflection.form.builder.panels.RightHeightTableHeader;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -46,7 +46,7 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
     - no need to pass renderers because editing takes place in dialog
      */
     private static DefaultTableColumnModel createMainListColumnModel(Class<?> embeddableClass,
-            FieldRetriever fieldRetriever) throws FieldRetrievalException {
+            FieldRetriever fieldRetriever) {
         DefaultTableColumnModel mainListColumnModel = new DefaultTableColumnModel();
         List<Field> embeddableClassFields = fieldRetriever.retrieveRelevantFields(embeddableClass);
         int i=0;
@@ -71,16 +71,17 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
     public EmbeddableListPanel(JPAReflectionFormBuilder reflectionFormBuilder,
             Class<?> embeddableClass,
             List<Object> initialValues,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             FieldHandler embeddableFieldHandler,
-            FieldRetriever fieldRetriever) throws FieldRetrievalException {
+            FieldRetriever fieldRetriever) {
         super(reflectionFormBuilder,
                 new EmbeddableListPanelCellEditor(),
                 new EmbeddableListPanelCellRenderer(),
                 new EmbeddableListPanelTableModel(embeddableClass,
-                        fieldRetriever),
+                        fieldRetriever,
+                        issueHandler),
                 initialValues,
-                messageHandler,
+                issueHandler,
                 new RightHeightTableHeader(createMainListColumnModel(embeddableClass, fieldRetriever), 16));
         if(embeddableClass == null) {
             throw new IllegalArgumentException("embeddableClass mustn't be null");
@@ -101,13 +102,13 @@ public class EmbeddableListPanel extends AbstractListPanel<Object, ListPanelItem
             embeddableClassConstructor.setAccessible(true);
             retValue = embeddableClassConstructor.newInstance();
             return retValue;
-        } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+        } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
             throw new IllegalArgumentException(String.format("embeddableClass %s doesn't have a zero-argument contructor", this.embeddableClass));
         }
     }
 
     @Override
-    protected void editRow() throws TransformationException, FieldRetrievalException {
+    protected void editRow() throws TransformationException, NoSuchFieldException, ResetException {
         ReflectionFormPanel reflectionFormPanel = this.getReflectionFormBuilder().transformEmbeddable(
                 embeddableClass, //entityClass
                 this.getMainListModel().getData().get(this.getMainList().getSelectedRow()), //entityToUpdate

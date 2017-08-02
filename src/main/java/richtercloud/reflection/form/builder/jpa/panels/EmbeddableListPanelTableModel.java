@@ -20,8 +20,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
+import richtercloud.message.handler.ExceptionMessage;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.panels.ListPanelTableModel;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -33,6 +34,7 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
     private List<Object> embeddables = new ArrayList<>();
     private Constructor<?> embeddableClassConstructor;
     private List<Field> embeddableClassFields;
+    private final IssueHandler issueHandler;
 
     /**
      *
@@ -43,13 +45,18 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
      * retrieval of this constructor with {@link Class#getDeclaredConstructor(java.lang.Class...) }
      */
     public EmbeddableListPanelTableModel(Class<?> embeddableClass,
-            FieldRetriever fieldRetriever) throws FieldRetrievalException {
+            FieldRetriever fieldRetriever,
+            IssueHandler issueHandler) {
         super(0, //rowCount
                 fieldRetriever.retrieveRelevantFields(embeddableClass).size() //columnCount
         );
         if(embeddableClass == null) {
             throw new IllegalArgumentException("embeddableClass mustn't be null");
         }
+        if(issueHandler == null) {
+            throw new IllegalArgumentException("issueHandler mustn't be null");
+        }
+        this.issueHandler = issueHandler;
         try {
             this.embeddableClassConstructor = embeddableClass.getDeclaredConstructor();
         }catch(NoSuchMethodException ex) {
@@ -128,10 +135,12 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
     }
 
     @Override
+    @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     public Object getValueAt(int rowIndex, int columnIndex) {
         try {
             return this.embeddableClassFields.get(columnIndex).get(this.embeddables.get(rowIndex));
         } catch (IllegalArgumentException | IllegalAccessException ex) {
+            issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
             throw new RuntimeException(ex);
         }
     }
@@ -156,8 +165,12 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
         }else if(rowIndex == this.embeddables.size()) {
             try {
                 embeddable = embeddableClassConstructor.newInstance();
-            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-                throw new RuntimeException(ex);
+            } catch (InstantiationException
+                    | IllegalAccessException
+                    | IllegalArgumentException
+                    | InvocationTargetException ex) {
+                issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                return;
             }
             this.embeddables.add(embeddable);
         }else {
@@ -168,7 +181,8 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
                 embeddableClassField.set(embeddable, embeddableClassField.get(aValue));
             }
         } catch (IllegalArgumentException | IllegalAccessException ex) {
-            throw new RuntimeException(ex);
+            issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+            return;
         }
     }
 

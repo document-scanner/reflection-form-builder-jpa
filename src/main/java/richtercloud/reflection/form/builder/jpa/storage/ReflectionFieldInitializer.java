@@ -16,7 +16,6 @@ package richtercloud.reflection.form.builder.jpa.storage;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -36,7 +35,8 @@ public class ReflectionFieldInitializer implements FieldInitializer {
     }
 
     @Override
-    public void initialize(Object entity) throws IllegalArgumentException, IllegalAccessException, FieldRetrievalException {
+    public void initialize(Object entity) throws IllegalArgumentException,
+            IllegalAccessException {
         if(entity == null) {
             throw new IllegalArgumentException("entity mustn't be null");
         }

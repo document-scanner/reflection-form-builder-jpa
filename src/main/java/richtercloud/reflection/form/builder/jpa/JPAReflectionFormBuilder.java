@@ -39,6 +39,7 @@ import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.Message;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.ReflectionFormPanel;
+import richtercloud.reflection.form.builder.ResetException;
 import richtercloud.reflection.form.builder.TransformationException;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandler;
 import richtercloud.reflection.form.builder.fieldhandler.FieldHandlingException;
@@ -49,7 +50,6 @@ import richtercloud.reflection.form.builder.jpa.idapplier.IdApplicationException
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
 import richtercloud.reflection.form.builder.storage.StorageException;
-import richtercloud.validation.tools.FieldRetrievalException;
 
 /**
  * Handles generation of {@link JPAReflectionFormPanel} from root entity class
@@ -101,7 +101,9 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
     public ReflectionFormPanel transformEntityClass(Class<?> entityClass,
             Object entityToUpdate,
             boolean editingMode,
-            FieldHandler fieldHandler) throws TransformationException, FieldRetrievalException {
+            FieldHandler fieldHandler) throws TransformationException,
+            NoSuchFieldException,
+            ResetException {
         final Map<Field, JComponent> fieldMapping = new HashMap<>();
         Object instance = prepareInstance(entityClass, entityToUpdate);
         ReflectionFormPanel retValue = new EntityReflectionFormPanel(storage,
@@ -135,7 +137,9 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
     @Override
     public ReflectionFormPanel transformEntityClass(Class<?> entityClass,
             Object entityToUpdate,
-            FieldHandler fieldHandler) throws TransformationException, FieldRetrievalException {
+            FieldHandler fieldHandler) throws TransformationException,
+            NoSuchFieldException,
+            ResetException {
         return transformEntityClass(entityClass,
                 entityToUpdate,
                 false, //editingMode
@@ -144,7 +148,9 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
 
     public EmbeddableReflectionFormPanel<?> transformEmbeddable(Class<?> embeddableClass,
             Object instance,
-            FieldHandler fieldHandler) throws TransformationException, FieldRetrievalException {
+            FieldHandler fieldHandler) throws TransformationException,
+            NoSuchFieldException,
+            ResetException {
         final Map<Field, JComponent> fieldMapping = new HashMap<>();
         Object instance0 = prepareInstance(embeddableClass, instance);
         EmbeddableReflectionFormPanel<Object> retValue = new EmbeddableReflectionFormPanel<>(storage,
@@ -449,7 +455,8 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
             InvocationTargetException,
             NoSuchMethodException,
             InstantiationException,
-            FieldRetrievalException {
+            NoSuchFieldException,
+            ResetException {
         JComponent retValue = super.getClassComponent(field,
                 entityClass,
                 instance,

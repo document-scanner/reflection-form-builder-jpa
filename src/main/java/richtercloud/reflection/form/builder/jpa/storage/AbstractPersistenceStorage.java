@@ -36,7 +36,6 @@ import richtercloud.reflection.form.builder.storage.StorageCallback;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageException;
-import richtercloud.validation.tools.FieldRetrievalException;
 import richtercloud.validation.tools.FieldRetriever;
 import richtercloud.validation.tools.ValidationTools;
 
@@ -197,23 +196,18 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
         }catch(ConstraintViolationException ex) {
             //needs to be caught here because ConstraintViolationException is
             //so smart to not contain the violation text in its message
-            String message;
-            try {
-                message = ValidationTools.buildConstraintVioloationMessage(ex.getConstraintViolations(),
-                        object,
-                        fieldRetriever,
-                    violationField -> {
-                        FieldInfo violationFieldInfo = violationField.getAnnotation(FieldInfo.class);
-                        if(violationFieldInfo != null) {
-                            return violationFieldInfo.name();
-                        }
-                        return null;
-                    },
-                        true //html
-                ); //@TODO: fix checkstyle indentation failure, see https://github.com/checkstyle/checkstyle/issues/3342
-            } catch (FieldRetrievalException ex1) {
-                throw new StorageException(ex1);
-            }
+            String message = ValidationTools.buildConstraintVioloationMessage(ex.getConstraintViolations(),
+                    object,
+                    fieldRetriever,
+                violationField -> {
+                    FieldInfo violationFieldInfo = violationField.getAnnotation(FieldInfo.class);
+                    if(violationFieldInfo != null) {
+                        return violationFieldInfo.name();
+                    }
+                    return null;
+                },
+                    true //html
+            ); //@TODO: fix checkstyle indentation failure, see https://github.com/checkstyle/checkstyle/issues/3342
                 //for issue report
             throw new StorageException(message,
                     ex);
@@ -253,26 +247,19 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
 
     private <E> TypedQuery<E> createQuery(String queryText, Class<E> entityClass) throws StorageException {
         EntityManager entityManager = this.retrieveEntityManager();
-        try {
-            TypedQuery<E> query = entityManager.createQuery(queryText, entityClass);
-            return query;
-        }catch(Exception ex) {
-            throw new StorageException(ex);
-        }
+        TypedQuery<E> query = entityManager.createQuery(queryText, entityClass);
+        return query;
     }
 
+    @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     @Override
     public <T> List<T> runQuery(String queryString,
             Class<T> clazz,
             int queryLimit) throws StorageException {
-        try {
-            LOGGER.trace(String.format("waiting for semaphore (with approx. %d "
-                    + "other threads)",
-                    querySemaphore.getQueueLength()));
-            querySemaphore.acquire();
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
+        LOGGER.trace(String.format("waiting for semaphore (with approx. %d "
+                + "other threads)",
+                querySemaphore.getQueueLength()));
+        querySemaphore.acquireUninterruptibly();
         try {
             LOGGER.trace(String.format("semaphore aquired (%d remaining permits)", querySemaphore.availablePermits()));
             LOGGER.debug(String.format("running query '%s'", queryString));
@@ -291,14 +278,10 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
     public <T> List<T> runQuery(String attribueName,
             String attributeValue,
             Class<T> clazz) {
-        try {
-            LOGGER.trace(String.format("waiting for semaphore (with approx. %d "
-                    + "other threads)",
-                    querySemaphore.getQueueLength()));
-            querySemaphore.acquire();
-        }catch(InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
+        LOGGER.trace(String.format("waiting for semaphore (with approx. %d "
+                + "other threads)",
+                querySemaphore.getQueueLength()));
+        querySemaphore.acquireUninterruptibly();
         try {
             LOGGER.trace(String.format("semaphore aquired (%d remaining permits, approx. %d threads waiting)",
                     querySemaphore.availablePermits(),
@@ -321,14 +304,10 @@ public abstract class AbstractPersistenceStorage<C extends AbstractPersistenceSt
 
     @Override
     public <T> List<T> runQueryAll(Class<T> clazz) {
-        try {
-            LOGGER.trace(String.format("waiting for semaphore (with approx. %d "
-                    + "other threads)",
-                    querySemaphore.getQueueLength()));
-            querySemaphore.acquire();
-        }catch(InterruptedException ex) {
-            throw new RuntimeException(ex);
-        }
+        LOGGER.trace(String.format("waiting for semaphore (with approx. %d "
+                + "other threads)",
+                querySemaphore.getQueueLength()));
+        querySemaphore.acquireUninterruptibly();
         try {
             LOGGER.trace(String.format("semaphore aquired (%d remaining permits)", querySemaphore.availablePermits()));
             EntityManager entityManager = this.retrieveEntityManager();

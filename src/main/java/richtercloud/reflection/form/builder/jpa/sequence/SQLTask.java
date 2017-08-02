@@ -24,5 +24,6 @@ import java.sql.SQLException;
 @FunctionalInterface
 interface SQLTask<T> {
 
-    T run(Connection connection) throws SQLException;
+    T run(Connection connection) throws SQLException,
+            SequenceManagementException;
 }

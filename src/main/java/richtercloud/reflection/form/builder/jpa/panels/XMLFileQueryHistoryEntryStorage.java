@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 
 /**
  * Storage implemented through map XML serialization to file.
@@ -32,9 +32,9 @@ import richtercloud.message.handler.MessageHandler;
 public class XMLFileQueryHistoryEntryStorage extends AbstractFileQueryHistoryEntryStorage {
 
     public XMLFileQueryHistoryEntryStorage(File file,
-            MessageHandler messageHandler) throws ClassNotFoundException, IOException {
+            IssueHandler issueHandler) throws ClassNotFoundException, IOException {
         super(file,
-                messageHandler);
+                issueHandler);
     }
 
     @Override
