@@ -14,10 +14,8 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -27,6 +25,8 @@ import java.sql.SQLException;
 import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import richtercloud.jhbuild.java.wrapper.OutputReaderThread;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.jpa.sequence.PostgresqlSequenceManager;
 import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
 import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
@@ -36,6 +36,12 @@ import richtercloud.validation.tools.FieldRetriever;
 
 /**
  * Manages start of a PostgreSQL instance with system processes.
+ *
+ * Working with the build-in Java Process API is painful because it's hard to
+ * terminate the {@code postgres} process which is the standard shutdown
+ * routine. In order to properly wait for a process to terminate, it's necessary
+ * to read it's {@code stdout} and {@code stderr} output completely. This has to
+ * happen on another thread.
  *
  * @author richter
  */
@@ -55,16 +61,19 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
      * The wait time between checks whether the server is up in ms.
      */
     private int waitServerUpIntervalMillis = 1000;
+    private final IssueHandler issueHandler;
 
     public PostgresqlAutoPersistenceStorage(PostgresqlAutoPersistenceStorageConf storageConf,
             String persistenceUnitName,
             int parallelQueryCount,
-            FieldRetriever fieldRetriever) throws IOException, InterruptedException, StorageConfValidationException, StorageCreationException {
+            FieldRetriever fieldRetriever,
+            IssueHandler issueHandler) throws IOException, InterruptedException, StorageConfValidationException, StorageCreationException {
         super(storageConf,
                 persistenceUnitName,
                 parallelQueryCount,
                 fieldRetriever);
         this.sequenceManager = new PostgresqlSequenceManager(this);
+        this.issueHandler = issueHandler;
     }
 
     @Override
@@ -109,6 +118,8 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
             }else {
                 LOGGER.info(String.format("database directory '%s' exists, expecting valid PostgreSQL data directory which is used", getStorageConf().getDatabaseDir()));
             }
+            //postgres process (necessary for both createdb to work and for the
+            //storage to run (in case createdb isn't necessary)
             ProcessBuilder postgresProcessBuilder = new ProcessBuilder(getStorageConf().getPostgresBinaryPath(),
                     "-D", getStorageConf().getDatabaseDir(),
                     "-h", getStorageConf().getHostname(),
@@ -119,39 +130,12 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
             //closed which is very unfortunate and can be seen as a JDK
             //design error -> read from stdout and stderr in separate
             //threads
-            postgresStdoutThread = new Thread(() -> {
-                try {
-                    BufferedReader postgresProcessStdoutReader = new BufferedReader(new InputStreamReader(postgresProcess.getInputStream()));
-                    while(postgresProcessStdoutReader.ready()) {
-                        String line = postgresProcessStdoutReader.readLine();
-                        if(line == null) {
-                            break;
-                        }
-                        LOGGER.info(String.format("[PostgreSQL stdout] %s",
-                                line));
-                    }
-                    LOGGER.debug("postgres process stdout stream reader thread terminated");
-                } catch (IOException ex) {
-                    LOGGER.error("unexpected exception, see nested exception for details", ex);
-                }
-            },
-                    "postgres-stdout-thread");
-            postgresStderrThread = new Thread(() -> {
-                try {
-                    BufferedReader postgresProcessStderrReader = new BufferedReader(new InputStreamReader(postgresProcess.getErrorStream()));
-                    while(postgresProcessStderrReader.ready()) {
-                        String line = postgresProcessStderrReader.readLine();
-                        if(line == null) {
-                            break;
-                        }
-                        LOGGER.info(String.format("[PostgreSQL stderr] %s",
-                                line));
-                    }
-                    LOGGER.debug("postgres process stderr stream reader thread terminated");
-                } catch (IOException ex) {
-                    LOGGER.error("unexpected exception, see nested exception for details", ex);
-                }
-            },
+            postgresStdoutThread = new OutputReaderThread(postgresProcess.getInputStream(),
+                    issueHandler,
+                    "postgres-stdout-thread" //name
+            );
+            postgresStderrThread = new OutputReaderThread(postgresProcess.getErrorStream(),
+                    issueHandler,
                     "postgres-stderr-thread");
             postgresStdoutThread.start();
             postgresStderrThread.start();
@@ -251,16 +235,8 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
         }
         try {
             postgresProcess.destroy();
-            try {
-                LOGGER.info("waiting for postgres process reader thread to terminate");
-                postgresStdoutThread.join();
-                LOGGER.debug("postgres stdout reader thread joined");
-                postgresStderrThread.join();
-                LOGGER.debug("postgres stderr reader thread joined");
-                //should handle writing to stdout and stderr
-            } catch (InterruptedException ex) {
-                LOGGER.error("unexpected exception, see nested exception for details", ex);
-            }
+            //Joining stdout and stderr output threads before waiting for
+            //postgres process to terminate causes waiting forever, unclear why
             LOGGER.info("waiting for postgres process to terminate");
             //postgresProcess.waitFor(); blocks in integration tests which is
             //a common phenomenon of the very simple Java Process API although
@@ -278,6 +254,17 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
                 }
             }
             LOGGER.info("postgres process returned");
+            try {
+                LOGGER.info("waiting for postgres process stdout reader thread to terminate");
+                postgresStdoutThread.join();
+                LOGGER.debug("postgres stdout reader thread joined");
+                LOGGER.info("waiting for postgres process stderr reader thread to terminate");
+                postgresStderrThread.join();
+                LOGGER.debug("postgres stderr reader thread joined");
+                //should handle writing to stdout and stderr
+            } catch (InterruptedException ex) {
+                LOGGER.error("unexpected exception, see nested exception for details", ex);
+            }
         }finally{
             getShutdownLock().unlock();
         }

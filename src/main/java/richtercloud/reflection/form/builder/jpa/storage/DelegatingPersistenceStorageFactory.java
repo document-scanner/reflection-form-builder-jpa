@@ -14,7 +14,7 @@
  */
 package richtercloud.reflection.form.builder.jpa.storage;
 
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.storage.StorageConf;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
 import richtercloud.reflection.form.builder.storage.StorageFactory;
@@ -33,7 +33,7 @@ public class DelegatingPersistenceStorageFactory implements StorageFactory<Persi
 
     public DelegatingPersistenceStorageFactory(String persistenceUnitName,
             int parallelQueryCount,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             FieldRetriever fieldRetriever) {
         this.derbyEmbeddedPersistenceStorageFactory = new DerbyEmbeddedPersistenceStorageFactory(persistenceUnitName,
                 parallelQueryCount,
@@ -46,10 +46,11 @@ public class DelegatingPersistenceStorageFactory implements StorageFactory<Persi
                 fieldRetriever);
         this.postgresqlAutoPersistenceStorageFactory = new PostgresqlAutoPersistenceStorageFactory(persistenceUnitName,
                 parallelQueryCount,
-                fieldRetriever);
+                fieldRetriever,
+                issueHandler);
         this.mySQLAutoPersistenceStorageFactory = new MySQLAutoPersistenceStorageFactory(persistenceUnitName,
                 parallelQueryCount,
-                messageHandler,
+                issueHandler,
                 fieldRetriever);
     }
 
