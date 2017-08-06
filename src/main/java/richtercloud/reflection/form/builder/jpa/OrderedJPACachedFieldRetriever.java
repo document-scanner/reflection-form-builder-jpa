@@ -30,6 +30,9 @@ public class OrderedJPACachedFieldRetriever extends JPACachedFieldRetriever {
     private final Map<Class<?>, List<Field>> fieldOrderMap;
 
     public OrderedJPACachedFieldRetriever(Map<Class<?>, List<Field>> fieldOrderMap) {
+        if(fieldOrderMap == null) {
+            throw new IllegalArgumentException("fieldOrderMap mustn't be null");
+        }
         this.fieldOrderMap = fieldOrderMap;
     }
 
