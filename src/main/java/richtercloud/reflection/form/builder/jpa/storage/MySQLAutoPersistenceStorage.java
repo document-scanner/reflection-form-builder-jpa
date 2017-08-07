@@ -21,14 +21,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
-import javax.swing.JOptionPane;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import richtercloud.message.handler.Message;
-import richtercloud.message.handler.MessageHandler;
+import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.jpa.sequence.MySQLSequenceManager;
-import richtercloud.reflection.form.builder.jpa.sequence.SequenceManagementException;
 import richtercloud.reflection.form.builder.jpa.sequence.SequenceManager;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 import richtercloud.reflection.form.builder.storage.StorageCreationException;
@@ -58,226 +56,197 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
     private final static String COMMAND_FAILED_TEMPLATE = "command '%s' failed with returncode %d";
     private final static String SOCKET_TEMPLATE = "--socket=%s";
     private final static String USER_TEMPLATE = "--user=root";
-    private Thread mysqldThread;
-    private Process mysqldProcess;
-    private final MessageHandler messageHandler;
-    private final SequenceManager<Long> sequenceManager;
 
     public MySQLAutoPersistenceStorage(MySQLAutoPersistenceStorageConf storageConf,
             String persistenceUnitName,
             int parallelQueryCount,
-            MessageHandler messageHandler,
+            IssueHandler issueHandler,
             FieldRetriever fieldRetriever) throws StorageConfValidationException, StorageCreationException {
         super(storageConf,
                 persistenceUnitName,
                 parallelQueryCount,
-                fieldRetriever);
-        this.messageHandler = messageHandler;
-        this.sequenceManager = new MySQLSequenceManager(this);
+                fieldRetriever,
+                issueHandler);
     }
 
-    /**
-     * Starts the database server and if necessary initializes the database
-     * directories.
-     * @throws StorageCreationException
-     */
-    /*
-    internal implementation notes:
-    - There's no sense in putting this into recreateEntityManager since it
-    messes up setting of serverRunning flag (showing that using overridable
-    methods in constructor (of AbstractPersistenceStorage) is discouraged for a
-    reason).
-    */
     @Override
-    protected void init() throws StorageCreationException {
-        try {
-            assert new File(getStorageConf().getMysqld()).exists();
-            assert new File(getStorageConf().getMysqladmin()).exists();
-            assert new File(getStorageConf().getMysql()).exists();
-            File databaseDirFile = new File(getStorageConf().getDatabaseDir());
-            File myCnfFile = new File(getStorageConf().getMyCnfFilePath());
-            if(!myCnfFile.exists()) {
-                LOGGER.debug(String.format("creating inexisting configuration file '%s'", myCnfFile.getAbsolutePath()));
-                Files.write(Paths.get(myCnfFile.getAbsolutePath()),
-                        String.format("[server]\n"
-                                + "user=%s\n"
-                                + "basedir=%s\n"
-                                + "datadir=%s\n"
-                                + "socket=%s\n"
-                                + "bind-address=%s\n"
-                                + "port=%d\n"
-                                + "max_allowed_packet=1073741824\n",
-                                    //allows upload of binary image data
-                                    //up to ca. 1 GB (default of 4 MB
-                                    //is too small) since a 10 page scan can
-                                    //easily have 200 MB of image data
-                                    //avoid `Caused by: com.mysql.cj.jdbc.exceptions.PacketTooBigException: Packet for query is too large (24.088.697 > 4.194.304). You can change this value on the server by setting the 'max_allowed_packet' variable.`
-                                getStorageConf().getUsername(),
-                                getStorageConf().getBaseDir(),
-                                getStorageConf().getDatabaseDir(),
-                                SOCKET,
-                                getStorageConf().getHostname(),
-                                getStorageConf().getPort()).getBytes(),
-                        StandardOpenOption.WRITE,
-                        StandardOpenOption.CREATE
-                );
-            }
-            boolean needToCreate = !databaseDirFile.exists();
-            if(needToCreate) {
-                LOGGER.debug(String.format("creating inexisting database directory '%s'", getStorageConf().getDatabaseDir()));
-                if(!databaseDirFile.mkdirs()) {
-                    throw new IOException(String.format("creation of database directory '%s' failed", getStorageConf().getDatabaseDir()));
-                }
-                ProcessBuilder mysqldInitProcessBuilder = new ProcessBuilder(getStorageConf().getMysqld(),
-                        String.format("--defaults-file=%s", myCnfFile.getAbsolutePath()),
-                        "--initialize-insecure" //use --initialize-insecure
-                            //instead of --initialize because it's hard to
-                            //retrieve the random password for root
-                            //from the logs
-                );
-                LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
-                        mysqldInitProcessBuilder.command().toString()));
-                Process mysqldInitProcess = mysqldInitProcessBuilder.start();
-                mysqldInitProcess.waitFor();
-                IOUtils.copy(mysqldInitProcess.getInputStream(), System.out);
-                IOUtils.copy(mysqldInitProcess.getErrorStream(), System.err);
-                if(mysqldInitProcess.exitValue() != 0) {
-                    throw new StorageCreationException(String.format(COMMAND_FAILED_TEMPLATE,
-                            mysqldInitProcessBuilder.command(), mysqldInitProcess.exitValue()));
-                }
-            }
-            //if mysqld is already running (because shutdown in the last run of
-            //document-scanner failed/couldn't be performed) or a system process
-            //is using the same host and port combination, mysqld will simply
-            //fail in mysqldThread without the failure being noticed -> @TODO
-            ProcessBuilder mysqldProcessBuilder = new ProcessBuilder(getStorageConf().getMysqld(),
-                    String.format("--defaults-file=%s", myCnfFile.getAbsolutePath()));
+    protected SequenceManager<Long> createSequenceManager() {
+        return new MySQLSequenceManager(this);
+    }
+
+    @Override
+    protected String getShortDescription() {
+        return "MySQL server";
+    }
+
+    @Override
+    protected void preCreation() throws IOException {
+        assert new File(getStorageConf().getMysqld()).exists();
+        assert new File(getStorageConf().getMysqladmin()).exists();
+        assert new File(getStorageConf().getMysql()).exists();
+        File myCnfFile = new File(getStorageConf().getMyCnfFilePath());
+        if(!myCnfFile.exists()) {
+            LOGGER.debug(String.format("creating inexisting configuration file '%s'", myCnfFile.getAbsolutePath()));
+            Files.write(Paths.get(myCnfFile.getAbsolutePath()),
+                    String.format("[server]\n"
+                            + "user=%s\n"
+                            + "basedir=%s\n"
+                            + "datadir=%s\n"
+                            + "socket=%s\n"
+                            + "bind-address=%s\n"
+                            + "port=%d\n"
+                            + "max_allowed_packet=1073741824\n",
+                                //allows upload of binary image data
+                                //up to ca. 1 GB (default of 4 MB
+                                //is too small) since a 10 page scan can
+                                //easily have 200 MB of image data
+                                //avoid `Caused by: com.mysql.cj.jdbc.exceptions.PacketTooBigException: Packet for query is too large (24.088.697 > 4.194.304). You can change this value on the server by setting the 'max_allowed_packet' variable.`
+                            getStorageConf().getUsername(),
+                            getStorageConf().getBaseDir(),
+                            getStorageConf().getDatabaseDir(),
+                            SOCKET,
+                            getStorageConf().getHostname(),
+                            getStorageConf().getPort()).getBytes(),
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.CREATE
+            );
+        }
+    }
+
+    @Override
+    protected boolean needToCreate() {
+        File databaseDirFile = new File(getStorageConf().getDatabaseDir());
+        boolean retValue = !databaseDirFile.exists();
+        return retValue;
+    }
+
+    @Override
+    protected void createDatabase() throws IOException, StorageCreationException, InterruptedException {
+        File databaseDirFile = new File(getStorageConf().getDatabaseDir());
+        LOGGER.debug(String.format("creating inexisting database directory '%s'", getStorageConf().getDatabaseDir()));
+        File myCnfFile = new File(getStorageConf().getMyCnfFilePath());
+        FileUtils.forceMkdir(databaseDirFile);
+        ProcessBuilder mysqldInitProcessBuilder = new ProcessBuilder(getStorageConf().getMysqld(),
+                String.format("--defaults-file=%s", myCnfFile.getAbsolutePath()),
+                "--initialize-insecure" //use --initialize-insecure
+                    //instead of --initialize because it's hard to
+                    //retrieve the random password for root
+                    //from the logs
+        );
+        LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
+                mysqldInitProcessBuilder.command().toString()));
+        Process mysqldInitProcess = mysqldInitProcessBuilder.start();
+        mysqldInitProcess.waitFor();
+        IOUtils.copy(mysqldInitProcess.getInputStream(), System.out);
+        IOUtils.copy(mysqldInitProcess.getErrorStream(), System.err);
+        if(mysqldInitProcess.exitValue() != 0) {
+            throw new StorageCreationException(String.format(COMMAND_FAILED_TEMPLATE,
+                    mysqldInitProcessBuilder.command(), mysqldInitProcess.exitValue()));
+        }
+    }
+
+    @Override
+    protected Process createProcess() throws IOException {
+        //if mysqld is already running (because shutdown in the last run of
+        //document-scanner failed/couldn't be performed) or a system process
+        //is using the same host and port combination, mysqld will simply
+        //fail in mysqldThread without the failure being noticed -> @TODO
+        File myCnfFile = new File(getStorageConf().getMyCnfFilePath());
+        ProcessBuilder mysqldProcessBuilder = new ProcessBuilder(getStorageConf().getMysqld(),
+                String.format("--defaults-file=%s", myCnfFile.getAbsolutePath()));
+        LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
+                mysqldProcessBuilder.command().toString()));
+        Process mysqldProcess = mysqldProcessBuilder.start();
+        return mysqldProcess;
+    }
+
+    @Override
+    protected void setupDatabase() throws IOException, InterruptedException, StorageCreationException {
+        //set password for root user
+        ProcessBuilder mysqladminProcessBuilder = new ProcessBuilder(getStorageConf().getMysqladmin(),
+                String.format(SOCKET_TEMPLATE, SOCKET),
+                USER_TEMPLATE,
+                "password", getStorageConf().getPassword());
+            //don't need to specify password here because it
+            //isn't set yet
+            //specification of --host causes failure here (but
+            //succeeds after the password has been set)
+        Process mysqladminProcess = null;
+        int mysqladminTries = 0, mysqladminTriesMax = 5;
+        while(mysqladminTries < mysqladminTriesMax) {
             LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
-                    mysqldProcessBuilder.command().toString()));
-            mysqldProcess = mysqldProcessBuilder.start();
-            mysqldThread = new Thread(() -> {
-                try {
-                    mysqldProcess.waitFor();
-                    IOUtils.copy(mysqldProcess.getInputStream(), System.out);
-                    IOUtils.copy(mysqldProcess.getErrorStream(), System.err);
-                    if(getShutdownLock().tryLock()) {
-                        try {
-                            messageHandler.handle(new Message(String.format("MySQL server process process '%s' crashed or was shutdown from outside the application. Restart the application in order to avoid data loss.", getStorageConf().getMysqld()),
-                                    JOptionPane.ERROR_MESSAGE,
-                                    "MySQL server crashed"));
-                            setServerRunning(false);
-                        }finally{
-                            getShutdownLock().unlock();
-                        }
-                    }else {
-                        LOGGER.warn("process 'mysqld' returned expectedly during shutdown process");
-                    }
-                } catch (InterruptedException | IOException ex) {
-                    LOGGER.error("unexpected exception, see nested exception for details", ex);
-                }
-            },
-                    "mysqld-thread");
-            mysqldThread.start();
-            if(needToCreate) {
-                //set password for root user
-                ProcessBuilder mysqladminProcessBuilder = new ProcessBuilder(getStorageConf().getMysqladmin(),
-                        String.format(SOCKET_TEMPLATE, SOCKET),
-                        USER_TEMPLATE,
-                        "password", getStorageConf().getPassword());
-                    //don't need to specify password here because it
-                    //isn't set yet
-                    //specification of --host causes failure here (but
-                    //succeeds after the password has been set)
-                Process mysqladminProcess = null;
-                int mysqladminTries = 0, mysqladminTriesMax = 5;
-                while(mysqladminTries < mysqladminTriesMax) {
-                    LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
-                            mysqladminProcessBuilder.command().toString()));
-                    mysqladminProcess = mysqladminProcessBuilder.start();
-                    mysqladminProcess.waitFor();
-                    IOUtils.copy(mysqladminProcess.getInputStream(), System.out);
-                    IOUtils.copy(mysqladminProcess.getErrorStream(), System.err);
-                    if(mysqladminProcess.exitValue() == 0) {
-                        break;
-                    }
-                    mysqladminTries += 1;
-                    LOGGER.debug("sleeping 0.5 s to wait for mysqld to be available");
-                    Thread.sleep(500);
-                }
-                if(mysqladminTries == mysqladminTriesMax) {
-                    throw new StorageCreationException(String.format("command '%s' failed 5 times (last time with returncode %d)", mysqladminProcessBuilder.command(), mysqladminProcess.exitValue()));
-                }
-                //create database
-                mysqladminProcessBuilder = new ProcessBuilder(getStorageConf().getMysqladmin(),
-                        String.format(SOCKET_TEMPLATE, SOCKET),
-                        String.format("--host=%s", getStorageConf().getHostname()),
-                        USER_TEMPLATE,
-                        String.format("--password=%s", getStorageConf().getPassword()),
-                        "create", getStorageConf().getDatabaseName());
-                LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
-                        mysqladminProcessBuilder.command().toString()));
-                mysqladminProcess = mysqladminProcessBuilder.start();
-                mysqladminProcess.waitFor();
-                IOUtils.copy(mysqladminProcess.getInputStream(), System.out);
-                IOUtils.copy(mysqladminProcess.getErrorStream(), System.err);
-                if(mysqladminProcess.exitValue() != 0) {
-                    throw new StorageCreationException(String.format(COMMAND_FAILED_TEMPLATE,
-                            mysqladminProcessBuilder.command(), mysqladminProcess.exitValue()));
-                }
-                //create user document-scanner
-                ProcessBuilder mysqlProcessBuilder = new ProcessBuilder(getStorageConf().getMysql(),
-                        String.format(SOCKET_TEMPLATE, SOCKET),
-                        String.format("--host=%s", getStorageConf().getHostname()),
-                        USER_TEMPLATE,
-                        String.format("--password=%s", getStorageConf().getPassword()),
-                        getStorageConf().getDatabaseName());
-                LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
-                        mysqlProcessBuilder.command().toString()));
-                Process mysqlProcess = mysqlProcessBuilder.start();
-                String mysqlCommand = String.format("create user '%s'@'%s' identified by '%s';\n"
-                        + "flush privileges;\n",
-                        getStorageConf().getUsername(),
-                        getStorageConf().getHostname(),
-                        getStorageConf().getPassword());
-                mysqlProcess.getOutputStream().write(mysqlCommand.getBytes());
-                LOGGER.debug(String.format("sending MySQL command '%s'", mysqlCommand));
-                mysqlCommand = String.format("grant all on `%s`.* to '%s'@'%s';\n"
-                        + "exit\n",
-                        getStorageConf().getDatabaseName(),
-                        getStorageConf().getUsername(),
-                        getStorageConf().getHostname());
-                mysqlProcess.getOutputStream().write(mysqlCommand.getBytes());
-                    //note the quite strange escaping for database names in
-                    //MySQL (from http://stackoverflow.com/questions/925696/mysql-create-database-with-special-characters-in-the-name)
-                LOGGER.debug(String.format("sending MySQL command '%s'", mysqlCommand));
-                mysqlProcess.getOutputStream().flush();
-                    //necessary in order to avoid waiting for ever
-                mysqlProcess.waitFor();
-                IOUtils.copy(mysqlProcess.getInputStream(), System.out);
-                IOUtils.copy(mysqlProcess.getErrorStream(), System.err);
-                if(mysqlProcess.exitValue() != 0) {
-                    throw new StorageCreationException(String.format(COMMAND_FAILED_TEMPLATE,
-                            mysqlProcessBuilder.command(), mysqlProcess.exitValue()));
-                }
+                    mysqladminProcessBuilder.command().toString()));
+            mysqladminProcess = mysqladminProcessBuilder.start();
+            mysqladminProcess.waitFor();
+            IOUtils.copy(mysqladminProcess.getInputStream(), System.out);
+            IOUtils.copy(mysqladminProcess.getErrorStream(), System.err);
+            if(mysqladminProcess.exitValue() == 0) {
+                break;
             }
-            setServerRunning(true);
-        }catch(IOException | InterruptedException ex) {
-            throw new StorageCreationException(ex);
-                //@TODO: this StorageCreationException is ignored by the JVM
-                //and is not caught in DocumentScanner.main where it should end
-                //up -> investigate through reproduction and eventually file
-                //a bug against OpenJDK
+            mysqladminTries += 1;
+            LOGGER.debug("sleeping 0.5 s to wait for mysqld to be available");
+            Thread.sleep(500);
+        }
+        if(mysqladminTries == mysqladminTriesMax) {
+            throw new StorageCreationException(String.format("command '%s' failed 5 times (last time with returncode %d)", mysqladminProcessBuilder.command(), mysqladminProcess.exitValue()));
+        }
+        //create database
+        mysqladminProcessBuilder = new ProcessBuilder(getStorageConf().getMysqladmin(),
+                String.format(SOCKET_TEMPLATE, SOCKET),
+                String.format("--host=%s", getStorageConf().getHostname()),
+                USER_TEMPLATE,
+                String.format("--password=%s", getStorageConf().getPassword()),
+                "create", getStorageConf().getDatabaseName());
+        LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
+                mysqladminProcessBuilder.command().toString()));
+        mysqladminProcess = mysqladminProcessBuilder.start();
+        mysqladminProcess.waitFor();
+        IOUtils.copy(mysqladminProcess.getInputStream(), System.out);
+        IOUtils.copy(mysqladminProcess.getErrorStream(), System.err);
+        if(mysqladminProcess.exitValue() != 0) {
+            throw new StorageCreationException(String.format(COMMAND_FAILED_TEMPLATE,
+                    mysqladminProcessBuilder.command(), mysqladminProcess.exitValue()));
+        }
+        //create user document-scanner
+        ProcessBuilder mysqlProcessBuilder = new ProcessBuilder(getStorageConf().getMysql(),
+                String.format(SOCKET_TEMPLATE, SOCKET),
+                String.format("--host=%s", getStorageConf().getHostname()),
+                USER_TEMPLATE,
+                String.format("--password=%s", getStorageConf().getPassword()),
+                getStorageConf().getDatabaseName());
+        LOGGER.debug(String.format(RUNNING_COMMAND_TEMPLATE,
+                mysqlProcessBuilder.command().toString()));
+        Process mysqlProcess = mysqlProcessBuilder.start();
+        String mysqlCommand = String.format("create user '%s'@'%s' identified by '%s';\n"
+                + "flush privileges;\n",
+                getStorageConf().getUsername(),
+                getStorageConf().getHostname(),
+                getStorageConf().getPassword());
+        mysqlProcess.getOutputStream().write(mysqlCommand.getBytes());
+        LOGGER.debug(String.format("sending MySQL command '%s'", mysqlCommand));
+        mysqlCommand = String.format("grant all on `%s`.* to '%s'@'%s';\n"
+                + "exit\n",
+                getStorageConf().getDatabaseName(),
+                getStorageConf().getUsername(),
+                getStorageConf().getHostname());
+        mysqlProcess.getOutputStream().write(mysqlCommand.getBytes());
+            //note the quite strange escaping for database names in
+            //MySQL (from http://stackoverflow.com/questions/925696/mysql-create-database-with-special-characters-in-the-name)
+        LOGGER.debug(String.format("sending MySQL command '%s'", mysqlCommand));
+        mysqlProcess.getOutputStream().flush();
+            //necessary in order to avoid waiting for ever
+        mysqlProcess.waitFor();
+        IOUtils.copy(mysqlProcess.getInputStream(), System.out);
+        IOUtils.copy(mysqlProcess.getErrorStream(), System.err);
+        if(mysqlProcess.exitValue() != 0) {
+            throw new StorageCreationException(String.format(COMMAND_FAILED_TEMPLATE,
+                    mysqlProcessBuilder.command(), mysqlProcess.exitValue()));
         }
     }
 
     @Override
     protected void shutdown0() {
-        getShutdownLock().lock();
-        if(!isServerRunning()) {
-            getShutdownLock().unlock();
-            return;
-        }
-        try {
+        if(getProcess() != null) {
             //Don't kill the mysqld_safe process because that might
             //corrupt the database -> use `mysqladmin shutdown`
             ProcessBuilder mysqladminProcessBuilder = new ProcessBuilder(getStorageConf().getMysqladmin(),
@@ -313,7 +282,7 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
             }
             try {
                 LOGGER.info("waiting for mysqld process to terminate");
-                mysqldProcess.waitFor();
+                getProcess().waitFor();
                     //never waited forever in integration tests; if that ever
                     //happens, call Process.exitValue and catch
                     //IllegalThreadStateException in a loop method in
@@ -321,9 +290,10 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
             } catch (InterruptedException ex) {
                 LOGGER.error("waiting for termination of mysqld process failed, see nested exception for details", ex);
             }
+            assert getProcessThread() != null;
             try {
                 LOGGER.info("waiting for mysqld process watch thread to terminate");
-                mysqldThread.join();
+                getProcessThread().join();
                 //should handle writing to stdout and stderr
             } catch (InterruptedException ex) {
                 LOGGER.error("unexpected exception, see nested exception for details", ex);
@@ -333,11 +303,9 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
             } catch (InterruptedException ex) {
                 LOGGER.error("unexpected exception during shutdown of MySQL abandoned connection clean thread, see nested exception for details", ex);
             }
-            LOGGER.info(String.format("shutdown hooks in %s finished", MySQLAutoPersistenceStorage.class));
-            setServerRunning(false);
-        }finally {
-            getShutdownLock().unlock();
         }
+        LOGGER.info(String.format("shutdown hooks in %s finished", MySQLAutoPersistenceStorage.class));
+        setServerRunning(false);
     }
 
     @Override
@@ -345,20 +313,5 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
         Map<String, String> properties = super.getEntityManagerProperties();
         properties.put("useSSL", "false");
         return properties;
-    }
-
-    @Override
-    public boolean checkSequenceExists(String sequenceName) throws SequenceManagementException {
-        return this.sequenceManager.checkSequenceExists(sequenceName);
-    }
-
-    @Override
-    public void createSequence(String sequenceName) throws SequenceManagementException {
-        this.sequenceManager.createSequence(sequenceName);
-    }
-
-    @Override
-    public Long getNextSequenceValue(String sequenceName) throws SequenceManagementException {
-        return this.sequenceManager.getNextSequenceValue(sequenceName);
     }
 }
