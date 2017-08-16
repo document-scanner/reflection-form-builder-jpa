@@ -34,6 +34,8 @@ import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.swing.JComponent;
 import javax.swing.JOptionPane;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.ConfirmMessageHandler;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.Message;
@@ -66,6 +68,7 @@ internal implementation notes:
 FieldHandler for how to provide a portable interface
 */
 public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetriever> {
+    private final static Logger LOGGER = LoggerFactory.getLogger(JPAReflectionFormBuilder.class);
     private PersistenceStorage storage;
     private final IdApplier idApplier;
     private final ConfirmMessageHandler confirmMessageHandler;
@@ -104,6 +107,8 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
             FieldHandler fieldHandler) throws TransformationException,
             NoSuchFieldException,
             ResetException {
+        LOGGER.trace(String.format("transforming entity class %s",
+                entityClass.getName()));
         final Map<Field, JComponent> fieldMapping = new HashMap<>();
         Object instance = prepareInstance(entityClass, entityToUpdate);
         ReflectionFormPanel retValue = new EntityReflectionFormPanel(storage,
@@ -461,7 +466,15 @@ public class JPAReflectionFormBuilder extends ReflectionFormBuilder<JPAFieldRetr
                 entityClass,
                 instance,
                 fieldHandler);
+        LOGGER.trace(String.format("class component for field %s.%s is %s",
+                field.getDeclaringClass().getName(),
+                field.getName(),
+                retValue));
         if(field.getAnnotation(Id.class) != null) {
+            LOGGER.trace(String.format("registering id field component for "
+                    + "field %s.%s",
+                    field.getDeclaringClass().getName(),
+                    field.getName()));
             registerIdFieldComponent(instance,
                     retValue //fieldComponent
             );
