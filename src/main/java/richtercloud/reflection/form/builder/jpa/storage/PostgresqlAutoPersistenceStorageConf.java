@@ -20,10 +20,15 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import richtercloud.jhbuild.java.wrapper.BinaryTools;
 import richtercloud.jhbuild.java.wrapper.BinaryValidationException;
+import richtercloud.jhbuild.java.wrapper.OutputReaderThread;
 import richtercloud.reflection.form.builder.storage.StorageConfValidationException;
 
 /**
@@ -32,6 +37,7 @@ import richtercloud.reflection.form.builder.storage.StorageConfValidationExcepti
  */
 public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceStorageConf {
     private static final long serialVersionUID = 1L;
+    private final static Logger LOGGER = LoggerFactory.getLogger(PostgresqlAutoPersistenceStorageConf.class);
     private final static String BIN_TEMPLATE = "bin";
 
     /**
@@ -205,6 +211,7 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
     @Override
     public void validate() throws StorageConfValidationException {
         super.validate();
+        //validate binaries
         for(Pair<String, String> binaryPair : Arrays.asList(new ImmutablePair<>(postgresBinaryPath, "postgres"),
             new ImmutablePair<>(initdbBinaryPath, "initdb"),
             new ImmutablePair<>(createdbBinaryPath, "createdb"))) {
@@ -214,6 +221,60 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
             }catch(BinaryValidationException ex) {
                 throw new StorageConfValidationException(ex);
             }
+        }
+        try {
+            //validate version
+            Process postgresProcess = new ProcessBuilder(postgresBinaryPath, "--version")
+                    .redirectOutput(ProcessBuilder.Redirect.PIPE)
+                    .redirectError(ProcessBuilder.Redirect.INHERIT)
+                    .start();
+            OutputReaderThread postgresProcessStdoutThread = new OutputReaderThread(postgresProcess.getInputStream(),
+                    postgresProcess);
+            OutputReaderThread postgresProcessStderrThread = new OutputReaderThread(postgresProcess.getErrorStream(),
+                    postgresProcess);
+            postgresProcessStdoutThread.start();
+            postgresProcessStderrThread.start();
+            postgresProcess.waitFor();
+            postgresProcessStdoutThread.join();
+            postgresProcessStderrThread.join();
+            String postgresProcessStdout = postgresProcessStdoutThread.getOutputBuilder().toString();
+            if(postgresProcess.exitValue() != 0) {
+                throw new StorageConfValidationException(String.format(
+                        "running %s --version during configuration validation "
+                        + "failed with return code %d (stdout was '%s' and "
+                        + "stderr was '%s'",
+                        postgresBinaryPath,
+                        postgresProcess.exitValue(),
+                        postgresProcessStdout,
+                        postgresProcessStderrThread.getOutputBuilder().toString()));
+            }
+            Matcher versionMatcher = Pattern.compile(".*(?<version>\\d\\.\\d\\.\\d).*").matcher(postgresProcessStdout);
+            if(!versionMatcher.find()) {
+                throw new StorageConfValidationException(String.format(
+                        "postgres process version output %s couldn't be parsed",
+                        postgresProcessStdout));
+            }
+            String version = versionMatcher.group("version");
+            LOGGER.trace(String.format("version: %s",
+                    version));
+            String[] versionSplit = version.split("\\.");
+            if(Integer.valueOf(versionSplit[0]) < 9) {
+                throw new StorageConfValidationException(String.format(
+                        "postgres binary '%s' has a version %s < 9.x which "
+                        + "isn't supported",
+                        postgresBinaryPath,
+                        version));
+            }
+            if(Integer.valueOf(versionSplit[1]) <= 2) {
+                //9.2 doesn't work, 9.6 does, others not tested
+                throw new StorageConfValidationException(String.format(
+                        "postgres binary '%s' has a version %s < 9.2.x which "
+                        + "isn't supported",
+                        postgresBinaryPath,
+                        version));
+            }
+        } catch (IOException | InterruptedException ex) {
+            throw new StorageConfValidationException(ex);
         }
     }
 
