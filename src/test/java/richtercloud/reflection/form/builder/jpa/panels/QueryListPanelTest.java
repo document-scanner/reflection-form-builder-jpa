@@ -30,9 +30,10 @@ import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.LoggerIssueHandler;
 import richtercloud.reflection.form.builder.ReflectionFormBuilder;
 import richtercloud.reflection.form.builder.ResetException;
-import richtercloud.reflection.form.builder.jpa.JPACachedFieldRetriever;
+import richtercloud.reflection.form.builder.jpa.retriever.JPAOrderedCachedFieldRetriever;
 import richtercloud.reflection.form.builder.jpa.storage.FieldInitializer;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.reflection.form.builder.retriever.FieldOrderValidationException;
 import richtercloud.validation.tools.FieldRetriever;
 
 /**
@@ -47,18 +48,21 @@ public class QueryListPanelTest {
     public void testInit() throws IllegalArgumentException, IllegalAccessException,
             IOException,
             QueryHistoryEntryStorageCreationException,
-            NoSuchFieldException, ResetException {
+            NoSuchFieldException,
+            ResetException,
+            FieldOrderValidationException {
         PersistenceStorage storage = mock(PersistenceStorage.class);
         when(storage.isClassSupported(any())).thenReturn(true);
         ReflectionFormBuilder reflectionFormBuilder = mock(ReflectionFormBuilder.class);
-        FieldRetriever fieldRetriever = new JPACachedFieldRetriever();
         Class entityClass = A.class;
+        Set<Class<?>> entityClasses = new HashSet<>(Arrays.asList(A.class,
+                B.class));
+        FieldRetriever fieldRetriever = new JPAOrderedCachedFieldRetriever(entityClasses);
         List<Object> initialValues = null;
         String bidirectionalHelpDialogTitle = "test";
         IssueHandler issueHandler = new LoggerIssueHandler(LOGGER);
         FieldInitializer fieldInitializer = mock(FieldInitializer.class);
         File entryStorageFile = File.createTempFile(QueryListPanelTest.class.getSimpleName(), null);
-        Set<Class<?>> entityClasses = new HashSet<>(Arrays.asList(A.class));
         QueryHistoryEntryStorageFactory entryStorageFactory = new XMLFileQueryHistoryEntryStorageFactory(entryStorageFile,
                 entityClasses,
                 true,

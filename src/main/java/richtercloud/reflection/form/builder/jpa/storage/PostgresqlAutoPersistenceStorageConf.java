@@ -279,6 +279,8 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
                         postgresProcess.exitValue(),
                         postgresProcessStdout));
             }
+            LOGGER.trace(String.format("postgres version process output: %s",
+                    postgresProcessStdout));
             Matcher versionMatcher = Pattern.compile(".*(?<version>\\d\\.\\d\\.\\d).*").matcher(postgresProcessStdout);
             if(!versionMatcher.find()) {
                 throw new StorageConfValidationException(String.format(

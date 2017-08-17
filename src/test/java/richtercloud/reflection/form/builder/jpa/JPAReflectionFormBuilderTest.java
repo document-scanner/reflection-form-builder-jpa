@@ -18,7 +18,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 import org.junit.Assert;
 import static org.junit.Assert.*;
 import org.junit.Test;
@@ -34,7 +36,9 @@ import richtercloud.reflection.form.builder.jpa.entities.EntityD;
 import richtercloud.reflection.form.builder.jpa.entities.EntityE;
 import richtercloud.reflection.form.builder.jpa.entities.EntityF;
 import richtercloud.reflection.form.builder.jpa.idapplier.IdApplier;
+import richtercloud.reflection.form.builder.jpa.retriever.JPAOrderedCachedFieldRetriever;
 import richtercloud.reflection.form.builder.jpa.storage.PersistenceStorage;
+import richtercloud.reflection.form.builder.retriever.FieldOrderValidationException;
 
 /**
  *
@@ -49,10 +53,12 @@ public class JPAReflectionFormBuilderTest {
      * @throws java.lang.reflect.InvocationTargetException
      */
     @Test
-    public void testOnFieldUpdate() throws NoSuchFieldException, IllegalAccessException, InvocationTargetException {
+    public void testOnFieldUpdate() throws NoSuchFieldException, IllegalAccessException, InvocationTargetException, FieldOrderValidationException {
         EntityA entityA1 = new EntityA(1L);
         EntityB entityB1 = new EntityB(2L);
         EntityB entityB2 = new EntityB(3L);
+        Set<Class<?>> entityClasses = new HashSet<>(Arrays.asList(EntityA.class,
+                EntityB.class));
         Field mappedField = EntityA.class.getDeclaredField("bs");
         FieldUpdateEvent<?> event = new MappedFieldUpdateEvent<>(new LinkedList<>(Arrays.asList(entityB1, entityB2)),
                 mappedField //mappedField
@@ -62,7 +68,7 @@ public class JPAReflectionFormBuilderTest {
         PersistenceStorage storage = mock(PersistenceStorage.class);
         IssueHandler issueHandler = mock(IssueHandler.class);
         ConfirmMessageHandler confirmMesserHandler = mock(ConfirmMessageHandler.class);
-        JPAFieldRetriever fieldRetriever = new JPACachedFieldRetriever();
+        JPAFieldRetriever fieldRetriever = new JPAOrderedCachedFieldRetriever(entityClasses);
         IdApplier<?> idApplier = mock(IdApplier.class);
         JPAReflectionFormBuilder instance = new JPAReflectionFormBuilder(storage, "title", //fieldDescriptionDialogTitle
                 issueHandler,

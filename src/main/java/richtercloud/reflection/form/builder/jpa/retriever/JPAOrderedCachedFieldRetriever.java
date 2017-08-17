@@ -12,27 +12,47 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package richtercloud.reflection.form.builder.jpa;
+package richtercloud.reflection.form.builder.jpa.retriever;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 import javax.persistence.Id;
 import javax.persistence.Transient;
-import richtercloud.validation.tools.CachedFieldRetriever;
+import richtercloud.reflection.form.builder.jpa.JPAFieldRetriever;
+import richtercloud.reflection.form.builder.retriever.FieldOrderValidationException;
+import richtercloud.reflection.form.builder.retriever.OrderedCachedFieldRetriever;
 
 /**
  *
  * @author richter
  */
-public class JPACachedFieldRetriever extends CachedFieldRetriever implements JPAFieldRetriever {
+public class JPAOrderedCachedFieldRetriever extends OrderedCachedFieldRetriever implements JPAFieldRetriever {
+
+    public JPAOrderedCachedFieldRetriever(Set<Class<?>> entityClasses) throws FieldOrderValidationException {
+        super(entityClasses);
+    }
+
+    public JPAOrderedCachedFieldRetriever(Map<Class<?>, List<Field>> fieldOrderMap,
+            Set<Class<?>> entityClass) throws FieldOrderValidationException {
+        super(fieldOrderMap,
+                entityClass);
+    }
+
+    public JPAOrderedCachedFieldRetriever(Map<Class<?>, List<Field>> fieldOrderMap,
+            Set<Class<?>> entityClasses,
+            boolean visualizeDependencyGraphOnError) throws FieldOrderValidationException {
+        super(fieldOrderMap,
+                entityClasses,
+                visualizeDependencyGraphOnError);
+    }
 
     /**
      * Retrieves relevant fields from super class and removes fields with
-     * {@link Transient} annotation because they're irrelevant in JPA. Moves
-     * fields annotated with {@link Id} to the beginning of the returned list.
+     * {@link Transient} annotation because they're irrelevant in JPA.
      * @param entityClass
      * @return the list of relevant fields
      */
@@ -42,6 +62,13 @@ public class JPACachedFieldRetriever extends CachedFieldRetriever implements JPA
             throw new IllegalArgumentException("entityClass mustn't be null");
         }
         List<Field> relevantFields = super.retrieveRelevantFields(entityClass);
+            //relevantFields/the return value should only be modified if the
+            //result is stored with overwriteCachedResult and the next call to
+            //retrieveRelevantFields avoids modifications which have already
+            //been made since they will most likely cause a
+            //ConcurrentModificationException; alternatively the value can be
+            //copied here and be modified at will (shouldn't be done unless
+            //necessary because of the minimal performance impact of the copy)
         ListIterator<Field> relevantFieldsIt = relevantFields.listIterator();
         while(relevantFieldsIt.hasNext()) {
             Field relevantFieldsNxt = relevantFieldsIt.next();
@@ -49,19 +76,8 @@ public class JPACachedFieldRetriever extends CachedFieldRetriever implements JPA
                 relevantFieldsIt.remove();
             }
         }
-        //move @Id annotated fields to the beginning of the list
-        Set<Field> idFields = new HashSet<>();
-        relevantFieldsIt = relevantFields.listIterator();
-        while(relevantFieldsIt.hasNext()) {
-            Field relevantFieldsNxt = relevantFieldsIt.next();
-            if(relevantFieldsNxt.getAnnotation(Id.class) != null) {
-                relevantFieldsIt.remove();
-                idFields.add(relevantFieldsNxt);
-            }
-        }
-        for(Field idField : idFields) {
-            relevantFields.add(0, idField);
-        }
+        overwriteCachedResult(entityClass,
+                relevantFields);
         return relevantFields;
     }
 
