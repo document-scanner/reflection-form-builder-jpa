@@ -32,11 +32,18 @@ import richtercloud.validation.tools.FieldRetriever;
 /**
  * Manages start of a PostgreSQL instance with system processes.
  *
- * Working with the build-in Java Process API is painful because it's hard to
- * terminate the {@code postgres} process which is the standard shutdown
- * routine. In order to properly wait for a process to terminate, it's necessary
- * to read it's {@code stdout} and {@code stderr} output completely. This has to
- * happen on another thread.
+ * Working with the build-in Java Process API is painful because it doesn't
+ * guarantee that a certain signal is send. Postgres 9.6 has 3 different
+ * shutdown modes (see
+ * <a href="https://www.postgresql.org/docs/9.6/static/server-shutdown.html">PostgreSQL documentation</a>
+ * for details) of which the "smart" one might wait for connections to be closed
+ * on the client side. That means that any issue in JPA provider or JDBC driver
+ * implementation with connections remaining open causes a process deadlock
+ * which one can work around by specifying a timeout to wait for the process,
+ * but that's a last resort. This last resort doesn't have to be used if the
+ * {@code pg_ctl} binary is used which has a {@code stop} subcommand which
+ * allows to choose the shutdown mode (see <a href="https://www.postgresql.org/docs/9.6/static/app-pg-ctl.html">PostgreSQL documentation</a>
+ * for details).
  *
  * @author richter
  */
@@ -53,17 +60,15 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
                 persistenceUnitName,
                 parallelQueryCount,
                 fieldRetriever,
-                issueHandler);
+                issueHandler,
+                String.format("PostgreSQL server at %s:%d",
+                        storageConf.getHostname(),
+                        storageConf.getPort()));
     }
 
     @Override
     protected SequenceManager<Long> createSequenceManager() {
         return new PostgresqlSequenceManager(this);
-    }
-
-    @Override
-    protected String getShortDescription() {
-        return "PostgreSQL server";
     }
 
     @Override
@@ -134,6 +139,7 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
                         "-h", getStorageConf().getHostname(),
                         //using the short options improves escaping of user
                         //and database names dramatically
+                        "-p", String.valueOf(getStorageConf().getPort()),
                         "-U", getStorageConf().getUsername(),
                         getStorageConf().getDatabaseName())
                         .redirectError(ProcessBuilder.Redirect.INHERIT)
@@ -157,34 +163,30 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
     }
 
     @Override
-    @SuppressWarnings("SleepWhileInLoop")
     protected void shutdown0() {
         if(getProcess() != null) {
-            getProcess().destroy();
+            try {
+                Process pgCtlProcess = new ProcessBuilder(getStorageConf().getPgCtlBinaryPath(),
+                        "stop",
+                        "-D", getStorageConf().getDatabaseDir())
+                        .start();
+                pgCtlProcess.waitFor();
+            } catch (InterruptedException | IOException ex) {
+                LOGGER.error("unexpected exception during waiting for pg_ctl process",
+                        ex);
+                getIssueHandler().handleUnexpectedException(new ExceptionMessage(ex));
+            }
             //Joining stdout and stderr output threads before waiting for
             //postgres process to terminate causes waiting forever, unclear why
             LOGGER.info("waiting for postgres process to terminate");
-            //postgresProcess.waitFor(); blocks in integration tests which is
-            //a common phenomenon of the very simple Java Process API although
-            //only explained through remaining output in stdout or stderr; the
-            //following doesn't block
-            boolean returned = false;
-            while(!returned) {
-                try {
-                    getProcess().exitValue();
-                        //throws IllegalThreadStateException is the process
-                        //hasn't terminated yet
-                    returned = true;
-                }catch(IllegalThreadStateException ex) {
-                    //continue
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException interruptedException) {
-                        getIssueHandler().handleUnexpectedException(new ExceptionMessage(interruptedException));
-                    }
-                }
+            try {
+                getProcessThread().join();
+                LOGGER.info("postgres process returned expectedly");
+            } catch (InterruptedException ex) {
+                LOGGER.error("unexpected exception during joining of process watch thread",
+                        ex);
+                getIssueHandler().handleUnexpectedException(new ExceptionMessage(ex));
             }
-            LOGGER.info("postgres process returned");
         }
         if(getProcessStdoutReaderThread() != null) {
             try {

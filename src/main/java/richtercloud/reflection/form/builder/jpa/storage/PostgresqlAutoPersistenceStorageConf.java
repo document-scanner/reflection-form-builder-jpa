@@ -23,7 +23,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.jhbuild.java.wrapper.BinaryTools;
@@ -51,7 +53,7 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
      * @return the pathes to the found {@code initdb} and {@code postgres}binary
      * or {@code null} if none are found
      */
-    public static Pair<String, String> findBestInitialPostgresqlBasePath() {
+    public static Triple<String, String, String> findBestInitialPostgresqlBasePath() {
         File postgresqlDir = new File("/usr/lib/postgresql");
         if(!postgresqlDir.exists()) {
             return null;
@@ -84,8 +86,9 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
         if(highestVersionDir == null) {
             return null;
         }
-        Pair<String, String> retValue = new ImmutablePair<>(new File(highestVersionDir, String.join(File.separator, BIN_TEMPLATE, "initdb")).getAbsolutePath(),
-                new File(highestVersionDir, String.join(File.separator, BIN_TEMPLATE, "postgres")).getAbsolutePath());
+        Triple<String, String, String> retValue = new ImmutableTriple<>(new File(highestVersionDir, String.join(File.separator, BIN_TEMPLATE, "initdb")).getAbsolutePath(),
+                new File(highestVersionDir, String.join(File.separator, BIN_TEMPLATE, "postgres")).getAbsolutePath(),
+                new File(highestVersionDir, String.join(File.separator, BIN_TEMPLATE, "pg_ctl")).getAbsolutePath());
         return retValue;
     }
 
@@ -97,6 +100,7 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
     private String initdbBinaryPath;
     private String postgresBinaryPath;
     private String createdbBinaryPath;
+    private String pgCtlBinaryPath;
 
     public PostgresqlAutoPersistenceStorageConf(Set<Class<?>> entityClasses,
             String hostname,
@@ -107,17 +111,48 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
             String databaseDir,
             String initdbBinaryPath,
             String postgresBinaryPath,
-            String createdbBinaryPath) throws FileNotFoundException, IOException {
-        super(entityClasses,
+            String createdbBinaryPath,
+            String pgCtlBinaryPath) throws FileNotFoundException, IOException {
+        this(entityClasses,
                 hostname,
                 username,
                 password,
                 databaseName,
-                schemeChecksumFile);
-        init0(databaseDir,
+                schemeChecksumFile,
+                databaseDir,
                 initdbBinaryPath,
                 postgresBinaryPath,
-                createdbBinaryPath);
+                createdbBinaryPath,
+                pgCtlBinaryPath,
+                PostgresqlPersistenceStorageConf.PORT_DEFAULT
+                );
+    }
+
+    public PostgresqlAutoPersistenceStorageConf(Set<Class<?>> entityClasses,
+            String hostname,
+            String username,
+            String password,
+            String databaseName,
+            File schemeChecksumFile,
+            String databaseDir,
+            String initdbBinaryPath,
+            String postgresBinaryPath,
+            String createdbBinaryPath,
+            String pgCtlBinaryPath,
+            int port) throws FileNotFoundException, IOException {
+        this(entityClasses,
+                hostname,
+                username,
+                password,
+                databaseName,
+                schemeChecksumFile,
+                databaseDir,
+                initdbBinaryPath,
+                postgresBinaryPath,
+                createdbBinaryPath,
+                pgCtlBinaryPath,
+                port,
+                PostgresqlPersistenceStorageConf.DATABASE_DRIVER_DEFAULT);
     }
 
     /**
@@ -143,6 +178,7 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
             String initdbBinaryPath,
             String postgresBinaryPath,
             String createdbBinaryPath,
+            String pgCtlBinaryPath,
             int port,
             String databaseDriver) throws FileNotFoundException, IOException {
         super(entityClasses,
@@ -153,20 +189,11 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
                 schemeChecksumFile,
                 port,
                 databaseDriver);
-        init0(databaseDir,
-                initdbBinaryPath,
-                postgresBinaryPath,
-                createdbBinaryPath);
-    }
-
-    private void init0(String databaseDir,
-            String initdbBinaryPath,
-            String postgresBinaryPath,
-            String createdbBinaryPath) {
         this.databaseDir = databaseDir;
         this.initdbBinaryPath = initdbBinaryPath;
         this.postgresBinaryPath = postgresBinaryPath;
         this.createdbBinaryPath = createdbBinaryPath;
+        this.pgCtlBinaryPath = pgCtlBinaryPath;
     }
 
     public String getDatabaseDir() {
@@ -201,6 +228,14 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
         this.createdbBinaryPath = createdbBinaryPath;
     }
 
+    public String getPgCtlBinaryPath() {
+        return pgCtlBinaryPath;
+    }
+
+    public void setPgCtlBinaryPath(String pgCtlBinaryPath) {
+        this.pgCtlBinaryPath = pgCtlBinaryPath;
+    }
+
     /**
      * Requires {@code postgresBinaryPath} and {@code initdbBinaryPath} to be
      * not {@code null} and an existing file.
@@ -212,12 +247,13 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
     public void validate() throws StorageConfValidationException {
         super.validate();
         //validate binaries
-        for(Pair<String, String> binaryPair : Arrays.asList(new ImmutablePair<>(postgresBinaryPath, "postgres"),
+        for(Pair<String, String> binaryNamePair : Arrays.asList(new ImmutablePair<>(postgresBinaryPath, "postgres"),
             new ImmutablePair<>(initdbBinaryPath, "initdb"),
-            new ImmutablePair<>(createdbBinaryPath, "createdb"))) {
+            new ImmutablePair<>(createdbBinaryPath, "createdb"),
+            new ImmutablePair<>(pgCtlBinaryPath, "pg_ctl"))) {
             try {
-                BinaryTools.validateBinary(binaryPair.getKey(),
-                    binaryPair.getValue());
+                BinaryTools.validateBinary(binaryNamePair.getKey(),
+                    binaryNamePair.getValue());
             }catch(BinaryValidationException ex) {
                 throw new StorageConfValidationException(ex);
             }
@@ -230,28 +266,23 @@ public class PostgresqlAutoPersistenceStorageConf extends PostgresqlPersistenceS
                     .start();
             OutputReaderThread postgresProcessStdoutThread = new OutputReaderThread(postgresProcess.getInputStream(),
                     postgresProcess);
-            OutputReaderThread postgresProcessStderrThread = new OutputReaderThread(postgresProcess.getErrorStream(),
-                    postgresProcess);
             postgresProcessStdoutThread.start();
-            postgresProcessStderrThread.start();
             postgresProcess.waitFor();
             postgresProcessStdoutThread.join();
-            postgresProcessStderrThread.join();
             String postgresProcessStdout = postgresProcessStdoutThread.getOutputBuilder().toString();
             if(postgresProcess.exitValue() != 0) {
                 throw new StorageConfValidationException(String.format(
                         "running %s --version during configuration validation "
                         + "failed with return code %d (stdout was '%s' and "
-                        + "stderr was '%s'",
+                        + "stderr was redirected to the JVMs output",
                         postgresBinaryPath,
                         postgresProcess.exitValue(),
-                        postgresProcessStdout,
-                        postgresProcessStderrThread.getOutputBuilder().toString()));
+                        postgresProcessStdout));
             }
             Matcher versionMatcher = Pattern.compile(".*(?<version>\\d\\.\\d\\.\\d).*").matcher(postgresProcessStdout);
             if(!versionMatcher.find()) {
                 throw new StorageConfValidationException(String.format(
-                        "postgres process version output %s couldn't be parsed",
+                        "postgres process version output '%s' couldn't be parsed",
                         postgresProcessStdout));
             }
             String version = versionMatcher.group("version");

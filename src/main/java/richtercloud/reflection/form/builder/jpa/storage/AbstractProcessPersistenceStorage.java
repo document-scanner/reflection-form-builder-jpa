@@ -43,6 +43,8 @@ internal implementation notes:
 - Uses AbstractNetworkPersistenceStorageConf rather than
 AbstractPersistenceStorageConf since no database which is managed as external
 process and is not communicating via network comes to mind.
+- In order to properly wait for a process to terminate, it's necessary to read
+its stdout and stderr output completely. This has to happen on another thread.
 */
 public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetworkPersistenceStorageConf> extends AbstractPersistenceStorage<C> {
     private final static Logger LOGGER = LoggerFactory.getLogger(AbstractProcessPersistenceStorage.class);
@@ -71,17 +73,25 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
      * The wait time between checks whether the server is up in ms.
      */
     private int waitServerUpIntervalMillis = 1000;
+    /**
+     * A short description used in success or failure notifications, like
+     * '... process crashed' where ... should be MySQL server or PostgreSQL
+     * management application or something similar.
+     */
+    private final String shortDescription;
 
     public AbstractProcessPersistenceStorage(C storageConf,
             String persistenceUnitName,
             int parallelQueryCount,
             FieldRetriever fieldRetriever,
-            IssueHandler issueHandler) throws StorageConfValidationException, StorageCreationException {
+            IssueHandler issueHandler,
+            String shortDescription) throws StorageConfValidationException, StorageCreationException {
         super(storageConf,
                 persistenceUnitName,
                 parallelQueryCount,
                 fieldRetriever);
         this.issueHandler = issueHandler;
+        this.shortDescription = shortDescription;
         this.sequenceManager = createSequenceManager();
     }
 
@@ -92,15 +102,6 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
      * @return the {@link SequenceManager} for this storage instance
      */
     protected abstract SequenceManager<Long> createSequenceManager();
-
-    /**
-     * A short description used in success or failure notifications, like
-     * '... process crashed' where ... should be MySQL server or PostgreSQL
-     * management application or something similar.
-     *
-     * @return the short description
-     */
-    protected abstract String getShortDescription();
 
     public Lock getShutdownLock() {
         return shutdownLock;
@@ -148,11 +149,10 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
     public final void shutdown() {
         super.shutdown();
         getShutdownLock().lock();
-        if(!isServerRunning()) {
-            getShutdownLock().unlock();
-            return;
-        }
         try {
+            if(!isServerRunning()) {
+                return;
+            }
             shutdown0();
         }finally{
             getShutdownLock().unlock();
@@ -290,7 +290,7 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
                 throw new StorageCreationException(String.format("%s process "
                         + "is no longer running (stdout was '%s' and stderr "
                         + "was '%s'",
-                        getShortDescription(),
+                        shortDescription,
                         processStdoutReaderThread.getOutputBuilder().toString(),
                         processStderrReaderThread.getOutputBuilder().toString()));
             }
@@ -298,7 +298,7 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
                 throw new ServerStartTimeoutException(String.format("waiting for "
                         + "the %s process to start up timed out and has "
                         + "been tried too many times (stdout was '%s' and stderr was '%s')",
-                        getShortDescription(),
+                        shortDescription,
                         processStdoutReaderThread.getOutputBuilder().toString(),
                         processStderrReaderThread.getOutputBuilder().toString()));
             }
@@ -342,10 +342,10 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
                     LOGGER.trace("locked shutdown lock");
                     try {
                         issueHandler.handle(new Message(String.format("%s process crashed or was shutdown from outside the application. Restart the application in order to avoid data loss.",
-                                getShortDescription()),
+                                shortDescription),
                                 JOptionPane.ERROR_MESSAGE,
                                 String.format("%s process crashed",
-                                        getShortDescription())));
+                                        shortDescription)));
                         setServerRunning(false);
                     }finally{
                         getShutdownLock().unlock();
@@ -354,7 +354,7 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
                 }else {
                     LOGGER.trace("attempt to lock shutdown lock unsuccessful, assuming that shutdown is in progress and that process successfully finished");
                     LOGGER.info(String.format("%s returned expectedly during shutdown process with stdout '%s' and stderr '%s'",
-                            getShortDescription(),
+                            shortDescription,
                             processStdoutReaderThread.getOutputBuilder().toString(),
                             processStderrReaderThread.getOutputBuilder().toString()));
                 }

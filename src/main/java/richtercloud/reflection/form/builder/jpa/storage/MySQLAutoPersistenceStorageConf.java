@@ -30,7 +30,6 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
     private static final long serialVersionUID = 1L;
     public final static String DATABASE_DRIVER = com.mysql.jdbc.Driver.class.getName();
     public final static int PORT_DEFAULT = 3306;
-    public final static String DATABASE_NAME_DEFAULT = "document-scanner";
     public final static String MY_CNF_FILE_NAME_DEFAULT = "my.cnf";
     private String databaseDir;
     /**
@@ -70,6 +69,7 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
     public MySQLAutoPersistenceStorageConf(Set<Class<?>> entityClasses,
             String hostname,
             String username,
+            String databaseName,
             String databaseDir,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
         super(DATABASE_DRIVER,
@@ -78,9 +78,30 @@ public class MySQLAutoPersistenceStorageConf extends AbstractNetworkPersistenceS
                 entityClasses,
                 username,
                 null, //password
-                DATABASE_NAME_DEFAULT,
+                databaseName,
                 schemeChecksumFile);
         this.databaseDir = databaseDir;
+    }
+
+    public MySQLAutoPersistenceStorageConf(String databaseDir,
+            String baseDir,
+            String hostname,
+            int port,
+            Set<Class<?>> entityClasses,
+            String username,
+            String password,
+            String databaseName,
+            File schemeChecksumFile) throws FileNotFoundException, IOException {
+        this(databaseDir,
+                baseDir,
+                hostname,
+                port,
+                DATABASE_DRIVER,
+                entityClasses,
+                username,
+                password,
+                databaseName,
+                schemeChecksumFile);
     }
 
     /**

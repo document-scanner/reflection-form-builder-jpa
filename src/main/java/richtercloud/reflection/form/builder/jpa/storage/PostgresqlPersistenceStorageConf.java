@@ -26,12 +26,12 @@ import org.postgresql.Driver;
  */
 public class PostgresqlPersistenceStorageConf extends AbstractNetworkPersistenceStorageConf {
     private static final long serialVersionUID = 1L;
-    private final static String DRIVER_NAME = Driver.class.getName();
+    public final static String DATABASE_DRIVER_DEFAULT = Driver.class.getName();
     public final static String USERNAME_DEFAULT = "sa";
     public final static int PORT_DEFAULT = 5432;
     static {
         try {
-            Class.forName(DRIVER_NAME);
+            Class.forName(DATABASE_DRIVER_DEFAULT);
         }catch(ClassNotFoundException ex) {
             //dependencies not provided properly
             throw new ExceptionInInitializerError(ex);
@@ -44,7 +44,7 @@ public class PostgresqlPersistenceStorageConf extends AbstractNetworkPersistence
             String password,
             String databaseName,
             File schemeChecksumFile) throws FileNotFoundException, IOException {
-        super(DRIVER_NAME, //databaseDriver
+        super(DATABASE_DRIVER_DEFAULT, //databaseDriver
                 hostname,
                 PORT_DEFAULT, //port
                 entityClasses, //entityClasses

@@ -66,17 +66,15 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
                 persistenceUnitName,
                 parallelQueryCount,
                 fieldRetriever,
-                issueHandler);
+                issueHandler,
+                String.format("MySQL server at %s:%d",
+                        storageConf.getHostname(),
+                        storageConf.getPort()));
     }
 
     @Override
     protected SequenceManager<Long> createSequenceManager() {
         return new MySQLSequenceManager(this);
-    }
-
-    @Override
-    protected String getShortDescription() {
-        return "MySQL server";
     }
 
     @Override

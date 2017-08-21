@@ -88,6 +88,7 @@ public class DelegatingStorageConfCopyFactory implements StorageConfCopyFactory<
                         storageConfCast.getInitdbBinaryPath(),
                         storageConfCast.getPostgresBinaryPath(),
                         storageConfCast.getCreatedbBinaryPath(),
+                        storageConfCast.getPgCtlBinaryPath(),
                         storageConfCast.getPort(),
                         storageConfCast.getDatabaseDriver());
             } catch (IOException ex) {
