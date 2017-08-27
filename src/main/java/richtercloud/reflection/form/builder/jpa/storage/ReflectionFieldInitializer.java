@@ -44,6 +44,7 @@ public class ReflectionFieldInitializer implements FieldInitializer {
             if(!initializeField(field)) {
                 continue;
             }
+            field.setAccessible(true);
             field.get(entity);
             if(Collection.class.isAssignableFrom(field.getType())) {
                 Collection fieldValue = ((Collection)field.get(entity));
