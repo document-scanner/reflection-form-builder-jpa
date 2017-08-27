@@ -33,6 +33,8 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.ExceptionMessage;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.MessageHandler;
@@ -48,6 +50,7 @@ import richtercloud.validation.tools.FieldRetriever;
  */
 public abstract class AbstractQueryPanel<E> extends JPanel {
     private static final long serialVersionUID = 1L;
+    private final static Logger LOGGER = LoggerFactory.getLogger(AbstractQueryPanel.class);
     public final static int QUERY_RESULT_TABLE_HEIGHT_DEFAULT = 100;
     private final Set<QueryPanelUpdateListener> updateListeners = new HashSet<>();
     private final JSeparator bidirectionalControlPanelSeparator;
@@ -154,6 +157,8 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
                     queryResultTableModel.updateColumns(queryResults);
                     queryResultTableModel.addAllEntities(queryResults);
                 } catch (IllegalArgumentException | IllegalAccessException ex) {
+                    LOGGER.error("unexpected exception during query execution occured",
+                            ex);
                     issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                     return;
                 }

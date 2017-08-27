@@ -29,6 +29,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.swing.JOptionPane;
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.ExceptionMessage;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.message.handler.Message;
@@ -39,6 +41,7 @@ import richtercloud.message.handler.Message;
  */
 public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHistoryEntryStorage {
     private final static String NOT_SUPPORTED = "Not supported yet.";
+    private final static Logger LOGGER = LoggerFactory.getLogger(AbstractFileQueryHistoryEntryStorage.class);
     private final File file;
     private final Map<Class<?>, List<QueryHistoryEntry>> cache;
     /**
@@ -91,6 +94,8 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
                     head = fileStoreThreadQueue.take();
                 }
             } catch (InterruptedException ex) {
+                LOGGER.error("unexpected exception during storing values occured",
+                        ex);
                 issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
             }
         },
@@ -105,6 +110,8 @@ public abstract class AbstractFileQueryHistoryEntryStorage implements QueryHisto
         try {
             fileStoreThread.join();
         } catch (InterruptedException ex) {
+            LOGGER.error("unexpected exception during shutdown occured",
+                    ex);
             issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
         }
     }

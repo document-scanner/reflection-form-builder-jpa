@@ -141,6 +141,8 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                     }
                 });
             } catch (InterruptedException | InvocationTargetException ex) {
+                LOGGER.error("unexpected exception during initialization of auto-complete support occured",
+                        ex);
                 issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                 return;
                     //It's fine to return if the thread has been interrupted
@@ -179,6 +181,8 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                                         }
                                     });
                                 } catch (InterruptedException | InvocationTargetException ex) {
+                                    LOGGER.error("unexpected exception during update of auto-complete component occured",
+                                            ex);
                                     issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                                     return;
                                         //It's fine to return if the thread has been interrupted
@@ -191,7 +195,8 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                             LOGGER.error("an exception during storage occured", ex);
                             issueHandler.handle(new Message(ex));
                         } catch(Throwable ex) {
-                            LOGGER.error("an unexpected exception during retrieval of auto-completion check results occured", ex);
+                            LOGGER.error("an unexpected exception during retrieval of auto-completion check results occured",
+                                    ex);
                             issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                             throw ex;
                         }finally {

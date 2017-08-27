@@ -87,6 +87,8 @@ public class PrioritizableReentrantLock extends ReentrantLock {
                 try {
                     managerQueueHead = managerQueue.take();
                 }catch(InterruptedException ex) {
+                    LOGGER.error("unexpected exception during dequeing element occured",
+                            ex);
                     bugHandler.handleUnexpectedException(new ExceptionMessage(ex));
                     return;
                         //It's fine to return if the thread has been interrupted
@@ -105,10 +107,14 @@ public class PrioritizableReentrantLock extends ReentrantLock {
                     try {
                         PrioritizableReentrantLock.this.locked.await();
                     }catch(InterruptedException ex) {
+                        LOGGER.error("unexpected exception during awaiting lock condition occured",
+                                ex);
                         bugHandler.handleUnexpectedException(new ExceptionMessage(ex));
                         return;
                     }
                 }catch(Throwable ex) {
+                    LOGGER.error("unexpected exception during queue processing occured",
+                            ex);
                     bugHandler.handleUnexpectedException(new ExceptionMessage(ex));
                 }finally {
                     PrioritizableReentrantLock.this.conditionLock.unlock();
@@ -161,6 +167,8 @@ public class PrioritizableReentrantLock extends ReentrantLock {
                 LOGGER.trace(String.format("waiting for condition with priority %d", priority));
                 entry.condition.await();
             } catch (InterruptedException ex) {
+                LOGGER.error("unexpected exception during awaiting lock condition occured",
+                        ex);
                 bugHandler.handleUnexpectedException(new ExceptionMessage(ex));
                 return;
                     //It's fine to return if the thread has been interrupted

@@ -439,7 +439,8 @@ public class QueryComponent<E> extends JPanel {
                         executeQueryGUI(queryResult, queryText);
                         QueryComponent.this.setEnabled(true);
                     }catch(Throwable ex) {
-                        LOGGER.error("an unexpected exception occured during query execution GUI callback", ex);
+                        LOGGER.error("an unexpected exception occured during query execution GUI callback",
+                                ex);
                         issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                     }
                 });

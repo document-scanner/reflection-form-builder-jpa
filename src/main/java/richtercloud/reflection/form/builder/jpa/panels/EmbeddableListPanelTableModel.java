@@ -20,6 +20,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import richtercloud.message.handler.ExceptionMessage;
 import richtercloud.message.handler.IssueHandler;
 import richtercloud.reflection.form.builder.panels.ListPanelTableModel;
@@ -31,6 +33,7 @@ import richtercloud.validation.tools.FieldRetriever;
  */
 public class EmbeddableListPanelTableModel extends DefaultTableModel implements ListPanelTableModel<Object> {
     private static final long serialVersionUID = 1L;
+    private final static Logger LOGGER = LoggerFactory.getLogger(EmbeddableListPanelTableModel.class);
     private List<Object> embeddables = new ArrayList<>();
     private Constructor<?> embeddableClassConstructor;
     private List<Field> embeddableClassFields;
@@ -140,6 +143,8 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
         try {
             return this.embeddableClassFields.get(columnIndex).get(this.embeddables.get(rowIndex));
         } catch (IllegalArgumentException | IllegalAccessException ex) {
+            LOGGER.error("unexpected exception during retrieval of table cell value occured",
+                    ex);
             issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
             throw new RuntimeException(ex);
         }
@@ -169,6 +174,8 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
                     | IllegalAccessException
                     | IllegalArgumentException
                     | InvocationTargetException ex) {
+                LOGGER.error("unexpected exception during setting of table cell value occured",
+                        ex);
                 issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                 return;
             }
@@ -181,8 +188,9 @@ public class EmbeddableListPanelTableModel extends DefaultTableModel implements 
                 embeddableClassField.set(embeddable, embeddableClassField.get(aValue));
             }
         } catch (IllegalArgumentException | IllegalAccessException ex) {
+            LOGGER.error("unexpected exception during setting of table cell value occured",
+                    ex);
             issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
-            return;
         }
     }
 

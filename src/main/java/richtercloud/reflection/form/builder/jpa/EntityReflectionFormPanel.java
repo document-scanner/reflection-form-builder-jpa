@@ -182,6 +182,8 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                 try {
                     reset();
                 } catch (ResetException ex) {
+                    LOGGER.error("unexpected exception during resetting of component occured",
+                            ex);
                     issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                 }
             }
@@ -284,6 +286,8 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                             keySet = true;
                         }
                     } catch (IllegalArgumentException | IllegalAccessException ex) {
+                        LOGGER.error("unexpected exception during saving of entity changes occured",
+                                ex);
                         issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                         return;
                     }
@@ -309,6 +313,8 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                             try {
                                 primaryKeyIdField = primaryKeyClass.getDeclaredField(idField.getName());
                             } catch (NoSuchFieldException | SecurityException ex) {
+                                LOGGER.error("unexpected exception during saving of entity occured",
+                                        ex);
                                 issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                                 return;
                             }
@@ -319,7 +325,12 @@ public class EntityReflectionFormPanel extends JPAReflectionFormPanel<Object, En
                             primaryKeyIdField.set(primaryKey,
                                     primaryKeyIdFieldValue);
                         }
-                    } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+                    } catch (InstantiationException
+                            | IllegalAccessException
+                            | IllegalArgumentException
+                            | InvocationTargetException ex) {
+                        LOGGER.error("unexpected exception during saving of entity occured",
+                                ex);
                         issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                         return;
                     }

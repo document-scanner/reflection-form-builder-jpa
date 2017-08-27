@@ -171,6 +171,8 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                 try {
                     resultTable.getModel().updateColumns(event.getQueryResults());
                 }catch(IllegalAccessException ex) {
+                    LOGGER.error("unexpected exception during query execution occured",
+                            ex);
                     issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
                 }
             }
