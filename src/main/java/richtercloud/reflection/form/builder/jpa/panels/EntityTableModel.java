@@ -142,6 +142,7 @@ public class EntityTableModel<E> extends DefaultTableModel {
                 if(fields.containsValue(field)) {
                     continue;
                 }
+                field.setAccessible(true);
                 FieldInfo fieldInfo = field.getAnnotation(FieldInfo.class);
                 if(fieldInfo != null) {
                     this.addColumn(String.format("%s (%s)",
