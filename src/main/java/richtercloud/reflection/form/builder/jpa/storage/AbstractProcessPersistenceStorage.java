@@ -222,7 +222,7 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
             if(needToCreate) {
                 createDatabase();
             }else {
-                LOGGER.info("the database is expected to exists and be operational");
+                LOGGER.info("the database is expected to exist and be operational");
             }
             this.process = createProcess();
             this.processThread = createProcessWatchThread();
@@ -244,9 +244,15 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
                         return false;
                     }
                 },
-                        "PostgreSQL server start");
+                        shortDescription);
                 setServerRunning(true);
             } catch (ServerStartTimeoutException ex) {
+                LOGGER.error("a server start timeout exception occured",
+                        ex);
+                    //extra logging (might be covered by caller which is
+                    //catching the created StorageCreationException below) in
+                    //order to figure out what might be wrong if shutdown0 hangs
+                    //or fails
                 shutdown0();
                     //need to call shutdown0 here because shutdown only works if
                     //serverRunning is true
