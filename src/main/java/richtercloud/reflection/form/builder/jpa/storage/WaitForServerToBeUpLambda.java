@@ -23,5 +23,25 @@ import java.io.IOException;
 @FunctionalInterface
 public interface WaitForServerToBeUpLambda {
 
-    boolean run() throws InterruptedException, IOException;
+    /**
+     * Performs the repeatable check whether the server is up/reachable/running
+     * which is e.g. performed in
+     * {@link AbstractProcessPersistenceStorage#waitForServerToBeUp(richtercloud.reflection.form.builder.jpa.storage.WaitForServerToBeUpLambda, java.lang.String) }
+     *
+     * @return the exception which indicates which was the cause for the failure
+     * of the connection check or {@code null} if the check was successful and
+     * callers can assume that the check loop can be left
+     * @throws InterruptedException
+     * @throws IOException
+     */
+    /*
+    internal implementation notes:
+    - in order to allow callers to get the last exception which caused the test
+    to result in false and which probably contains very valuable information
+    and allow tests which aren't based on an exception, it's a compomise to make
+    the return value an Exception instead of a boolean because one can just
+    throw Exception(String) because an explanation is needed anyway and this way
+    the interface can be a functional interface
+    */
+    Exception run() throws InterruptedException, IOException;
 }

@@ -115,6 +115,10 @@ public abstract class AbstractNetworkPersistenceStorageConf extends AbstractPers
         if(getUsername() == null || getUsername().isEmpty()) {
             throw new StorageConfValidationException("Password mustn't be empty");
         }
+        if(getDatabaseName().contains("/")) {
+            throw new StorageConfValidationException(String.format("Database name '%s' must not contain /",
+                    getDatabaseName()));
+        }
     }
 
     @Override

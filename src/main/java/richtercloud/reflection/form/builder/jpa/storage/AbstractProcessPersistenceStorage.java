@@ -22,6 +22,7 @@ import java.util.Properties;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.swing.JOptionPane;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import richtercloud.jhbuild.java.wrapper.OutputReaderThread;
@@ -239,9 +240,9 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
                         connectionProps.put("password", getStorageConf().getPassword());
                         DriverManager.getConnection(getStorageConf().getConnectionURL(),
                                 connectionProps);
-                        return true;
+                        return null;
                     } catch (SQLException ex) {
-                        return false;
+                        return ex;
                     }
                 },
                         shortDescription);
@@ -308,16 +309,21 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
                         processStdoutReaderThread.getOutputBuilder().toString(),
                         processStderrReaderThread.getOutputBuilder().toString()));
             }
+            Exception waitForServerToBeUpLambdaException = waitForServerToBeUpLambda.run();
+            if(waitForServerToBeUpLambdaException == null) {
+                break;
+            }
             if(waitServerUpMillis > waitServerUpMaxMillis) {
                 throw new ServerStartTimeoutException(String.format("waiting for "
                         + "the %s process to start up timed out and has "
-                        + "been tried too many times (stdout was '%s' and stderr was '%s')",
+                        + "been tried too many times (stdout was '%s' and "
+                        + "stderr was '%s'; the last connection failed because "
+                        + "due to '%s')",
                         shortDescription,
                         processStdoutReaderThread.getOutputBuilder().toString(),
-                        processStderrReaderThread.getOutputBuilder().toString()));
-            }
-            if(waitForServerToBeUpLambda.run()) {
-                break;
+                        processStderrReaderThread.getOutputBuilder().toString(),
+                        ExceptionUtils.getRootCause(waitForServerToBeUpLambdaException)),
+                        waitForServerToBeUpLambdaException);
             }
             waitServerUpMillis += waitServerUpIntervalMillis;
             if(waitServerUpMillis < waitServerUpMaxMillis) {

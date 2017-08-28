@@ -150,10 +150,11 @@ public class PostgresqlAutoPersistenceStorage extends AbstractProcessPersistence
                 if(createdbProcess.exitValue() != 0) {
                     LOGGER.debug(String.format("createdb failed with return code %s",
                             createdbProcess.exitValue()));
-                    return false;
+                    return new Exception(String.format("createdb process returned with non-zero code %d",
+                            createdbProcess.exitValue()));
                 }
                 LOGGER.debug("createdb succeeded");
-                return true;
+                return null;
             },
                     "PostgreSQL's createdb command");
         } catch (ServerStartTimeoutException ex) {
