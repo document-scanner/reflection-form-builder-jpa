@@ -71,6 +71,13 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
     private final EventList<String> comboBoxEventList = new BasicEventList<>();
     private final DefaultEventComboBoxModel<String> comboBoxModel = new DefaultEventComboBoxModel<>(comboBoxEventList);
     private List<?> lastCheckResults = new LinkedList<>();
+    private final IssueHandler issueHandler;
+    /**
+     * A flag which allows to avoid starting more than one query which
+     * is overkill and not constructive.
+     */
+    private boolean queryRunning = false;
+    private QueryThread pendingThread = null;
 
     private static Field retrieveFieldByName(FieldRetriever fieldRetriever,
             Class<?> entityClass,
@@ -110,6 +117,7 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                 entityClass,
                 fieldName,
                 initialQueryLimit);
+        this.issueHandler = issueHandler;
         initComponents();
         this.comboBox.addActionListener(new ActionListener() {
             @Override
@@ -153,10 +161,26 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
 
         this.comboBox.setSelectedItem(initialValue);
         this.comboBox.getEditor().getEditorComponent().addKeyListener(new KeyAdapter() {
-            private boolean queryRunning = false;
+            /**
+             * Handles querying the storage with the text of the text field
+             * right after the update. The query happens on a separate thread.
+             * If a query is running while the method is invoked from the EDT,
+             * a reference for processing is stored and started from within the
+             * currently running query thread. This reference is overwritten by
+             * any newer key release events which happen while the first query
+             * is still running, so that the result of the last update doesn't
+             * get lost like it would if the all updates would be discarded
+             * while a query is running.
+             *
+             * The fact that the next query thread is started from within the
+             * previous one avoids the need for a separate thread polling from a
+             * queue which is more intuitive, but unnecessary and requires
+             * overriding finalize.
+             *
+             * @param keyEvent the key event passed from Swing
+             */
             @Override
-            @SuppressWarnings("PMD.AvoidCatchingThrowable")
-            public void keyReleased(KeyEvent e) {
+            public void keyReleased(KeyEvent keyEvent) {
                 //Listen to keyReleased rather than keyPressed in order to avoid
                 //listening to Ctrl being pressed when using Ctrl+V or else.
                 //Since queries might be slow (later if the database is full or
@@ -164,49 +188,18 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
                 //a thread.
                 String textFieldText = ((JTextComponent)comboBox.getEditor().getEditorComponent()).getText();
                 assert textFieldText != null;
+                LOGGER.trace(String.format("checking auto-completion for text field text '%s'",
+                        textFieldText));
+                pendingThread = new QueryThread(textFieldText);
                 if(!queryRunning) {
                     queryRunning = true;
-                    LOGGER.trace(String.format("checking auto-completion for text field text '%s'", textFieldText));
-                    Thread checkThread = new Thread(() -> {
-                        List<String> checkResults;
-                        try {
-                            checkResults = check(textFieldText);
-                            if(!lastCheckResults.equals(checkResults)) {
-                                try {
-                                    SwingUtilities.invokeAndWait(() -> {
-                                        //avoid `IllegalStateException: Events to DefaultEventComboBoxModel must arrive on the EDT - consider adding GlazedListsSwing.swingThreadProxyList(source) somewhere in your list pipeline`
-                                        comboBoxEventList.clear();
-                                        for(String checkResult : checkResults) {
-                                            comboBoxEventList.add(checkResult);
-                                        }
-                                    });
-                                } catch (InterruptedException | InvocationTargetException ex) {
-                                    LOGGER.error("unexpected exception during update of auto-complete component occured",
-                                            ex);
-                                    issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
-                                    return;
-                                        //It's fine to return if the thread has been interrupted
-                                        //which is an unexpected condition anyway and can't be
-                                        //handled better than reporting an unexpected exception
-                                }
-                                lastCheckResults = checkResults;
-                            }
-                        }catch(StorageException ex) {
-                            LOGGER.error("an exception during storage occured", ex);
-                            issueHandler.handle(new Message(ex));
-                        } catch(Throwable ex) {
-                            LOGGER.error("an unexpected exception during retrieval of auto-completion check results occured",
-                                    ex);
-                            issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
-                            throw ex;
-                        }finally {
-                            queryRunning = false;
-                        }
-                    },
-                            "string-auto-complete-panel-check-thread");
-                    checkThread.start();
+                    pendingThread.start();
                 }else {
-                    LOGGER.trace(String.format("skipping auto-completion check for text field text '%s'", textFieldText));
+                    LOGGER.trace(String.format("queuing auto-completion check "
+                            + "for text field text '%s' (will be discarded if "
+                            + "a newer update arrives before the currently "
+                            + "running query terminates)",
+                            textFieldText));
                 }
             }
         });
@@ -238,6 +231,64 @@ public class StringAutoCompletePanel extends AbstractStringPanel {
     public void reset() {
         comboBox.setSelectedIndex(-1);
         comboBoxEventList.clear();
+    }
+
+    /**
+     * A thread which handles queries for auto-completion candidates after text
+     * field updates. Starts a new thread as last statement if
+     * {@code pendingThread} has been overwritten by an update event.
+     */
+    private class QueryThread extends Thread {
+        private final String textFieldText;
+
+        QueryThread(String textFieldText) {
+            super("string-auto-complete-panel-check-thread");
+            this.textFieldText = textFieldText;
+        }
+
+        @Override
+        @SuppressWarnings("PMD.AvoidCatchingThrowable")
+        public void run() {
+            List<String> checkResults;
+            try {
+                checkResults = check(textFieldText);
+                if(!lastCheckResults.equals(checkResults)) {
+                    try {
+                        SwingUtilities.invokeAndWait(() -> {
+                            //avoid `IllegalStateException: Events to DefaultEventComboBoxModel must arrive on the EDT - consider adding GlazedListsSwing.swingThreadProxyList(source) somewhere in your list pipeline`
+                            comboBoxEventList.clear();
+                            for(String checkResult : checkResults) {
+                                comboBoxEventList.add(checkResult);
+                            }
+                        });
+                    } catch (InterruptedException | InvocationTargetException ex) {
+                        LOGGER.error("unexpected exception during update of auto-complete component occured",
+                                ex);
+                        issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                        return;
+                            //It's fine to return if the thread has been interrupted
+                            //which is an unexpected condition anyway and can't be
+                            //handled better than reporting an unexpected exception
+                    }
+                    lastCheckResults = checkResults;
+                }
+            }catch(StorageException ex) {
+                LOGGER.error("an exception during storage occured", ex);
+                issueHandler.handle(new Message(ex));
+            } catch(Throwable ex) {
+                LOGGER.error("an unexpected exception during retrieval of auto-completion check results occured",
+                        ex);
+                issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
+                throw ex;
+            }finally {
+                if(pendingThread != null
+                        && pendingThread != this) {
+                    pendingThread.start();
+                }else {
+                    queryRunning = false;
+                }
+            }
+        }
     }
 
     /**
