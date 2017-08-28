@@ -253,9 +253,17 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
                     //catching the created StorageCreationException below) in
                     //order to figure out what might be wrong if shutdown0 hangs
                     //or fails
-                shutdown0();
-                    //need to call shutdown0 here because shutdown only works if
-                    //serverRunning is true
+                setServerRunning(true);
+                    //shutdown only works if serverRunning is true and we're
+                    //sure that the server will be shutdown in the next
+                    //statement anyway, so it doesn't matter
+                shutdown();
+                    //don't call shutdown0 here because it might want to join
+                    //processThread on EDT and processThread might want to
+                    //handle issue with a GUI based IssueHandler implementation
+                    //which results in deadlock. The deadlock can be avoided if
+                    //processThread tries to acquire shutdownLock and doesn't do
+                    //anything on EDT if that's refused
                 throw new StorageCreationException(ex);
             }
         }catch(IOException | InterruptedException ex) {
@@ -358,6 +366,9 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
                         LOGGER.trace("released shutdown lock");
                     }
                 }else {
+                    //must not do anything on EDT here because shutdown might be
+                    //in progress (e.g. after start attempts timed out and
+                    //ServerStartTimeoutException is caught in init
                     LOGGER.trace("attempt to lock shutdown lock unsuccessful, assuming that shutdown is in progress and that process successfully finished");
                     LOGGER.info(String.format("%s returned expectedly during shutdown process with stdout '%s' and stderr '%s'",
                             shortDescription,
@@ -365,7 +376,8 @@ public abstract class AbstractProcessPersistenceStorage<C extends AbstractNetwor
                             processStderrReaderThread.getOutputBuilder().toString()));
                 }
             } catch (InterruptedException ex) {
-                LOGGER.error("unexpected exception, see nested exception for details",
+                LOGGER.error(String.format("unexpected exception during watching of %s process",
+                                shortDescription),
                         ex);
                 issueHandler.handleUnexpectedException(new ExceptionMessage(ex));
             }

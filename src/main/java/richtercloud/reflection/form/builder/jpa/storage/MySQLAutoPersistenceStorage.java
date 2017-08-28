@@ -242,6 +242,13 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
         }
     }
 
+    /**
+     * The shutdown routine implementation which is wrapped inside acquisition
+     * and release of {@code shutdownLock}. This must not be called without
+     * acquiring the shutdown lock on EDT because it joins {@code processThread}
+     * which might want to handle issues with a GUI-based IssueHandler
+     * implementation.
+     */
     @Override
     protected void shutdown0() {
         if(getProcess() != null) {
