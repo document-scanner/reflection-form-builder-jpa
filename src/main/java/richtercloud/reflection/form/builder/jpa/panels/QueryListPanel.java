@@ -177,7 +177,8 @@ public class QueryListPanel<E> extends AbstractQueryPanel<E> {
                 }
             }
         });
-        getQueryComponent().runQuery(true //async (at creation)
+        getQueryComponent().runQuery(true, //async (at creation)
+                true //skipHistoryEntryUsageCountIncrement (at creation)
         ); //after adding QueryComponentListeners
             //(can't be run in AbstractListPanel because listeners can not be
             //passed to superclass and be able to reference variables in

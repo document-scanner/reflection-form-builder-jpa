@@ -249,7 +249,8 @@ public class QueryPanel<E> extends AbstractQueryPanel<E> {
                 }
             }
         });
-        getQueryComponent().runQuery(true //async (at creation)
+        getQueryComponent().runQuery(true, //async (at creation)
+                true //skipHistoryEntryUsageCountIncrement
         );
     }
 

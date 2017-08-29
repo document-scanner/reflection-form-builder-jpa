@@ -240,7 +240,9 @@ public class QueryComponent<E> extends JPanel {
             String queryText = initiallySelectedEntry.getText();
             executeQuery(initialQueryLimit,
                     queryText,
-                    async);
+                    async,
+                    true //skipHistoryEntryUsageCountIncrement
+            );
         }
     }
 
@@ -352,7 +354,8 @@ public class QueryComponent<E> extends JPanel {
                                 GroupLayout.PREFERRED_SIZE)));
     }
 
-    public void runQuery(boolean async) {
+    public void runQuery(boolean async,
+            boolean skipHistoryEntryUsageCountIncrement) {
         //although queryComboBox's model should never be empty in the current
         //implementation, there's check nevertheless so that future changes
         //don't cause too much trouble (adding a function to delete history
@@ -379,13 +382,15 @@ public class QueryComponent<E> extends JPanel {
         int queryLimit = (int) queryLimitSpinner.getValue();
         this.executeQuery(queryLimit,
                 queryText,
-                async //async
+                async, //async
+                skipHistoryEntryUsageCountIncrement //skipHistoryEntryUsageCountIncrement
         );
     }
 
     @SuppressWarnings("PMD.UnusedFormalParameter")
     private void queryButtonActionPerformed(java.awt.event.ActionEvent evt) {
-        runQuery(false //async
+        runQuery(false, //async
+                false //skipHistoryEntryUsageCountIncrement
         );
     }
 
@@ -412,12 +417,15 @@ public class QueryComponent<E> extends JPanel {
     @SuppressWarnings("PMD.AvoidCatchingThrowable")
     private void executeQuery(int queryLimit,
             String queryText,
-            boolean async) {
+            boolean async,
+            boolean skipHistoryEntryUsageCountIncrement) {
         if(!async) {
             try {
                 LOGGER.debug("running query synchronously");
                 List<E> queryResult = executeQueryNonGUI(queryLimit, queryText);
-                executeQueryGUI(queryResult, queryText);
+                executeQueryGUI(queryResult,
+                        queryText,
+                        skipHistoryEntryUsageCountIncrement);
             }catch(StorageException ex) {
                 LOGGER.info("an exception occured while executing the query", ex);
                 this.queryStatusLabel.setText(generateStatusMessage(ex.getMessage()));
@@ -436,7 +444,9 @@ public class QueryComponent<E> extends JPanel {
                 }
                 SwingUtilities.invokeLater(() -> {
                     try {
-                        executeQueryGUI(queryResult, queryText);
+                        executeQueryGUI(queryResult,
+                                queryText,
+                                skipHistoryEntryUsageCountIncrement);
                         QueryComponent.this.setEnabled(true);
                     }catch(Throwable ex) {
                         LOGGER.error("an unexpected exception occured during query execution GUI callback",
@@ -472,9 +482,21 @@ public class QueryComponent<E> extends JPanel {
      * in the non-GUI routine of executing queries, i.e.
      * {@link #executeQueryNonGUI(int, java.lang.String) }
      * @param queryText the text used to retrieve the query results
+     * @param skipHistoryEntryUsageCountIncrement allows to skip the increment
+     * of {@code usageCount} of the retrieved or created
+     * {@link QueryHistoryEntry} which is useful when the QueryPanel is created
+     * and the query run without the users explicit request
      */
+    /*
+    internal implementation notes:
+    - contains some parts which aren't GUI-related and thus could be moved to
+    executeQueryNonGUI which would make them profit from async execution, but
+    currently there're GUI-related parts before and after them, so moving them
+    into executeQueryNonGUI requires intensive testing
+    */
     private void executeQueryGUI(List<E> queryResults,
-            String queryText) {
+            String queryText,
+            boolean skipHistoryEntryUsageCountIncrement) {
         ListIterator<E> queryResultsItr = queryResults.listIterator();
         while(queryResultsItr.hasNext()) {
             E queryResult = queryResultsItr.next();
@@ -540,7 +562,9 @@ public class QueryComponent<E> extends JPanel {
                 issueHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
             }
         }else {
-            modelEntry.setUsageCount(modelEntry.getUsageCount()+1);
+            if(!skipHistoryEntryUsageCountIncrement) {
+                modelEntry.setUsageCount(modelEntry.getUsageCount()+1);
+            }
             try {
                 this.entryStorage.store(this.entityClass,
                         modelEntry);
@@ -558,7 +582,8 @@ public class QueryComponent<E> extends JPanel {
     public void repeatLastQuery() {
         executeQuery(lastQueryLimit,
                 lastQueryText,
-                false //async
+                false, //async
+                false //skipHistoryEntryUsageCountIncrement
         );
     }
 

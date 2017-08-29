@@ -345,6 +345,8 @@ public abstract class AbstractQueryPanel<E> extends JPanel {
      * Runs the query on the {@link QueryComponent}.
      */
     public void runQuery(boolean async) {
-        getQueryComponent().runQuery(async);
+        getQueryComponent().runQuery(async,
+                false //skipHistoryEntryUsageCountIncrement
+        );
     }
 }
