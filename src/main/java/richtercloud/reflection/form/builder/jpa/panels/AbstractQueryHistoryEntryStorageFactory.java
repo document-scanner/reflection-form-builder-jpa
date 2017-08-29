@@ -102,11 +102,14 @@ public abstract class AbstractQueryHistoryEntryStorageFactory<S extends QueryHis
                     isForbidSubtypes());
             for(String queryText : queryTexts) {
                 try {
-                    entryStorage.store(entityClass,
-                            new QueryHistoryEntry(queryText, //queryText
-                                    1, //usageCount
-                                    new Date() //lastUsage
-                            ));
+                    QueryHistoryEntry newEntry = new QueryHistoryEntry(queryText, //queryText
+                            1, //usageCount
+                            new Date() //lastUsage
+                    );
+                    if(!entryStorage.retrieve(entityClass).contains(newEntry)) {
+                        entryStorage.store(entityClass,
+                                newEntry);
+                    }
                 } catch (QueryHistoryEntryStorageException ex) {
                     throw new QueryHistoryEntryStorageCreationException(ex);
                 }
