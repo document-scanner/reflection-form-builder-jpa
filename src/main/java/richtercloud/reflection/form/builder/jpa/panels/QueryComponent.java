@@ -379,6 +379,14 @@ public class QueryComponent<E> extends JPanel {
             this.queryStatusLabel.setText("No query entered or selected");
             return;
         }
+        runQuery(queryText,
+                async,
+                skipHistoryEntryUsageCountIncrement);
+    }
+
+    public void runQuery(String queryText,
+            boolean async,
+            boolean skipHistoryEntryUsageCountIncrement) {
         int queryLimit = (int) queryLimitSpinner.getValue();
         this.executeQuery(queryLimit,
                 queryText,
@@ -561,6 +569,7 @@ public class QueryComponent<E> extends JPanel {
             } catch (QueryHistoryEntryStorageException ex) {
                 issueHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
             }
+            this.queryComboBox.setSelectedItem(newEntry);
         }else {
             if(!skipHistoryEntryUsageCountIncrement) {
                 modelEntry.setUsageCount(modelEntry.getUsageCount()+1);
@@ -571,6 +580,7 @@ public class QueryComponent<E> extends JPanel {
             } catch (QueryHistoryEntryStorageException ex) {
                 issueHandler.handle(new Message(ex, JOptionPane.ERROR_MESSAGE));
             }
+            this.queryComboBox.setSelectedItem(modelEntry);
         }
         this.queryComboBoxModel.sort();
             //sort no matter whether item has been added or usageCount or
@@ -593,6 +603,10 @@ public class QueryComponent<E> extends JPanel {
 
     public Class<? extends E> getEntityClass() {
         return entityClass;
+    }
+
+    public JComboBox<QueryHistoryEntry> getQueryComboBox() {
+        return queryComboBox;
     }
 
     /**
