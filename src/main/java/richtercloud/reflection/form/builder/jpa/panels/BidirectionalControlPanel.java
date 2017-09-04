@@ -108,6 +108,9 @@ public class BidirectionalControlPanel extends javax.swing.JPanel {
         this.bidirectionalHelpDialogTitle = bidirectionalHelpDialogTitle;
         this.entityClass = entityClass;
         this.mappedByField = mappedByField;
+        if(mappedFieldCandidates == null) {
+            throw new IllegalArgumentException("mappedFieldCandidates mustn't be null");
+        }
         this.mappedFieldCandidates = mappedFieldCandidates;
         for(Field mappedFieldCandidate : this.mappedFieldCandidates) {
             this.mappedFieldComboBoxModel.addElement(mappedFieldCandidate);
