@@ -14,7 +14,10 @@
  */
 package richtercloud.reflection.form.builder.jpa.panels;
 
+import java.awt.Component;
+import javax.swing.JLabel;
 import javax.swing.JTable;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableModel;
 
 /**
@@ -28,6 +31,8 @@ public class EntityTable<E> extends JTable {
 
     public EntityTable(EntityTableModel<E> dm) {
         super(dm);
+        this.setDefaultRenderer(Object.class,
+                new EntityTableCellRenderer());
     }
 
     @Override
@@ -41,5 +46,19 @@ public class EntityTable<E> extends JTable {
     @Override
     public EntityTableModel<E> getModel() {
         return (EntityTableModel<E>) super.getModel();
+    }
+
+    private class EntityTableCellRenderer extends DefaultTableCellRenderer {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            JLabel retValue = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            assert retValue != null;
+            if(retValue.getText() != null && !retValue.getText().isEmpty()) {
+                retValue.setToolTipText(retValue.getText());
+            }
+            return retValue;
+        }
     }
 }
