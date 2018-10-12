@@ -8,10 +8,10 @@
         </encoder>
     </appender>
 
-    <logger name="richtercloud" level="DEBUG"/>
-    <logger name="richtercloud.reflection.form.builder.jpa.storage.AbstractPersistenceStorage" level="TRACE"/>
-    <logger name="richtercloud.reflection.form.builder.jpa.storage.PrioritizableReentrantLock" level="TRACE"/>
-    <logger name="richtercloud.reflection.form.builder.jpa.storage.PrioritizableReentrantLockTest" level="TRACE"/>
+    <logger name="de.richtercloud" level="DEBUG"/>
+    <logger name="de.richtercloud.reflection.form.builder.jpa.storage.AbstractPersistenceStorage" level="TRACE"/>
+    <logger name="de.richtercloud.reflection.form.builder.jpa.storage.PrioritizableReentrantLock" level="TRACE"/>
+    <logger name="de.richtercloud.reflection.form.builder.jpa.storage.PrioritizableReentrantLockTest" level="TRACE"/>
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
