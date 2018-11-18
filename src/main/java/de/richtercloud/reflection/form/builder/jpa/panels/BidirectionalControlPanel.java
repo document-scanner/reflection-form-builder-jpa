@@ -204,6 +204,7 @@ public class BidirectionalControlPanel extends javax.swing.JPanel {
 
         bidirectionalHelpButton.setText("?");
         bidirectionalHelpButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 bidirectionalHelpButtonActionPerformed(evt);
             }
@@ -211,6 +212,7 @@ public class BidirectionalControlPanel extends javax.swing.JPanel {
 
         bidirectionalCheckBox.setText("Bidirectional");
         bidirectionalCheckBox.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 bidirectionalCheckBoxActionPerformed(evt);
             }

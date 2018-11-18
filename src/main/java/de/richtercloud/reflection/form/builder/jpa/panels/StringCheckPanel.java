@@ -141,12 +141,14 @@ public class StringCheckPanel extends AbstractStringPanel {
         checkButton.setText("Check");
         checkButton.setEnabled(false);
         checkButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 checkButtonActionPerformed(evt);
             }
         });
 
         textField.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 textFieldKeyReleased(evt);
             }
@@ -155,6 +157,7 @@ public class StringCheckPanel extends AbstractStringPanel {
         showButton.setText("Show");
         showButton.setEnabled(false);
         showButton.addActionListener(new java.awt.event.ActionListener() {
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 showButtonActionPerformed(evt);
             }
