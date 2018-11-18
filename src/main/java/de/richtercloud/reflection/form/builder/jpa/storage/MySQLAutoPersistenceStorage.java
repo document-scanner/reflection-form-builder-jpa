@@ -79,9 +79,13 @@ public class MySQLAutoPersistenceStorage extends AbstractProcessPersistenceStora
 
     @Override
     protected void preCreation() throws IOException {
-        assert new File(getStorageConf().getMysqld()).exists();
-        assert new File(getStorageConf().getMysqladmin()).exists();
-        assert new File(getStorageConf().getMysql()).exists();
+        assert getStorageConf() != null: "storage configuration mustn't be null";
+        assert new File(getStorageConf().getMysqld()).exists(): String.format("mysqld '%s' specified in storage configuration doesn't exist",
+                getStorageConf().getMysqld());
+        assert new File(getStorageConf().getMysqladmin()).exists(): String.format("mysqladmin '%s' specified in storage configuration doesn't exist",
+                getStorageConf().getMysqladmin());
+        assert new File(getStorageConf().getMysql()).exists(): String.format("mysql '%s' specified in storage configuration doesn't exist",
+                getStorageConf().getMysql());
         File myCnfFile = new File(getStorageConf().getMyCnfFilePath());
         if(!myCnfFile.exists()) {
             LOGGER.debug(String.format("creating inexisting configuration file '%s'", myCnfFile.getAbsolutePath()));
